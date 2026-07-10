@@ -1,0 +1,9 @@
+server:
+  port: ${AUTH_SERVICE_PORT:8080}
+
+spring:
+  application:
+    name: auth-service
+
+jwt:
+  secret: ${JWT_SECRET:default_secret_key_for_local_development_needs_to_be_long_enough}
