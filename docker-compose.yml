@@ -19,6 +19,24 @@ services:
       timeout: 5s
       retries: 5
 
+  # Spring Boot Auth Service
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: studyflow_auth
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=studyflow_db
+      - DB_USER=studyflow
+      - DB_PASSWORD=studyflow
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Ollama for local LLM
   ollama:
     image: ollama/ollama
