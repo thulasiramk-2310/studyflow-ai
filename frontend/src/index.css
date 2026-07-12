@@ -4,47 +4,76 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
+    --background: 0 0% 98%; /* #FAFAFA */
+    --foreground: 222 47% 11%; /* #111827 */
+    
+    --surface: 0 0% 100%; /* #FFFFFF */
+    
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 215 16% 47%; /* #6B7280 */
+    
+    --text-muted: 215 16% 47%; 
+
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 222 47% 11%;
+
     --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --card-foreground: 222 47% 11%;
+
+    --border: 220 13% 91%; /* #E5E7EB */
+    --border-soft: 220 14% 96%; /* Lighter border */
+    
+    --input: 220 13% 91%;
+
+    /* Primary Accent (Dynamic via CSS variable, defaults to Ocean Blue) */
+    --primary: 221 83% 53%; /* #2563EB */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 221 83% 45%; 
+    --primary-soft: 221 83% 96%; 
+
+    /* Secondary Accent defaults to the same as Primary for now */
+    --secondary: var(--primary);
+    --secondary-foreground: 0 0% 100%;
+    --secondary-soft: var(--primary-soft);
+
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 100% 50%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --ring: 215 20.2% 65.1%;
-    --radius: 0.5rem;
+
+    --ring: var(--primary);
+    --radius: 0.5rem; /* Enterprise design usually has slightly less rounded borders */
   }
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
+    --background: 222 47% 11%;
+    --foreground: 0 0% 98%;
+    --surface: 223 47% 13%; 
     --muted: 223 47% 11%;
-    --muted-foreground: 215.4 16.3% 56.9%;
-    --popover: 224 71% 4%;
+    --muted-foreground: 215 16% 57%;
+    --text-muted: 215 16% 57%; 
+    --popover: 222 47% 11%;
     --popover-foreground: 215 20.2% 65.1%;
-    --card: 224 71% 4%;
-    --card-foreground: 213 31% 91%;
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 1.2%;
-    --secondary: 222.2 47.4% 11.2%;
-    --secondary-foreground: 210 40% 98%;
-    --accent: 216 34% 17%;
-    --accent-foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 0 0% 98%;
+    --border: 217 33% 22%;
+    --border-soft: 217 33% 18%; 
+    --input: 217 33% 22%;
+    
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 221 83% 60%;
+    --primary-soft: 221 50% 20%;
+    
+    --secondary: var(--primary);
+    --secondary-foreground: 0 0% 100%;
+    --secondary-soft: var(--primary-soft);
+    
+    --accent: 217 33% 22%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-    --ring: 216 34% 17%;
+    --ring: var(--primary);
   }
 }
 
@@ -53,6 +82,28 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
+}
+
+/* Animations from mockup */
+@keyframes sfBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+  40% { transform: translateY(-4px); opacity: 1; }
+}
+@keyframes sfToast {
+  from { transform: translate(-50%, 12px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+@keyframes sfPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes sfFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes sfModal {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
