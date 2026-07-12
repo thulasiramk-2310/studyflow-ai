@@ -37,6 +37,22 @@ services:
       postgres:
         condition: service_healthy
 
+  # Study Service
+  study-service:
+    build:
+      context: ./study-service
+    container_name: studyflow_study
+    ports:
+      - "${STUDY_SERVICE_PORT:-8081}:8000"
+    environment:
+      - DATABASE_URL=postgresql://studyflow:studyflow@postgres:5432/studyflow_db
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./study-service/alembic:/app/alembic
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Ollama for local LLM
   ollama:
     image: ollama/ollama
@@ -46,6 +62,18 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     # Note: A startup script or manual step will be needed to `ollama pull qwen3:8b` later.
+
+  # API Gateway
+  api-gateway:
+    image: nginx:alpine
+    container_name: studyflow_gateway
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - study-service
 
 volumes:
   postgres_data:
