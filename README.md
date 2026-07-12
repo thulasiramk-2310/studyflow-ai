@@ -4,6 +4,28 @@ StudyFlow AI is an AI-powered collaborative learning platform. The platform allo
 
 ## Architecture
 
+* ✅ PostgreSQL Database
+* ✅ Docker & Nginx API Gateway
+* ✅ Playwright E2E Tests
+* ✅ AI Document Ingestion (FAISS + LangChain)
+
+## Progress
+
+| Module      | Status |
+| ----------- | :----: |
+| UI          |    ✅   |
+| Routing     |    ✅   |
+| Auth        |    ✅   |
+| API Gateway |    ✅   |
+| Groups      |    ✅   |
+| Resources   |    ✅   |
+| Sessions    |    ✅   |
+| Infra/E2E   |    ✅   |
+| AI (Phase 1)|    ✅   |
+| AI (RAG)    |    ⏳   |
+| AWS         |    ⏳   |
+| CI/CD       |    ⏳   |
+
 StudyFlow AI uses a microservices architecture:
 - **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
 - **Auth Service**: Spring Boot, Spring Security, JWT

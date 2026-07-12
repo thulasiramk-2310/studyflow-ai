@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     
     # JWT
     JWT_SECRET: Optional[str] = None
+    JWT_ALGORITHM: str = "HS256"
+
+    # AI Service Integration
+    AI_SERVICE_URL: str = "http://ai-service:8002"
     
     MAX_FILE_SIZE: int = 25 * 1024 * 1024
     UPLOAD_PATH: str = "uploads"

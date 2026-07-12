@@ -16,6 +16,7 @@ class ResourceResponse(ResourceBase):
     id: int
     group_id: int
     uploaded_by: int
+    status: str
     created_at: datetime
 
     class Config:

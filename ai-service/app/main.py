@@ -1,16 +1,18 @@
+import logging
 from fastapi import FastAPI
 from app.core.config import settings
+from app.api.router import api_router
 
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
-@app.get("/health")
-def health_check():
-    return {
-        "status": "UP", 
-        "service": "ai-service", 
-        "llm_model": settings.LLM_MODEL,
-        "embedding_model": settings.EMBEDDING_MODEL
-    }
+app = FastAPI(title=settings.PROJECT_NAME)
+
+app.include_router(api_router, prefix="/api/v1")
+
+@app.get("/")
+def root():
+    return {"message": "StudyFlow AI Service"}

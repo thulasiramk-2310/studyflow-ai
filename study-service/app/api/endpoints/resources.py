@@ -3,35 +3,30 @@ import uuid
 import shutil
 import logging
 from typing import List
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
+from app.models.resource import Resource, ResourceStatus
 from app.schemas.resource import ResourceResponse, ResourceCreate
 from app.schemas.common import SuccessResponse
 from app.repositories import resource_repo, group_repo
+from app.repositories.resource_repo import ResourceRepository
+from app.repositories.group_repo import GroupRepository
 from app.models.group import GroupRole
 from app.core.config import settings
+from app.services.indexing_service import request_index
+from pydantic import BaseModel
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = settings.UPLOAD_PATH
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-def index_document_task(file_path: str, resource_id: int):
-    """
-    Placeholder task for Document Indexing Workflow (RAG)
-    This will eventually run Document Loader -> Chunking -> Embedding -> FAISS.
-    """
-    logger.info(f"[RAG Background Task] Started indexing for resource {resource_id}")
-    logger.info(f"[RAG Background Task] Loading file from {file_path}")
-    logger.info(f"[RAG Background Task] Chunking and embedding mock vectors...")
-    logger.info(f"[RAG Background Task] Stored in FAISS index.")
-    logger.info(f"[RAG Background Task] Completed indexing for resource {resource_id}")
-
 
 @router.post("/upload", response_model=SuccessResponse[ResourceResponse], status_code=status.HTTP_201_CREATED)
 def upload_resource(
@@ -67,26 +62,31 @@ def upload_resource(
     
     file_uuid = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1]
-    safe_filename = f"{file_uuid}{ext}"
-    file_path = os.path.join(group_dir, safe_filename)
+    new_filename = f"{file_uuid}{ext}"
+    file_path = os.path.join(group_dir, new_filename)
     
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
-    # 4. Save metadata to DB
-    resource_in = ResourceCreate(
-        filename=safe_filename,
+    # Save to database
+    resource = Resource(
+        group_id=group_id,
+        uploaded_by=user_id,
+        filename=new_filename,
         original_filename=file.filename,
         mime_type=file.content_type,
         size=file_size,
-        storage_path=file_path
+        storage_path=str(file_path),
+        status=ResourceStatus.UPLOADED.value
     )
-    db_resource = resource_repo.create_resource(db=db, resource_in=resource_in, group_id=group_id, user_id=user_id)
+    db.add(resource)
+    db.commit()
+    db.refresh(resource)
     
-    # 5. Trigger background task for RAG indexing
-    background_tasks.add_task(index_document_task, file_path, db_resource.id)
+    # Trigger AI indexing in background
+    request_index(background_tasks, resource.id, group_id, str(file_path))
     
-    return {"success": True, "data": db_resource}
+    return {"success": True, "data": resource}
 
 
 @router.get("/", response_model=SuccessResponse[List[ResourceResponse]])
@@ -146,26 +146,47 @@ def download_resource(
     )
 
 
-@router.delete("/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{resource_id}")
 def delete_resource(
     resource_id: int,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    user_id = current_user.get("userId")
-    resource = resource_repo.get_resource_by_id(db=db, resource_id=resource_id)
+    resource = resource_repo.get_resource_by_id(db, resource_id)
     if not resource:
         raise HTTPException(status_code=404, detail="Resource not found")
         
-    member = group_repo.get_member(db=db, group_id=resource.group_id, user_id=user_id)
-    # Only organizer can delete
-    if not member or member.role != GroupRole.ORGANIZER:
-        raise HTTPException(status_code=403, detail="Only organizers can delete resources")
+    group = group_repo.get_group_by_id(db, resource.group_id)
+    if group.organizer_id != current_user["userId"] and resource.uploaded_by != current_user["userId"]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this resource")
         
-    # Delete from filesystem
-    if os.path.exists(resource.storage_path):
-        os.remove(resource.storage_path)
+    # Delete file from disk
+    file_path = Path(resource.storage_path)
+    if file_path.exists():
+        os.remove(file_path)
         
-    # Delete from DB
-    resource_repo.delete_resource(db=db, db_resource=resource)
-    return None
+    db.delete(resource)
+    db.commit()
+    return {"success": True}
+
+class StatusUpdateRequest(BaseModel):
+    status: str
+
+@router.put("/{resource_id}/status", response_model=ResourceResponse)
+def update_resource_status(
+    resource_id: int,
+    request: StatusUpdateRequest,
+    db: Session = Depends(get_db)
+):
+    resource = resource_repo.get_resource_by_id(db, resource_id)
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+        
+    valid_statuses = [s.value for s in ResourceStatus]
+    if request.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Invalid status")
+        
+    resource.status = request.status
+    db.commit()
+    db.refresh(resource)
+    return resource

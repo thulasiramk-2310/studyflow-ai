@@ -49,6 +49,24 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./study-service/alembic:/app/alembic
+      - shared_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # AI Service
+  ai-service:
+    build:
+      context: ./ai-service
+    container_name: studyflow_ai
+    ports:
+      - "8002:8002"
+    environment:
+      - DATABASE_URL=postgresql://studyflow:studyflow@postgres:5432/studyflow_db
+      - STUDY_SERVICE_URL=http://study-service:8000
+    volumes:
+      - shared_uploads:/app/uploads
+      - ai_storage:/app/ai-storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,7 +92,10 @@ services:
     depends_on:
       - auth-service
       - study-service
+      - ai-service
 
 volumes:
   postgres_data:
   ollama_data:
+  shared_uploads:
+  ai_storage:

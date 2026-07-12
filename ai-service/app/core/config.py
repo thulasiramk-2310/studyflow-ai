@@ -1,16 +1,14 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "AI Service"
-    API_V1_STR: str = "/api/v1"
-    
-    # AI Specific Settings
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    PROJECT_NAME: str = "StudyFlow AI Service"
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
-    LLM_MODEL: str = "qwen3:8b"
-    FAISS_INDEX_PATH: str = "./faiss_index"
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 200
+    AI_STORAGE_DIR: str = "/app/ai-storage"
+    STUDY_SERVICE_URL: str = "http://study-service:8000"
 
     class Config:
-        env_file = "../../.env"
+        env_file = ".env"
 
 settings = Settings()
