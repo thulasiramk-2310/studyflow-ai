@@ -1,0 +1,68 @@
+import logging
+from app.embeddings.embedding_service import generate_embeddings
+from app.vectorstore.faiss_store import search_index, get_group_dir
+from app.prompts.chat_prompt import build_chat_prompt
+from app.services.llm_service import generate_answer
+from app.schemas.chat import ChatResponse, ChatCitation
+
+logger = logging.getLogger(__name__)
+
+def generate_rag_response(group_id: int, query: str, top_k: int = 3) -> ChatResponse:
+    """
+    Orchestrates the Retrieval-Augmented Generation (RAG) pipeline.
+    """
+    # 1. Check if index exists
+    group_dir = get_group_dir(group_id)
+    index_path = group_dir / "index.faiss"
+    
+    if not index_path.exists():
+        return ChatResponse(
+            success=True,
+            answer="No study materials have been indexed for this group yet.",
+            confidence=0.0,
+            citations=[]
+        )
+        
+    # 2. Embed the query
+    query_embeddings = generate_embeddings([query])
+    
+    # 3. Retrieve Top K chunks
+    # We use a higher top_k here just in case, but we will slice it to the top 3 best.
+    results_raw = search_index(group_id, query_embeddings[0], top_k=top_k)
+    
+    if not results_raw:
+        return ChatResponse(
+            success=True,
+            answer="I couldn't find this information in the uploaded study materials.",
+            confidence=0.0,
+            citations=[]
+        )
+        
+    # 4. Limit to highest quality chunks (already sorted by FAISS)
+    top_results = results_raw[:3]
+    chunks_text = [r["content"] for r in top_results]
+    
+    # 5. Calculate Confidence (using the top score)
+    confidence = top_results[0]["score"]
+    
+    # 6. Build Prompt
+    prompt = build_chat_prompt(query, chunks_text)
+    
+    # 7. Call LLM
+    answer = generate_answer(prompt)
+    
+    # 8. Attach Backend-Generated Citations
+    citations = []
+    for r in top_results:
+        citations.append(ChatCitation(
+            filename=r["source"]["filename"],
+            page=r["source"]["page"],
+            score=r["score"]
+        ))
+        
+    return ChatResponse(
+        success=True,
+        answer=answer,
+        confidence=confidence,
+        citations=citations
+    )

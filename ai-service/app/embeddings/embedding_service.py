@@ -17,6 +17,6 @@ def generate_embeddings(texts: list[str]) -> np.ndarray:
     Generate embeddings for a list of text chunks.
     """
     model = get_model()
-    # encode returns a numpy array
-    embeddings = model.encode(texts, convert_to_numpy=True)
+    # encode returns a numpy array. normalize_embeddings=True produces unit length vectors (cosine similarity)
+    embeddings = model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
     return embeddings

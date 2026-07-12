@@ -15,8 +15,6 @@ from app.models.resource import Resource, ResourceStatus
 from app.schemas.resource import ResourceResponse, ResourceCreate
 from app.schemas.common import SuccessResponse
 from app.repositories import resource_repo, group_repo
-from app.repositories.resource_repo import ResourceRepository
-from app.repositories.group_repo import GroupRepository
 from app.models.group import GroupRole
 from app.core.config import settings
 from app.services.indexing_service import request_index
@@ -84,7 +82,7 @@ def upload_resource(
     db.refresh(resource)
     
     # Trigger AI indexing in background
-    request_index(background_tasks, resource.id, group_id, str(file_path))
+    request_index(background_tasks, resource.id, group_id, str(file_path), file.filename)
     
     return {"success": True, "data": resource}
 
@@ -157,7 +155,7 @@ def delete_resource(
         raise HTTPException(status_code=404, detail="Resource not found")
         
     group = group_repo.get_group_by_id(db, resource.group_id)
-    if group.organizer_id != current_user["userId"] and resource.uploaded_by != current_user["userId"]:
+    if group.created_by != current_user["userId"] and resource.uploaded_by != current_user["userId"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this resource")
         
     # Delete file from disk

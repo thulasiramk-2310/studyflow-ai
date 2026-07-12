@@ -64,22 +64,14 @@ services:
     environment:
       - DATABASE_URL=postgresql://studyflow:studyflow@postgres:5432/studyflow_db
       - STUDY_SERVICE_URL=http://study-service:8000
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3:8b}
     volumes:
       - shared_uploads:/app/uploads
       - ai_storage:/app/ai-storage
     depends_on:
       postgres:
         condition: service_healthy
-
-  # Ollama for local LLM
-  ollama:
-    image: ollama/ollama
-    container_name: studyflow_ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    # Note: A startup script or manual step will be needed to `ollama pull qwen3:8b` later.
 
   # API Gateway
   api-gateway:
@@ -96,6 +88,5 @@ services:
 
 volumes:
   postgres_data:
-  ollama_data:
   shared_uploads:
   ai_storage:

@@ -4,17 +4,21 @@ import faiss
 import numpy as np
 from pathlib import Path
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_group_dir(group_id: int) -> Path:
     group_dir = Path(settings.AI_STORAGE_DIR) / f"group-{group_id}"
     group_dir.mkdir(parents=True, exist_ok=True)
     return group_dir
 
-def load_or_create_index(group_dir: Path, dimension: int) -> faiss.IndexFlatL2:
+def load_or_create_index(group_dir: Path, dimension: int) -> faiss.IndexFlatIP:
     index_path = group_dir / "index.faiss"
     if index_path.exists():
         return faiss.read_index(str(index_path))
-    return faiss.IndexFlatL2(dimension)
+    # We use IndexFlatIP for Cosine Similarity (requires normalized vectors)
+    return faiss.IndexFlatIP(dimension)
 
 def save_index(group_dir: Path, index: faiss.Index):
     index_path = group_dir / "index.faiss"
@@ -50,9 +54,10 @@ def save_documents(group_dir: Path, documents: list):
     with open(docs_path, 'w') as f:
         json.dump(documents, f, indent=2)
 
-def add_to_index(group_id: int, resource_id: int, chunks: list[str], embeddings: np.ndarray):
+def add_to_index(group_id: int, resource_id: int, filename: str, chunks: list[dict], embeddings: np.ndarray):
     """
     Add new chunks and embeddings to the FAISS index for a specific group.
+    `chunks` is a list of dicts: [{"page_num": int, "text": str}]
     """
     group_dir = get_group_dir(group_id)
     
@@ -70,14 +75,14 @@ def add_to_index(group_id: int, resource_id: int, chunks: list[str], embeddings:
     # Update documents tracking
     documents = load_documents(group_dir)
     
-    # Check if resource already exists and remove it? For now, append.
-    # If reindexing, we might have multiple copies if we don't clean up, but for phase 1 we just append.
     doc_entries = []
     for i, chunk in enumerate(chunks):
         doc_entries.append({
             "vector_id": start_idx + i,
             "resource_id": resource_id,
-            "text": chunk
+            "filename": filename,
+            "page": chunk["page_num"],
+            "text": chunk["text"]
         })
     documents.extend(doc_entries)
     save_documents(group_dir, documents)
@@ -87,3 +92,51 @@ def add_to_index(group_id: int, resource_id: int, chunks: list[str], embeddings:
     metadata["documents"] = len(set(d["resource_id"] for d in documents))
     metadata["total_chunks"] = index.ntotal
     save_metadata(group_dir, metadata)
+
+
+def search_index(group_id: int, query_embedding: np.ndarray, top_k: int = 5, threshold: float = 0.2) -> list[dict]:
+    """
+    Search the FAISS index for a given group and return the top K matching chunks.
+    """
+    group_dir = get_group_dir(group_id)
+    index_path = group_dir / "index.faiss"
+    
+    if not index_path.exists():
+        logger.warning(f"No index found for group {group_id}")
+        return []
+        
+    index = faiss.read_index(str(index_path))
+    documents = load_documents(group_dir)
+    
+    # Ensure query embedding is 2D
+    if len(query_embedding.shape) == 1:
+        query_embedding = query_embedding.reshape(1, -1)
+        
+    # Search FAISS (returns distances and indices)
+    # For IndexFlatIP, higher score is better (Cosine Similarity)
+    scores, indices = index.search(query_embedding, top_k)
+    
+    results = []
+    for i in range(len(indices[0])):
+        idx = int(indices[0][i])
+        if idx == -1: # FAISS returns -1 if there are not enough vectors
+            continue
+            
+        score = float(scores[0][i])
+        if score < threshold:
+            continue
+            
+        # Find corresponding document entry
+        doc = next((d for d in documents if d["vector_id"] == idx), None)
+        if doc:
+            results.append({
+                "score": score,
+                "content": doc["text"],
+                "source": {
+                    "resourceId": doc["resource_id"],
+                    "filename": doc.get("filename", "unknown"),
+                    "page": doc.get("page", 1)
+                }
+            })
+            
+    return results

@@ -16,14 +16,25 @@ test.describe('Resources Module E2E Tests', () => {
     await page.waitForURL('**/dashboard', { timeout: 10000 });
 
     // 2. Create Group
-    await page.click('text="Create Study Group"');
+    await page.click('text="My Groups"'); // Navigate to groups
+    await page.waitForURL('**/groups');
+    
+    // In Groups page, the button could be "New Group" (header) or "Create Group" (empty state)
+    const emptyCreateBtn = await page.isVisible('button:has-text("Create Group")');
+    if (emptyCreateBtn) {
+      await page.click('button:has-text("Create Group")');
+    } else {
+      await page.click('button:has-text("New Group")');
+    }
+    
     await expect(page.locator('text="Create Study Group"').first()).toBeVisible();
     await page.fill('input[placeholder="e.g. Advanced Calculus Study Group"]', 'Resources Test Group');
-    await page.click('button:has-text("Create Group")');
-    await page.waitForTimeout(1000);
+    await page.fill('textarea[placeholder="What is this group about?"]', 'Test description');
+    await page.locator('button:has-text("Create Group")').last().click();
+    await page.waitForTimeout(1500);
 
     // 3. Go to Resources Page
-    await page.click('text="Resources"');
+    await page.click('text="Resources"', { force: true });
     await page.waitForURL('**/resources');
 
     // 4. Upload a File
@@ -38,15 +49,16 @@ test.describe('Resources Module E2E Tests', () => {
     await page.waitForTimeout(1000);
 
     // 5. Verify file is listed
-    await expect(page.locator('text="dummy.md"')).toBeVisible();
-
-    // 6. Delete file (we assume there's a trash icon or delete button in a dropdown)
-    // For now, assume a button or icon exists. If not, this might fail, which is good to check.
-    const hasDeleteBtn = await page.isVisible('button[aria-label="Delete resource"]');
-    if (hasDeleteBtn) {
-      await page.click('button[aria-label="Delete resource"]');
-      await page.waitForTimeout(1000);
-      await expect(page.locator('text="dummy.md"')).not.toBeVisible();
-    }
+    // 6. Delete file
+    await page.hover('text="dummy.md"');
+    await page.waitForTimeout(500); // Wait for transition
+    
+    page.once('dialog', dialog => {
+      dialog.accept();
+    });
+    
+    await page.click('button[aria-label="Delete"]', { force: true });
+    await page.waitForTimeout(1500); // Give backend time to delete and frontend to refetch
+    await expect(page.locator('text="dummy.md"')).not.toBeVisible({ timeout: 10000 });
   });
 });

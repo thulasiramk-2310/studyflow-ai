@@ -7,7 +7,8 @@ StudyFlow AI is an AI-powered collaborative learning platform. The platform allo
 * ✅ PostgreSQL Database
 * ✅ Docker & Nginx API Gateway
 * ✅ Playwright E2E Tests
-* ✅ AI Document Ingestion (FAISS + LangChain)
+* ✅ AI Document Ingestion (FAISS + all-MiniLM-L6-v2)
+* ✅ Retrieval-Augmented Generation (Qwen3 via Ollama)
 
 ## Progress
 
@@ -22,7 +23,7 @@ StudyFlow AI is an AI-powered collaborative learning platform. The platform allo
 | Sessions    |    ✅   |
 | Infra/E2E   |    ✅   |
 | AI (Phase 1)|    ✅   |
-| AI (RAG)    |    ⏳   |
+| AI (RAG)    |    ✅   |
 | AWS         |    ⏳   |
 | CI/CD       |    ⏳   |
 
