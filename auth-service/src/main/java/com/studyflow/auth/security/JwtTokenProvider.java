@@ -21,13 +21,16 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    public String generateToken(Authentication authentication) {
-        String username = authentication.getName();
+    public String generateToken(Authentication authentication, com.studyflow.auth.entity.User user) {
+        String email = authentication.getName();
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(email)
+                .claim("userId", user.getId())
+                .claim("email", user.getEmail())
+                .claim("name", user.getName())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)

@@ -19,3 +19,9 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:default_secret_key_for_local_development_needs_to_be_long_enough}
+
+springdoc:
+  swagger-ui:
+    path: /auth/docs
+  api-docs:
+    path: /auth/v3/api-docs
