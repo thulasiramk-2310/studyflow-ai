@@ -18,9 +18,9 @@ def generate_answer(prompt: str) -> str:
     }
     
     try:
-        # 30 second timeout to prevent hanging forever
+        # 120 second timeout to prevent hanging forever
         logger.info(f"Sending prompt to Ollama ({settings.OLLAMA_MODEL})")
-        response = requests.post(url, json=payload, timeout=30.0)
+        response = requests.post(url, json=payload, timeout=120.0)
         response.raise_for_status()
         
         data = response.json()

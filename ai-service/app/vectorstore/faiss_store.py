@@ -94,9 +94,10 @@ def add_to_index(group_id: int, resource_id: int, filename: str, chunks: list[di
     save_metadata(group_dir, metadata)
 
 
-def search_index(group_id: int, query_embedding: np.ndarray, top_k: int = 5, threshold: float = 0.2) -> list[dict]:
+def search_index(group_id: int, query_embedding: np.ndarray, top_k: int = 5, threshold: float = 0.2, resource_ids: list[int] = None) -> list[dict]:
     """
     Search the FAISS index for a given group and return the top K matching chunks.
+    Optionally filter by resource_ids.
     """
     group_dir = get_group_dir(group_id)
     index_path = group_dir / "index.faiss"
@@ -112,23 +113,25 @@ def search_index(group_id: int, query_embedding: np.ndarray, top_k: int = 5, thr
     if len(query_embedding.shape) == 1:
         query_embedding = query_embedding.reshape(1, -1)
         
-    # Search FAISS (returns distances and indices)
-    # For IndexFlatIP, higher score is better (Cosine Similarity)
-    scores, indices = index.search(query_embedding, top_k)
+    # Search FAISS (fetch more if filtering)
+    fetch_k = top_k * 5 if resource_ids else top_k
+    scores, indices = index.search(query_embedding, fetch_k)
     
     results = []
     for i in range(len(indices[0])):
         idx = int(indices[0][i])
-        if idx == -1: # FAISS returns -1 if there are not enough vectors
+        if idx == -1:
             continue
             
         score = float(scores[0][i])
         if score < threshold:
             continue
             
-        # Find corresponding document entry
         doc = next((d for d in documents if d["vector_id"] == idx), None)
         if doc:
+            if resource_ids and doc["resource_id"] not in resource_ids:
+                continue
+                
             results.append({
                 "score": score,
                 "content": doc["text"],
@@ -138,5 +141,8 @@ def search_index(group_id: int, query_embedding: np.ndarray, top_k: int = 5, thr
                     "page": doc.get("page", 1)
                 }
             })
+            
+            if len(results) >= top_k:
+                break
             
     return results

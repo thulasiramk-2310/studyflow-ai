@@ -7,7 +7,7 @@ from app.schemas.chat import ChatResponse, ChatCitation
 
 logger = logging.getLogger(__name__)
 
-def generate_rag_response(group_id: int, query: str, top_k: int = 3) -> ChatResponse:
+def generate_rag_response(group_id: int, query: str, top_k: int = 3, history_messages: list = None) -> ChatResponse:
     """
     Orchestrates the Retrieval-Augmented Generation (RAG) pipeline.
     """
@@ -46,7 +46,7 @@ def generate_rag_response(group_id: int, query: str, top_k: int = 3) -> ChatResp
     confidence = top_results[0]["score"]
     
     # 6. Build Prompt
-    prompt = build_chat_prompt(query, chunks_text)
+    prompt = build_chat_prompt(query, chunks_text, history_messages)
     
     # 7. Call LLM
     answer = generate_answer(prompt)

@@ -1,6 +1,6 @@
 SYSTEM_PROMPT = """You are StudyFlow AI, an AI learning assistant.
 
-You must answer ONLY from the supplied context.
+You must answer ONLY from the supplied context and previous conversation.
 
 Rules:
 1. Never use outside knowledge.
@@ -13,14 +13,26 @@ Rules:
 Context:
 {context}
 
+Previous Conversation:
+{history}
+
 Question:
 {question}
 
 Answer:"""
 
-def build_chat_prompt(query: str, chunks: list[str]) -> str:
+def build_chat_prompt(query: str, chunks: list[str], history_messages: list = None) -> str:
     """
-    Builds the complete prompt string using the given query and context chunks.
+    Builds the complete prompt string using the given query, context chunks, and history.
     """
-    context_str = "\n\n---\n\n".join(chunks)
-    return SYSTEM_PROMPT.format(context=context_str, question=query)
+    context_str = "\n\n---\n\n".join(chunks) if chunks else "No specific context chunks retrieved."
+    
+    history_str = "None"
+    if history_messages:
+        history_lines = []
+        for msg in history_messages:
+            role_name = "User" if msg.role == "user" else "Assistant"
+            history_lines.append(f"{role_name}: {msg.content}")
+        history_str = "\n\n".join(history_lines)
+
+    return SYSTEM_PROMPT.format(context=context_str, history=history_str, question=query)

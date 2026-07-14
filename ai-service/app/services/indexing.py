@@ -1,11 +1,14 @@
 import logging
 import requests
 import time
+import tempfile
+import os
 from app.core.config import settings
 from app.loaders.document_loader import extract_text_from_document
 from app.chunking.splitter import chunk_text
 from app.embeddings.embedding_service import generate_embeddings
 from app.vectorstore.faiss_store import add_to_index
+from app.services.storage import storage
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +18,7 @@ def update_resource_status(resource_id: int, status: str):
     """
     try:
         url = f"{settings.STUDY_SERVICE_URL}/resources/{resource_id}/status"
-        response = requests.put(url, json={"status": status})
+        response = requests.put(url, json={"status": status}, headers={"X-Internal-Key": settings.INTERNAL_API_KEY})
         response.raise_for_status()
         logger.info(f"Updated resource {resource_id} status to {status}")
     except Exception as e:
@@ -29,8 +32,18 @@ def process_document(resource_id: int, group_id: int, file_path: str, filename: 
     try:
         logger.info(f"Starting ingestion for resource {resource_id} (Group: {group_id})")
         
-        # 1. Extract Text
-        pages = extract_text_from_document(file_path)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_path = tmp_file.name
+            
+        try:
+            # Download from storage to temp file
+            storage.download_to_file(file_path, tmp_path)
+            
+            # 1. Extract Text
+            pages = extract_text_from_document(tmp_path)
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
         
         # 2. Chunk Text
         chunks = chunk_text(pages)
