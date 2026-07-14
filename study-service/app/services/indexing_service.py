@@ -17,10 +17,11 @@ def _trigger_ai_indexing(resource_id: int, group_id: int, file_path: str, filena
             "file_path": file_path,
             "filename": filename
         }
-        # Use httpx for a non-blocking request (though we are already in a background task)
-        # We can just use a synchronous request here since it's a background thread
+        headers = {
+            "X-Internal-Key": settings.INTERNAL_API_KEY
+        }
         with httpx.Client() as client:
-            response = client.post(url, json=payload, timeout=10.0)
+            response = client.post(url, json=payload, headers=headers, timeout=10.0)
             response.raise_for_status()
             logger.info(f"Triggered AI indexing for resource {resource_id}. Response: {response.status_code}")
     except Exception as e:

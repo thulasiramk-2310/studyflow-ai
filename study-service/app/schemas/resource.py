@@ -16,6 +16,7 @@ class ResourceResponse(ResourceBase):
     id: int
     group_id: int
     uploaded_by: int
+    uploader_name: Optional[str] = None
     status: str
     created_at: datetime
 

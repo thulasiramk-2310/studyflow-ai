@@ -15,6 +15,9 @@ from app.schemas.group import (
 from app.schemas.common import SuccessResponse
 from app.repositories import group_repo
 from app.models.group import GroupRole
+from app.clients import auth_client
+from app.services import notification_service
+from app.models.notification import NotificationType
 
 router = APIRouter()
 
@@ -36,7 +39,7 @@ def get_user_groups(
     return {"success": True, "data": group_repo.get_user_groups(db=db, user_id=user_id)}
 
 @router.get("/{group_id}", response_model=SuccessResponse[StudyGroupDetailResponse])
-def get_group(
+async def get_group(
     group_id: int,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
@@ -50,7 +53,29 @@ def get_group(
     if not member:
         raise HTTPException(status_code=403, detail="Not a member of this group")
         
-    return {"success": True, "data": group}
+    # Hydrate group members with user profiles from Auth Service
+    db_members = group_repo.get_group_members(db=db, group_id=group_id)
+    user_ids = [m.user_id for m in db_members]
+    
+    users = await auth_client.get_users_batch(user_ids)
+    user_map = {u["id"]: u for u in users}
+    
+    # We construct the detail response manually to include members
+    group_dict = {c.name: getattr(group, c.name) for c in group.__table__.columns}
+    
+    members_out = []
+    for m in db_members:
+        m_dict = {c.name: getattr(m, c.name) for c in m.__table__.columns}
+        user_info = user_map.get(str(m.user_id), {})
+        m_dict["name"] = user_info.get("name")
+        m_dict["email"] = user_info.get("email")
+        m_dict["avatar"] = user_info.get("avatar")
+        members_out.append(m_dict)
+        
+    group_dict["members"] = members_out
+    
+    return {"success": True, "data": group_dict}
+
 
 @router.put("/{group_id}", response_model=SuccessResponse[StudyGroupResponse])
 def update_group(
@@ -104,6 +129,19 @@ def join_group(
         raise HTTPException(status_code=400, detail="Already a member of this group")
         
     group_repo.add_member(db=db, group_id=group.id, user_id=user_id)
+    
+    # Notify group members
+    notification_service.notify_group_members(
+        db=db,
+        group_id=group.id,
+        title="New Member Joined",
+        message=f"{current_user.get('name', 'A user')} joined the group.",
+        type=NotificationType.MEMBER_JOINED,
+        exclude_user_id=current_user.get("userId"),
+        entity_type="GROUP",
+        entity_id=group.id
+    )
+    
     return {"success": True, "data": group}
 
 @router.get("/{group_id}/sessions", response_model=SuccessResponse[List[Any]])
@@ -127,13 +165,13 @@ def get_group_sessions(
     
     result = []
     for s in sessions:
-        s_dict = s.__dict__.copy()
+        s_dict = {c.name: getattr(s, c.name) for c in s.__table__.columns}
         s_dict["resources"] = [sr.resource for sr in s.resources]
         result.append(s_dict)
     return {"success": True, "data": result}
 
 @router.get("/{group_id}/members", response_model=SuccessResponse[List[GroupMemberResponse]])
-def get_group_members(
+async def get_group_members(
     group_id: int,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
@@ -147,4 +185,136 @@ def get_group_members(
     if not member:
         raise HTTPException(status_code=403, detail="Not a member of this group")
         
-    return {"success": True, "data": group_repo.get_group_members(db=db, group_id=group_id)}
+    db_members = group_repo.get_group_members(db=db, group_id=group_id)
+    user_ids = [m.user_id for m in db_members]
+    users = await auth_client.get_users_batch(user_ids)
+    user_map = {u["id"]: u for u in users}
+    
+    members_out = []
+    for m in db_members:
+        m_dict = {c.name: getattr(m, c.name) for c in m.__table__.columns}
+        user_info = user_map.get(str(m.user_id), {})
+        m_dict["name"] = user_info.get("name")
+        m_dict["email"] = user_info.get("email")
+        m_dict["avatar"] = user_info.get("avatar")
+        members_out.append(m_dict)
+    return {"success": True, "data": members_out}
+
+@router.post("/{group_id}/leave", response_model=SuccessResponse[dict])
+def leave_group(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user.get("userId")
+    group = group_repo.get_group_by_id(db=db, group_id=group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+        
+    member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
+    if not member:
+        raise HTTPException(status_code=400, detail="Not a member of this group")
+        
+    if member.role == GroupRole.ORGANIZER:
+        organizers = [m for m in group.members if m.role == GroupRole.ORGANIZER]
+        if len(organizers) <= 1:
+            raise HTTPException(
+                status_code=409, 
+                detail="Transfer ownership or delete the group before leaving."
+            )
+            
+    db.delete(member)
+    db.commit()
+    
+    # Notify group members
+    notification_service.notify_group_members(
+        db=db,
+        group_id=group_id,
+        title="Member Left",
+        message=f"{current_user.get('name', 'A user')} left the group.",
+        type=NotificationType.MEMBER_LEFT,
+        exclude_user_id=current_user.get("userId"),
+        entity_type="GROUP",
+        entity_id=group_id
+    )
+    
+    return {"success": True, "data": {"message": "Left group successfully"}}
+
+@router.delete("/{group_id}/members/{target_user_id}", response_model=SuccessResponse[dict])
+def remove_member(
+    group_id: int,
+    target_user_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user.get("userId")
+    group = group_repo.get_group_by_id(db=db, group_id=group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+        
+    requester = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
+    if not requester or requester.role != GroupRole.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can remove members")
+        
+    target_member = group_repo.get_member(db=db, group_id=group_id, user_id=target_user_id)
+    if not target_member:
+        raise HTTPException(status_code=404, detail="Member not found")
+        
+    if target_member.role == GroupRole.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Cannot remove another organizer")
+        
+    db.delete(target_member)
+    db.commit()
+    return {"success": True, "data": {"message": "Member removed successfully"}}
+
+@router.post("/{group_id}/invite-code", response_model=SuccessResponse[dict])
+def regenerate_invite_code(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user.get("userId")
+    group = group_repo.get_group_by_id(db=db, group_id=group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+        
+    member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
+    if not member or member.role != GroupRole.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can regenerate invite codes")
+        
+    new_code = group_repo.generate_invite_code()
+    while group_repo.get_group_by_invite_code(db, new_code):
+        new_code = group_repo.generate_invite_code()
+        
+    group.invite_code = new_code
+    db.commit()
+    db.refresh(group)
+    
+    return {"success": True, "data": {"invite_code": new_code}}
+
+@router.post("/{group_id}/promote")
+def promote_member(group_id: int):
+    raise HTTPException(status_code=501, detail="Not Implemented")
+
+@router.post("/{group_id}/transfer")
+def transfer_ownership(group_id: int):
+    raise HTTPException(status_code=501, detail="Not Implemented")
+
+@router.post("/{group_id}/schedule-agent")
+async def schedule_agent(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user.get("userId")
+    
+    # 1. Verify Organizer Role
+    member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
+    if not member or member.role != GroupRole.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can use the AI Study Planner")
+        
+    # 2. Call agent service
+    from app.services.agent_service import generate_agentic_schedule
+    proposal = await generate_agentic_schedule(db=db, group_id=group_id)
+    
+    return {"success": True, "data": proposal}

@@ -1,7 +1,22 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
-from app.models.session import SessionStatus
+from app.models.session import SessionStatus, SummaryStatus, MeetingType, AttendanceStatus
+
+class SessionSummaryResponse(BaseModel):
+    id: int
+    session_id: int
+    summary: Optional[str] = None
+    key_concepts: Optional[List[str]] = None
+    important_points: Optional[List[str]] = None
+    action_items: Optional[List[str]] = None
+    status: SummaryStatus
+    model: Optional[str] = None
+    generated_at: Optional[datetime] = None
+    generation_time_ms: Optional[int] = None
+
+    class Config:
+        from_attributes = True
 
 class SessionBase(BaseModel):
     title: str = Field(..., min_length=2, max_length=100)
@@ -9,6 +24,8 @@ class SessionBase(BaseModel):
     agenda: Optional[str] = None
     scheduled_at: datetime
     duration_minutes: int
+    meeting_type: Optional[MeetingType] = MeetingType.NONE
+    meeting_url: Optional[str] = None
 
     @field_validator('title')
     @classmethod
@@ -22,6 +39,7 @@ class SessionBase(BaseModel):
 
 class SessionCreate(SessionBase):
     group_id: int
+    generated_by: Optional[str] = "MANUAL"
     resource_ids: List[int] = []
 
 class SessionUpdate(BaseModel):
@@ -31,6 +49,10 @@ class SessionUpdate(BaseModel):
     scheduled_at: Optional[datetime] = None
     duration_minutes: Optional[int] = None
     status: Optional[SessionStatus] = None
+    meeting_type: Optional[MeetingType] = None
+    meeting_url: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
 
     @field_validator('title')
     @classmethod
@@ -54,10 +76,23 @@ class SessionResponse(SessionBase):
     id: int
     group_id: int
     status: SessionStatus
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    generated_by: str
     created_by: int
     created_at: datetime
     updated_at: datetime
     resources: List[SessionResourceResponse] = []
+
+    class Config:
+        from_attributes = True
+
+class SessionAttendanceResponse(BaseModel):
+    user_id: int
+    status: AttendanceStatus
+    name: Optional[str] = None
+    email: Optional[str] = None
+    avatar: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -33,7 +33,7 @@ class GroupMember(Base):
     __tablename__ = "group_members"
 
     id = Column(Integer, primary_key=True, index=True)
-    group_id = Column(Integer, ForeignKey("study_groups.id"), nullable=False)
+    group_id = Column(Integer, ForeignKey("study_groups.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, nullable=False)
     role = Column(Enum(GroupRole), default=GroupRole.MEMBER, nullable=False)
     

@@ -6,11 +6,17 @@ from app.models.group import GroupRole
 class GroupMemberBase(BaseModel):
     user_id: int
     role: GroupRole
+
+    class Config:
+        from_attributes = True
     
 class GroupMemberResponse(GroupMemberBase):
     id: int
     group_id: int
     joined_at: datetime
+    name: Optional[str] = None
+    email: Optional[str] = None
+    avatar: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -39,6 +45,7 @@ class StudyGroupResponse(StudyGroupBase):
     created_by: int
     created_at: datetime
     updated_at: Optional[datetime] = None
+    members: List[GroupMemberBase]
     
     class Config:
         from_attributes = True

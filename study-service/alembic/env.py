@@ -18,7 +18,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 from app.core.database import Base
-from app.models.group import StudyGroup, GroupMember
+import app.models # imports __init__.py which has all models
 from app.core.config import settings
 
 target_metadata = Base.metadata

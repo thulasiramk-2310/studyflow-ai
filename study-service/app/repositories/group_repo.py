@@ -14,8 +14,10 @@ def get_group_by_id(db: Session, group_id: int):
 def get_group_by_invite_code(db: Session, invite_code: str):
     return db.query(StudyGroup).filter(StudyGroup.invite_code == invite_code).first()
 
+from sqlalchemy.orm import joinedload
+
 def get_user_groups(db: Session, user_id: int):
-    return db.query(StudyGroup).join(GroupMember).filter(GroupMember.user_id == user_id).all()
+    return db.query(StudyGroup).join(GroupMember).filter(GroupMember.user_id == user_id).options(joinedload(StudyGroup.members)).all()
 
 def create_group(db: Session, group_in: StudyGroupCreate, user_id: int):
     invite_code = generate_invite_code()
