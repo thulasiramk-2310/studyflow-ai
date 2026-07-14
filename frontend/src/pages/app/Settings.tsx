@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useTheme, ACCENT_COLORS, type AccentColor } from "../../context/ThemeContext";
 import { Sun, Moon, Laptop, Save } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
 import { PageHeader } from "../../components/shared";
 
 const SET_TABS = ["Appearance", "Notifications", "Security", "Account"] as const;
@@ -23,6 +24,7 @@ const DISPLAY_THEMES = [
 ] as const;
 
 export function Settings() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("Appearance");
   const { theme, setTheme, accent, setAccent } = useTheme();
   const [notifOn, setNotifOn] = useState([true, true, false, true]);
@@ -139,7 +141,7 @@ export function Settings() {
               <div className="grid grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-[12.5px] font-semibold mb-1.5">Full name</label>
-                  <input defaultValue="Ada Okafor" className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm bg-background outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                  <input defaultValue={user?.name || ""} className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm bg-background outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
                 </div>
                 <div>
                   <label className="block text-[12.5px] font-semibold mb-1.5">Email</label>

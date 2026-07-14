@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, SkeletonList, EmptyState } from "../../components/shared";
-import { MOCK_NOTIFICATIONS } from "../../lib/mock-data";
 import { Upload, Calendar, Sparkles, UserPlus } from "lucide-react";
+import { notificationService } from "../../services/notification.service";
+import type { Notification } from "../../services/notification.service";
+import { formatDistanceToNow } from "date-fns";
 
 const TYPE_ICON: Record<string, React.ElementType> = {
   upload: Upload, session: Calendar, ai: Sparkles, member: UserPlus,
@@ -15,21 +17,74 @@ const TYPE_STYLE: Record<string, [string, string]> = {
   member:  ["bg-amber-50",       "text-amber-600"],
 };
 
+const mapNotificationType = (apiType: string) => {
+  if (apiType.includes("RESOURCE")) return "upload";
+  if (apiType.includes("MEMBER")) return "member";
+  if (apiType.includes("READY")) return "ai";
+  return "session"; // default for SESSION_CREATED etc
+};
+
 export function Notifications() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
-  const [notifs, setNotifs] = useState(MOCK_NOTIFICATIONS);
-  useEffect(() => { const t = setTimeout(() => setLoading(false), 600); return () => clearTimeout(t); }, []);
-
-  const markAllRead = () => {
-    setNotifs(n => n.map(x => ({ ...x, unread: false })));
-    toast.success("All notifications marked as read");
+  const [notifs, setNotifs] = useState<Notification[]>([]);
+  
+  const fetchNotifications = async () => {
+    try {
+      const data = await notificationService.getNotifications(0, 50);
+      setNotifs(data.notifications);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const shown = filter === "unread" ? notifs.filter(n => n.unread) : notifs;
-  const today   = shown.filter(n => n.group === "today");
-  const earlier = shown.filter(n => n.group === "earlier");
-  const unreadCount = notifs.filter(n => n.unread).length;
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const markAllRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifs(n => n.map(x => ({ ...x, is_read: true })));
+      toast.success("All notifications marked as read");
+    } catch (err) {
+      toast.error("Failed to mark all as read");
+    }
+  };
+
+  const markRead = async (id: number, isRead: boolean) => {
+    if (isRead) return;
+    try {
+      await notificationService.markAsRead(id);
+      setNotifs(n => n.map(x => x.id === id ? { ...x, is_read: true } : x));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteNotif = async (id: number) => {
+    try {
+      await notificationService.deleteNotification(id);
+      setNotifs(n => n.filter(x => x.id !== id));
+      toast.success("Notification deleted");
+    } catch (err) {
+      toast.error("Failed to delete notification");
+    }
+  };
+
+  const shown = filter === "unread" ? notifs.filter(n => !n.is_read) : notifs;
+  const unreadCount = notifs.filter(n => !n.is_read).length;
+  
+  const isToday = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const today = new Date();
+    return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  };
+
+  const today = shown.filter(n => isToday(n.created_at));
+  const earlier = shown.filter(n => !isToday(n.created_at));
 
   if (loading) return (
     <div className="max-w-[760px] mx-auto px-6 md:px-8 py-7 pb-12">
@@ -38,26 +93,50 @@ export function Notifications() {
     </div>
   );
 
-  const Section = ({ label, items }: { label: string; items: typeof notifs }) =>
+  if (notifs.length === 0) {
+    return (
+      <div className="max-w-[800px] mx-auto px-8 py-10 animate-[sfFade_0.3s_ease]">
+        <PageHeader title="Notifications" />
+        <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] px-5 py-12 mt-6 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 rounded-full bg-primary-soft flex items-center justify-center mb-4">
+            <Bell className="w-8 h-8 text-primary opacity-80" />
+          </div>
+          <h3 className="text-base font-bold text-foreground">No notifications yet</h3>
+          <p className="text-[13px] text-muted-foreground mt-1 max-w-[280px]">
+            We'll notify you when AI summaries finish, someone joins your group, or sessions are scheduled.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const Section = ({ label, items }: { label: string; items: Notification[] }) =>
     items.length === 0 ? null : (
-      <div>
+      <div className="mb-6">
         <div className="text-[11.5px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5">{label}</div>
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           {items.map((n) => {
-            const Icon = TYPE_ICON[n.type] ?? Bell;
-            const [bg, color] = TYPE_STYLE[n.type] ?? ["bg-border-soft", "text-muted-foreground"];
+            const mappedType = mapNotificationType(n.type);
+            const Icon = TYPE_ICON[mappedType] ?? Bell;
+            const [bg, color] = TYPE_STYLE[mappedType] ?? ["bg-border-soft", "text-muted-foreground"];
             return (
               <div key={n.id}
-                className={`flex items-start gap-3.5 px-5 py-4 border-b border-border-soft last:border-0 transition-colors cursor-pointer ${n.unread ? "bg-primary-soft/20 hover:bg-primary-soft/30" : "hover:bg-background"}`}
-                onClick={() => setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, unread: false } : x))}>
+                className={`flex items-start gap-3.5 px-5 py-4 border-b border-border-soft last:border-0 transition-colors cursor-pointer ${!n.is_read ? "bg-primary-soft/20 hover:bg-primary-soft/30" : "hover:bg-background"}`}
+                onClick={() => markRead(n.id, n.is_read)}>
                 <div className={`w-8 h-8 rounded-lg ${bg} ${color} flex items-center justify-center shrink-0`}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-[13px] leading-relaxed">{n.text}</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">{n.when}</div>
+                  <div className="text-[13px] font-semibold text-foreground">{n.title}</div>
+                  <div className="text-[13px] leading-relaxed text-muted-foreground">{n.message}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{formatDistanceToNow(new Date(n.created_at), {addSuffix: true})}</div>
                 </div>
-                {n.unread && <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />}
+                <div className="flex items-center gap-2 shrink-0 mt-1">
+                    {!n.is_read && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    <button onClick={(e) => { e.stopPropagation(); deleteNotif(n.id); }} className="text-muted-foreground hover:text-destructive transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
               </div>
             );
           })}
@@ -80,8 +159,8 @@ export function Notifications() {
             <div className="flex bg-surface border border-border rounded-lg p-0.5">
               {(["all", "unread"] as const).map(f => (
                 <button key={f} onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-md text-[12.5px] font-semibold transition-colors capitalize ${filter === f ? "bg-primary text-white" : "text-muted-foreground"}`}>
-                  {f}
+                  className={`px-3 py-1.5 text-[12px] font-semibold rounded-md transition-colors ${filter === f ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
               ))}
             </div>
@@ -89,13 +168,16 @@ export function Notifications() {
         }
       />
 
-      <div className="flex flex-col gap-5">
+      <div className="mt-6 space-y-6">
         <Section label="Today" items={today} />
         <Section label="Earlier" items={earlier} />
-        {shown.length === 0 && (
-          <EmptyState icon={Bell} title="You're all caught up!" description="No new notifications right now. Check back later." />
-        )}
       </div>
+
+      {shown.length === 0 && (
+        <div className="mt-8">
+          <EmptyState icon={Bell} title="You're all caught up!" description="No new notifications match this filter." />
+        </div>
+      )}
     </div>
   );
 }

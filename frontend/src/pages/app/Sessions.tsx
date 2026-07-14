@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Plus, ChevronRight } from "lucide-react";
-import { PageHeader, SkeletonList, EmptyState, StatusBadge } from "../../components/shared";
+import { PageHeader, EmptyState, StatusBadge } from "../../components/shared";
+import { SessionsSkeleton } from "../../components/skeletons";
 import { sessionService } from "../../services/session.service";
 import type { Session } from "../../services/session.service";
 import { groupService } from "../../services/group.service";
@@ -94,12 +95,7 @@ export function Sessions() {
     return acc;
   }, {} as Record<string, Session[]>);
 
-  if (loading) return (
-    <div className="px-6 md:px-8 py-7 pb-12 max-w-[900px] mx-auto">
-      <div className="h-8 w-48 bg-border-soft rounded-lg animate-pulse mb-6" />
-      <SkeletonList rows={5} cols={5} />
-    </div>
-  );
+  if (loading) return <SessionsSkeleton />;
 
   return (
     <div className="px-6 md:px-8 py-7 pb-12 max-w-[900px] mx-auto">

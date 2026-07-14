@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Upload, Search, Download, FolderOpen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader, SkeletonList, EmptyState } from "../../components/shared";
+import { PageHeader, EmptyState } from "../../components/shared";
+import { ResourcesSkeleton } from "../../components/skeletons";
 import { resourceService } from "../../services/resource.service";
 import type { Resource } from "../../services/resource.service";
 import { groupService } from "../../services/group.service";
@@ -29,14 +30,25 @@ export function Resources() {
       setGroups(groupsData);
 
       let allResources: EnrichedResource[] = [];
+      const token = localStorage.getItem("sf_token");
+      let currentUserId = -1;
+      if (token) {
+        try { currentUserId = JSON.parse(atob(token.split('.')[1])).userId; } catch(e) {}
+      }
+
       for (const group of groupsData) {
         try {
           const groupResources = await resourceService.getResources(group.id);
-          const enriched = groupResources.map(r => ({
-            ...r,
-            groupName: group.name,
-            userRole: group.members?.find(m => m.user_id === group.created_by)?.role || "MEMBER" // We should properly get role from token/user, but this works for simple check if created_by is us
-          }));
+          const enriched = groupResources.map(r => {
+            const memberRole = group.members?.find(m => m.user_id === currentUserId)?.role || "MEMBER";
+            const canDelete = r.uploaded_by === currentUserId || memberRole === "ORGANIZER" || group.created_by === currentUserId;
+            return {
+              ...r,
+              groupName: group.name,
+              userRole: memberRole,
+              canDelete
+            };
+          });
           allResources = [...allResources, ...enriched];
         } catch (e) {
           console.error(`Failed to fetch resources for group ${group.id}`);
@@ -70,16 +82,14 @@ export function Resources() {
   const filtered = resources.filter(r => {
     const typeLabel = resourceService.getFileIconType(r.mime_type, r.filename);
     const matchesType = typeFilter === "All" || typeLabel.includes(typeFilter) || (typeFilter === 'PPT' && typeLabel === 'PPTX');
-    const matchesQuery = r.original_filename.toLowerCase().includes(query.toLowerCase()) || r.groupName.toLowerCase().includes(query.toLowerCase());
+    
+    const fName = r.original_filename || r.filename || "";
+    const gName = r.groupName || "";
+    const matchesQuery = fName.toLowerCase().includes(query.toLowerCase()) || gName.toLowerCase().includes(query.toLowerCase());
     return matchesType && matchesQuery;
   });
 
-  if (loading) return (
-    <div className="px-6 md:px-8 py-7 pb-12 max-w-[960px] mx-auto">
-      <div className="h-8 w-48 bg-border-soft rounded-lg animate-pulse mb-6" />
-      <SkeletonList rows={7} cols={5} />
-    </div>
-  );
+  if (loading) return <ResourcesSkeleton />;
 
   return (
     <div className="px-6 md:px-8 py-7 pb-12 max-w-[960px] mx-auto animate-[sfFade_0.25s_ease]">
@@ -135,29 +145,36 @@ export function Resources() {
                   {typeLabel === 'PPTX' ? 'PPT' : typeLabel === 'DOCX' ? 'DOC' : typeLabel}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13.5px] font-semibold truncate">{r.original_filename}</div>
+                  <div className="text-[13.5px] font-semibold truncate">{r.original_filename || r.filename || "Unknown file"}</div>
                   <div className="text-[12px] text-muted-foreground mt-0.5">{r.groupName} · {resourceService.formatFileSize(r.size)}</div>
                 </div>
                 <div className="text-[12px] text-muted-foreground shrink-0 hidden sm:block text-right">
-                  <div className="font-medium">User {r.uploaded_by}</div>
+                  <div className="font-medium">{r.uploader_name || `User ${r.uploaded_by}`}</div>
                   <div>{new Date(r.created_at).toLocaleDateString()}</div>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a
-                    href={resourceService.getDownloadUrl(r.id)}
-                    download
+                  <button
+                    onClick={() => {
+                      toast.info("Downloading file...");
+                      resourceService.downloadResource(r.id, r.original_filename).catch(err => {
+                        toast.error(err.message || "Failed to download file");
+                      });
+                    }}
                     className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-primary-soft hover:text-primary hover:border-primary/20 transition-colors"
                     aria-label="Download"
                   >
                     <Download className="w-3.5 h-3.5" />
-                  </a>
-                  <button
-                    onClick={() => handleDelete(r.id)}
-                    className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                    aria-label="Delete"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
+                  {/* @ts-ignore - injected above */}
+                  {r.canDelete && (
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             );

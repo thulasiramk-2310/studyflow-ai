@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Users, Plus, Search, ChevronRight } from "lucide-react";
-import { PageHeader, SkeletonList, EmptyState } from "../../components/shared";
+import { PageHeader, EmptyState } from "../../components/shared";
+import { GroupsSkeleton } from "../../components/skeletons";
 import { groupService } from "../../services/group.service";
 import type { Group } from "../../services/group.service";
 import { CreateGroupModal } from "../../components/groups/CreateGroupModal";
@@ -36,12 +37,7 @@ export function Groups() {
     (g.description || "").toLowerCase().includes(query.toLowerCase())
   );
 
-  if (loading) return (
-    <div className="px-6 md:px-8 py-7 pb-12 max-w-[900px] mx-auto">
-      <div className="h-8 w-48 bg-border-soft rounded-lg animate-pulse mb-6" />
-      <SkeletonList rows={6} cols={5} />
-    </div>
-  );
+  if (loading) return <GroupsSkeleton />;
 
   return (
     <div className="px-6 md:px-8 py-7 pb-12 max-w-[900px] mx-auto">

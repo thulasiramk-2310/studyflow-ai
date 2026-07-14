@@ -1,87 +1,115 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Sparkle } from "../../components/Icons";
+import { sessionService } from "../../services/session.service";
+import type { QuizResponse, Session } from "../../services/session.service";
 
-const QUESTIONS = [
-  {
-    n: 1,
-    question: "Where does transcription occur in eukaryotic cells?",
-    options: ["Ribosome", "Nucleus", "Golgi apparatus", "Cytoplasm only"],
-    correct: 1,
-  },
-  {
-    n: 2,
-    question: "The lac operon is best described as a(n):",
-    options: ["Constitutive system", "Inducible system", "Silenced gene", "Non-coding region"],
-    correct: 1,
-  },
-  {
-    n: 3,
-    question: "Which molecule is the direct product of transcription?",
-    options: ["DNA", "mRNA", "A folded protein", "A lipid"],
-    correct: 1,
-  },
-  {
-    n: 4,
-    question: "In eukaryotes, enhancers primarily act to:",
-    options: ["Block all transcription", "Increase transcription rate", "Cut the DNA strand", "Replicate the genome"],
-    correct: 1,
-  },
-  {
-    n: 5,
-    question: "Translation assembles proteins at the:",
-    options: ["Nucleus", "Ribosome", "Mitochondria", "Cell membrane"],
-    correct: 1,
-  },
-];
-const LETTERS = ["A", "B", "C", "D"];
+const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
 export function Quiz() {
+  const { sessionId } = useParams();
+  const [session, setSession] = useState<Session | null>(null);
+  const [quizData, setQuizData] = useState<QuizResponse | null>(null);
+  const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!sessionId) return;
+    
+    Promise.all([
+      sessionService.getSession(Number(sessionId)),
+      sessionService.getSessionQuiz(Number(sessionId))
+    ]).then(([sess, q]) => {
+      if (!isMounted) return;
+      setSession(sess);
+      setQuizData(q);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      if (isMounted) setLoading(false);
+    });
+
+    return () => { isMounted = false; };
+  }, [sessionId]);
 
   const pick = (qi: number, oi: number) => {
     if (submitted) return;
     setAnswers(prev => ({ ...prev, [qi]: oi }));
   };
 
-  const score = QUESTIONS.filter((q, i) => answers[i] === q.correct).length;
+  if (loading) {
+    return <div className="max-w-[720px] mx-auto px-8 py-7">Loading quiz...</div>;
+  }
+  
+  if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+    return <div className="max-w-[720px] mx-auto px-8 py-7">Quiz is not ready or failed to generate.</div>;
+  }
+
+  // Pre-process questions to find the correct index based on `correct_answer`
+  const questions = quizData.questions.map((q, i) => {
+    const opts = q.options || ["True", "False"];
+    let correctIdx = opts.findIndex(o => o.trim().toLowerCase() === q.correct_answer?.trim().toLowerCase());
+    if (correctIdx === -1) {
+      // Fallback logic if exact string matching fails
+      correctIdx = opts.findIndex(o => q.correct_answer?.toLowerCase().includes(o.toLowerCase()) || o.toLowerCase().includes(q.correct_answer?.toLowerCase() || ''));
+      if (correctIdx === -1) correctIdx = 0; // Default fallback to avoid crashes
+    }
+    return {
+      n: i + 1,
+      question: q.question,
+      options: opts,
+      correct: correctIdx,
+      explanation: q.explanation
+    };
+  });
+
+  const score = questions.filter((q, i) => answers[i] === q.correct).length;
   const answered = Object.keys(answers).length;
 
   return (
     <div className="max-w-[720px] mx-auto px-8 py-7 pb-12 animate-[sfFade_0.25s_ease]">
+      <Link to={`/sessions/${sessionId}`} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-6">
+        <ArrowLeft className="w-4 h-4" /> Back to session
+      </Link>
+      
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-[12px] font-bold text-primary uppercase tracking-wider">
             <Sparkle className="w-3.5 h-3.5" /> AI-generated quiz
           </div>
-          <div className="mt-1 text-[22px] font-extrabold tracking-tight">Chapter 4 — Gene Expression</div>
-          <div className="mt-1 text-muted-foreground text-[13px]">5 questions · Biology 301</div>
+          <div className="mt-1 text-[22px] font-extrabold tracking-tight">Quiz: {session?.title || "Session"}</div>
+          <div className="mt-1 text-muted-foreground text-[13px]">{questions.length} questions</div>
         </div>
         {submitted && (
-          <div className="text-right">
-            <div className="text-[30px] font-extrabold text-primary">{score}/{QUESTIONS.length}</div>
-            <div className="text-[13px] text-muted-foreground">{score >= 4 ? "Excellent!" : score >= 3 ? "Good work!" : "Keep studying"}</div>
+          <div className="text-left md:text-right bg-surface border border-border px-4 py-3 rounded-xl shadow-sm">
+            <div className="text-[28px] font-extrabold text-primary leading-tight">{score}/{questions.length}</div>
+            <div className="text-[13px] text-muted-foreground font-medium">
+              {score / questions.length >= 0.8 ? "Excellent!" : score / questions.length >= 0.6 ? "Good work!" : "Keep studying"}
+            </div>
           </div>
         )}
       </div>
 
       {/* Progress bar */}
       {!submitted && (
-        <div className="mt-4">
+        <div className="mt-6">
           <div className="flex justify-between text-[12px] text-muted-foreground mb-1.5">
-            <span>{answered} of {QUESTIONS.length} answered</span>
-            <span>{Math.round(answered / QUESTIONS.length * 100)}%</span>
+            <span>{answered} of {questions.length} answered</span>
+            <span>{Math.round(answered / questions.length * 100)}%</span>
           </div>
           <div className="h-1.5 bg-border-soft rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all" style={{ width: `${answered / QUESTIONS.length * 100}%` }} />
+            <div className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all" style={{ width: `${answered / questions.length * 100}%` }} />
           </div>
         </div>
       )}
 
       {/* Questions */}
-      <div className="flex flex-col gap-5 mt-6">
-        {QUESTIONS.map((q, qi) => (
+      <div className="flex flex-col gap-5 mt-8">
+        {questions.map((q, qi) => (
           <div key={qi} className="bg-surface border border-border rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div className="text-[13px] font-semibold text-muted-foreground mb-2">Question {q.n}</div>
             <div className="text-[15px] font-bold leading-snug">{q.question}</div>
@@ -112,8 +140,11 @@ export function Quiz() {
             </div>
 
             {submitted && (
-              <div className={`mt-3 px-4 py-2.5 rounded-xl text-[12.5px] font-medium ${answers[qi] === q.correct ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
-                {answers[qi] === q.correct ? "✓ Correct — nicely done." : `Correct answer: ${q.options[q.correct]}.`}
+              <div className={`mt-4 px-4 py-3 rounded-xl text-[13px] font-medium leading-relaxed ${answers[qi] === q.correct ? "bg-emerald-50 text-emerald-800 border border-emerald-100" : "bg-red-50 text-red-800 border border-red-100"}`}>
+                <div className="font-bold mb-1">
+                  {answers[qi] === q.correct ? "✓ Correct" : `✕ Incorrect — Correct answer: ${q.options[q.correct]}`}
+                </div>
+                {q.explanation && <div className="opacity-90">{q.explanation}</div>}
               </div>
             )}
           </div>
@@ -123,7 +154,7 @@ export function Quiz() {
       {/* Submit */}
       {!submitted ? (
         <button onClick={() => setSubmitted(true)}
-          disabled={answered < QUESTIONS.length}
+          disabled={answered < questions.length}
           className="mt-6 w-full bg-primary text-white rounded-xl py-3 text-[14.5px] font-bold hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/20">
           Submit quiz
         </button>
