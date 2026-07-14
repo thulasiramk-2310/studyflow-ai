@@ -23,23 +23,12 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Forward to API Gateway
       "/auth": {
         target: "http://localhost:8000",
         changeOrigin: true,
         secure: false,
       },
-      "/groups": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-        secure: false,
-      },
-      "/resources": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-        secure: false,
-      },
-      "/sessions": {
+      "/api": {
         target: "http://localhost:8000",
         changeOrigin: true,
         secure: false,

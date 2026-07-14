@@ -6,7 +6,6 @@ export interface User {
   name: string;
   email: string;
   initials: string;
-  role: "organizer" | "member";
 }
 
 export interface AuthState {

@@ -51,7 +51,7 @@ export function AppRoutes() {
           <Route path="/resources"              element={<Resources />} />
           <Route path="/sessions"               element={<Sessions />} />
           <Route path="/sessions/:sessionId"    element={<SessionDetails />} />
-          <Route path="/quiz"                   element={<Quiz />} />
+          <Route path="/sessions/:sessionId/quiz" element={<Quiz />} />
           <Route path="/ai"                     element={<AIAssistant />} />
           <Route path="/notifications"          element={<Notifications />} />
           <Route path="/profile"               element={<Profile />} />

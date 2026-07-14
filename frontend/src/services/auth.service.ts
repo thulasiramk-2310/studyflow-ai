@@ -48,7 +48,6 @@ function normaliseUser(raw: Partial<User> & { name: string; email: string }): Us
     name: raw.name,
     email: raw.email,
     initials: raw.initials ?? toInitials(raw.name),
-    role: raw.role ?? "member",
   };
 }
 
