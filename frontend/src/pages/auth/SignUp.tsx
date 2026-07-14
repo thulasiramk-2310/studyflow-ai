@@ -60,7 +60,7 @@ export function SignUp() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ada Okafor"
+              placeholder="John Doe"
               className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
               required
             />
@@ -109,18 +109,6 @@ export function SignUp() {
             </div>
           </div>
 
-          <div className="mt-1">
-            <div className="bg-primary-soft border border-primary-soft rounded-xl p-3 flex gap-2.5 items-start">
-              <div className="w-6 h-6 rounded-lg bg-surface text-primary flex items-center justify-center shrink-0 shadow-sm">
-                <Sparkle className="w-3.5 h-3.5" />
-              </div>
-              <p className="text-[12px] leading-relaxed text-muted-foreground font-medium">
-                No role to pick. Create a group and you organize it; join one
-                and you're a member. You can be both.
-              </p>
-            </div>
-          </div>
-
           <button
             type="submit"
             disabled={isLoading}
@@ -140,7 +128,7 @@ export function SignUp() {
         <div className="mt-5 text-center text-[13px] text-muted-foreground font-medium">
           Already have an account?{" "}
           <Link
-            to="/"
+            to="/login"
             className="font-semibold text-foreground hover:text-primary transition-colors"
           >
             Sign in
