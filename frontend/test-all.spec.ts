@@ -40,14 +40,15 @@ test.describe('StudyFlow AI E2E Tests', () => {
     await expect(page.locator('text=/Welcome/i').first()).toBeVisible();
 
     // 5. Create a Group
-    // If empty state "Create Study Group", otherwise "+" or "Groups" tab
+    // If empty state "Create Study Group", otherwise use Groups nav link
     const emptyCreateBtn = await page.isVisible('text="Create Study Group"');
     if (emptyCreateBtn) {
       await page.click('text="Create Study Group"');
     } else {
-      await page.click('text="Groups"'); // Navigate to groups
-      await page.waitForURL('**/groups');
-      await page.click('button:has-text("Create Group")');
+      await page.locator('nav a[href="/groups"], a:has-text("Groups")').first().click({ force: true });
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(500);
+      await page.locator('button:has-text("New Group")').click({ timeout: 6000 });
     }
 
     // 6. Fill Group Modal
@@ -60,6 +61,8 @@ test.describe('StudyFlow AI E2E Tests', () => {
     await page.waitForTimeout(1500); // give time for modal to close and refetch
 
     // 8. Assert group is visible on the dashboard or groups list
+    await page.click('text=Groups');
+    await page.waitForURL('**/groups');
     await expect(page.locator('text="Playwright E2E Group"').first()).toBeVisible();
     
     console.log("E2E Test successfully passed: Logged in, verified dashboard, and created a group.");

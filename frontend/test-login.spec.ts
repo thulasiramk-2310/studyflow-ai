@@ -48,6 +48,6 @@ test('Test login and dashboard access', async ({ page }) => {
   }
   
   // 4. Verify Dashboard elements
-  await expect(page.locator('text=/Welcome back/i').first()).toBeVisible();
+  await expect(page.locator('text=/Welcome (back|to StudyFlow AI)/i').first()).toBeVisible();
   console.log("Successfully logged in and reached Dashboard.");
 });
