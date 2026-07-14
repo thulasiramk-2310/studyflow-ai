@@ -51,7 +51,7 @@ export function ProfileMenu({ onClose }: ProfileMenuProps) {
             {user?.initials ?? "AO"}
           </div>
           <div className="min-w-0">
-            <div className="text-[13.5px] font-bold">{user?.name ?? "Ada Okafor"}</div>
+            <div className="text-[13.5px] font-bold">{user?.name}</div>
             <div className="text-[11.5px] text-muted-foreground truncate">{user?.email ?? "ada@studyflow.ai"}</div>
           </div>
         </div>

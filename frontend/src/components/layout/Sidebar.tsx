@@ -8,7 +8,7 @@ import {
 import { Logo } from "../Icons";
 import { useAuth } from "../../hooks/useAuth";
 import { useSidebar } from "../../context/SidebarContext";
-import { MOCK_NOTIFICATIONS } from "../../lib/mock-data";
+
 
 const NAV_ITEMS = [
   { label: "Dashboard",     to: "/dashboard",      icon: LayoutDashboard },
@@ -24,7 +24,7 @@ const BOTTOM_ITEMS = [
   { label: "Settings",      to: "/settings",      icon: Settings },
 ];
 
-const unreadCount = MOCK_NOTIFICATIONS.filter(n => n.unread).length;
+const unreadCount = 0;
 
 function NavItem({ to, icon: Icon, label, collapsed, badge }: { to: string; icon: React.ElementType; label: string; collapsed: boolean; badge?: number }) {
   return (
@@ -123,8 +123,8 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
           {!collapsed && (
             <>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-semibold truncate">{user?.name ?? "Ada Okafor"}</div>
-                <div className="text-[11.5px] text-muted-foreground capitalize">{user?.role ?? "Member"}</div>
+                <div className="text-[13px] font-semibold truncate">{user?.name}</div>
+                <div className="text-[11.5px] text-muted-foreground truncate">{user?.email}</div>
               </div>
               <button
                 onClick={handleLogout}

@@ -6,10 +6,9 @@ import { SearchModal } from "../shared/SearchModal";
 import { useSidebar } from "../../context/SidebarContext";
 import { useAuth } from "../../hooks/useAuth";
 import { Breadcrumb } from "../shared/Breadcrumb";
-import { MOCK_NOTIFICATIONS } from "../../lib/mock-data";
 import { toast } from "sonner";
 
-const unreadCount = MOCK_NOTIFICATIONS.filter(n => n.unread).length;
+import { notificationService } from "../../services/notification.service";
 
 export function Topbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,6 +16,23 @@ export function Topbar() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toggle: toggleSidebar } = useSidebar();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchUnread = async () => {
+      try {
+        const data = await notificationService.getUnreadCount();
+        setUnreadCount(data.unread_count);
+      } catch (err) {
+        console.error("Failed to fetch unread notifications count", err);
+      }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Global Cmd+K shortcut
   useEffect(() => {
@@ -84,14 +100,16 @@ export function Topbar() {
           </button>
 
           {/* Notifications */}
-          <button
-            className="relative w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-background transition-colors hover:text-foreground"
-            onClick={() => navigate("/notifications")}
-            aria-label={`${unreadCount} unread notifications`}
+          <button 
+            className="p-2 relative rounded-full hover:bg-border-soft transition-colors"
+            onClick={() => navigate('/notifications')}
+            title="Notifications"
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-[18px] h-[18px] text-muted-foreground" />
             {unreadCount > 0 && (
-              <span className="absolute top-[6px] right-[7px] w-2 h-2 rounded-full bg-destructive border-[1.5px] border-surface" />
+              <span className="absolute top-1 right-1.5 w-[14px] h-[14px] bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white leading-none">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
             )}
           </button>
 
