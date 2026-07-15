@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Any
+from typing import List, Any, Optional
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
@@ -10,9 +10,14 @@ from app.schemas.group import (
     StudyGroupResponse,
     StudyGroupDetailResponse,
     GroupMemberResponse,
-    JoinGroupRequest
+    JoinGroupRequest,
+    LearningPlanItemCreate,
+    LearningPlanItemUpdate,
+    LearningPlanItemResponse,
+    LearningPlanReorderRequestItem
 )
 from app.schemas.common import SuccessResponse
+from app.schemas.session import SessionResponse
 from app.repositories import group_repo
 from app.models.group import GroupRole
 from app.clients import auth_client
@@ -36,7 +41,38 @@ def get_user_groups(
     current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user.get("userId")
-    return {"success": True, "data": group_repo.get_user_groups(db=db, user_id=user_id)}
+    groups = group_repo.get_user_groups(db=db, user_id=user_id)
+    result = []
+    for group in groups:
+        g_dict = {c.name: getattr(group, c.name) for c in group.__table__.columns}
+        g_dict["members"] = group.members
+        
+        learning_plan = getattr(group, "learning_plan", [])
+        total_items_count = len(learning_plan) if learning_plan else 0
+        completed_items_count = sum(1 for item in learning_plan if getattr(item, "status", None) == "COMPLETED") if learning_plan else 0
+        progress_percent = int((completed_items_count / total_items_count) * 100) if total_items_count > 0 else 0
+        
+        next_item = None
+        if learning_plan:
+            pending = [item for item in learning_plan if getattr(item, "status", None) != "COMPLETED"]
+            pending.sort(key=lambda x: getattr(x, "order_index", 0))
+            if pending:
+                ni = pending[0]
+                if hasattr(ni, "__table__"):
+                    next_item = {c.name: getattr(ni, c.name) for c in ni.__table__.columns}
+                elif hasattr(ni, "dict"):
+                    next_item = ni.dict()
+                else:
+                    next_item = ni
+                    
+        g_dict["total_items_count"] = total_items_count
+        g_dict["completed_items_count"] = completed_items_count
+        g_dict["progress_percent"] = progress_percent
+        g_dict["next_item"] = next_item
+        
+        result.append(g_dict)
+        
+    return {"success": True, "data": result}
 
 @router.get("/{group_id}", response_model=SuccessResponse[StudyGroupDetailResponse])
 async def get_group(
@@ -73,6 +109,29 @@ async def get_group(
         members_out.append(m_dict)
         
     group_dict["members"] = members_out
+    
+    learning_plan = getattr(group, "learning_plan", [])
+    total_items_count = len(learning_plan) if learning_plan else 0
+    completed_items_count = sum(1 for item in learning_plan if getattr(item, "status", None) == "COMPLETED") if learning_plan else 0
+    progress_percent = int((completed_items_count / total_items_count) * 100) if total_items_count > 0 else 0
+    
+    next_item = None
+    if learning_plan:
+        pending = [item for item in learning_plan if getattr(item, "status", None) != "COMPLETED"]
+        pending.sort(key=lambda x: getattr(x, "order_index", 0))
+        if pending:
+            ni = pending[0]
+            if hasattr(ni, "__table__"):
+                next_item = {c.name: getattr(ni, c.name) for c in ni.__table__.columns}
+            elif hasattr(ni, "dict"):
+                next_item = ni.dict()
+            else:
+                next_item = ni
+                
+    group_dict["total_items_count"] = total_items_count
+    group_dict["completed_items_count"] = completed_items_count
+    group_dict["progress_percent"] = progress_percent
+    group_dict["next_item"] = next_item
     
     return {"success": True, "data": group_dict}
 
@@ -144,9 +203,11 @@ def join_group(
     
     return {"success": True, "data": group}
 
-@router.get("/{group_id}/sessions", response_model=SuccessResponse[List[Any]])
+@router.get("/{group_id}/sessions", response_model=SuccessResponse[List[SessionResponse]])
 def get_group_sessions(
     group_id: int,
+    upcoming: Optional[bool] = False,
+    limit: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -160,8 +221,14 @@ def get_group_sessions(
     if not member:
         raise HTTPException(status_code=403, detail="Not a member of this group")
         
-    from app.models.session import StudySession
-    sessions = db.query(StudySession).filter(StudySession.group_id == group_id).order_by(StudySession.scheduled_at.asc()).all()
+    from app.models.session import StudySession, SessionStatus
+    query = db.query(StudySession).filter(StudySession.group_id == group_id)
+    if upcoming:
+        query = query.filter(StudySession.status.in_([SessionStatus.SCHEDULED, SessionStatus.LIVE]))
+    query = query.order_by(StudySession.scheduled_at.asc())
+    if limit is not None:
+        query = query.limit(limit)
+    sessions = query.all()
     
     result = []
     for s in sessions:
@@ -318,3 +385,74 @@ async def schedule_agent(
     proposal = await generate_agentic_schedule(db=db, group_id=group_id)
     
     return {"success": True, "data": proposal}
+
+# --- Learning Plan Endpoints ---
+
+@router.post("/{group_id}/roadmap", response_model=SuccessResponse[LearningPlanItemResponse], status_code=status.HTTP_201_CREATED)
+def add_learning_plan_item(
+    group_id: int,
+    item_in: LearningPlanItemCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user.get("userId")
+    member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
+    if not member or member.role != GroupRole.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can add learning plan items")
+        
+    item = group_repo.add_learning_plan_item(db=db, group_id=group_id, item_in=item_in, user_id=user_id)
+    return {"success": True, "data": item}
+
+@router.put("/{group_id}/roadmap/reorder", response_model=SuccessResponse[Any])
+def reorder_learning_plan_items(
+    group_id: int,
+    items_in: List[LearningPlanReorderRequestItem],
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user.get("userId")
+    member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
+    if not member or member.role != GroupRole.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can reorder learning plan items")
+        
+    group_repo.reorder_learning_plan_items(db=db, group_id=group_id, items_in=items_in)
+    return {"success": True, "data": {"message": "Items reordered successfully"}}
+
+@router.put("/{group_id}/roadmap/{item_id}", response_model=SuccessResponse[LearningPlanItemResponse])
+def update_learning_plan_item(
+    group_id: int,
+    item_id: int,
+    item_in: LearningPlanItemUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user.get("userId")
+    member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
+    if not member or member.role != GroupRole.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can update learning plan items")
+        
+    db_item = group_repo.get_learning_plan_item(db=db, item_id=item_id)
+    if not db_item or db_item.group_id != group_id:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    updated_item = group_repo.update_learning_plan_item(db=db, db_item=db_item, item_in=item_in)
+    return {"success": True, "data": updated_item}
+
+@router.delete("/{group_id}/roadmap/{item_id}", response_model=SuccessResponse[Any])
+def delete_learning_plan_item(
+    group_id: int,
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user.get("userId")
+    member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
+    if not member or member.role != GroupRole.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can delete learning plan items")
+        
+    db_item = group_repo.get_learning_plan_item(db=db, item_id=item_id)
+    if not db_item or db_item.group_id != group_id:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    group_repo.delete_learning_plan_item(db=db, db_item=db_item)
+    return {"success": True, "data": {"message": "Item deleted successfully"}}

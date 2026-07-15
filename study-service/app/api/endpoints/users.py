@@ -24,7 +24,8 @@ class UserProfileResponse(BaseModel):
     groupsJoined: int
     resourcesShared: int
     sessionsHosted: int
-    questionsAsked: int
+    aiConversations: int
+    aiQuestionsAsked: int
 
 @router.get("/profile", response_model=UserProfileResponse)
 def get_user_profile(
@@ -50,6 +51,21 @@ def get_user_profile(
     resources_shared = db.query(Resource).filter(Resource.uploaded_by == user_id).count()
     sessions_hosted = db.query(StudySession).filter(StudySession.created_by == user_id).count()
     
+    total_ai_chats = 0
+    total_questions_asked = 0
+    try:
+        with httpx.Client(timeout=3.0) as client:
+            res = client.get(
+                f"{settings.AI_SERVICE_URL}/api/v1/ai/chat/stats?user_id={user_id}",
+                headers={"X-Internal-Key": settings.INTERNAL_API_KEY}
+            )
+            if res.status_code == 200:
+                data = res.json().get("data", {})
+                total_ai_chats = data.get("total_ai_chats", 0)
+                total_questions_asked = data.get("total_questions_asked", 0)
+    except Exception as e:
+        logger.error(f"Failed to fetch AI stats for profile: {e}")
+        
     return UserProfileResponse(
         name=name,
         email=email,
@@ -57,7 +73,8 @@ def get_user_profile(
         groupsJoined=groups_joined,
         resourcesShared=resources_shared,
         sessionsHosted=sessions_hosted,
-        questionsAsked=0
+        aiConversations=total_ai_chats,
+        aiQuestionsAsked=total_questions_asked
     )
 
 def _time_ago(dt) -> str:
@@ -91,10 +108,10 @@ def get_dashboard(
     if total_groups == 0:
         # Return zeros
         return DashboardResponse(
-            stats=DashboardStats(groups=0, resources=0, sessions=0, aiChats=0, quizzes=0, flashcards=0),
-            upcomingSessions=[],
-            recentResources=[],
-            recentActivity=[]
+            stats=DashboardStats(groups=0, resources=0, sessions=0, conversations=0, quizzes=0, flashcards=0),
+            upcoming_sessions=[],
+            recent_resources=[],
+            recent_activity=[]
         )
         
     # 2. Group ID mapping for names
@@ -124,7 +141,7 @@ def get_dashboard(
         groups=total_groups,
         resources=total_resources,
         sessions=total_sessions,
-        aiChats=total_ai_chats,
+        conversations=total_ai_chats,
         quizzes=total_quizzes,
         flashcards=total_flashcards
     )
@@ -224,7 +241,7 @@ def get_dashboard(
     
     return DashboardResponse(
         stats=stats,
-        upcomingSessions=upcoming_sessions,
-        recentResources=recent_resources,
-        recentActivity=recent_activity
+        upcoming_sessions=upcoming_sessions,
+        recent_resources=recent_resources,
+        recent_activity=recent_activity
     )

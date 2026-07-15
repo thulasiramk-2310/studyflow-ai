@@ -220,6 +220,11 @@ def delete_resource(
     if group.created_by != current_user["userId"] and resource.uploaded_by != current_user["userId"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this resource")
         
+    user_id = current_user.get("userId")
+    member = group_repo.get_member(db=db, group_id=resource.group_id, user_id=user_id)
+    if not member:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+        
     # Delete file from storage
     storage.delete(resource.storage_path)
         
@@ -247,11 +252,17 @@ class StatusUpdateRequest(BaseModel):
 def update_resource_status(
     resource_id: int,
     request: StatusUpdateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
     resource = resource_repo.get_resource_by_id(db, resource_id)
     if not resource:
         raise HTTPException(status_code=404, detail="Resource not found")
+        
+    user_id = current_user.get("userId")
+    member = group_repo.get_member(db=db, group_id=resource.group_id, user_id=user_id)
+    if not member:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
         
     valid_statuses = [s.value for s in ResourceStatus]
     if request.status not in valid_statuses:

@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Sparkle } from "../../components/Icons";
 import { sessionService } from "../../services/session.service";
-import type { QuizResponse, Session } from "../../services/session.service";
+import type { QuizResponse, Session, QuizGradeResponse } from "../../services/session.service";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
@@ -14,6 +14,8 @@ export function Quiz() {
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [gradeResult, setGradeResult] = useState<QuizGradeResponse | null>(null);
+  const [isGrading, setIsGrading] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -66,7 +68,6 @@ export function Quiz() {
     };
   });
 
-  const score = questions.filter((q, i) => answers[i] === q.correct).length;
   const answered = Object.keys(answers).length;
 
   return (
@@ -84,11 +85,11 @@ export function Quiz() {
           <div className="mt-1 text-[22px] font-extrabold tracking-tight">Quiz: {session?.title || "Session"}</div>
           <div className="mt-1 text-muted-foreground text-[13px]">{questions.length} questions</div>
         </div>
-        {submitted && (
+        {submitted && gradeResult && (
           <div className="text-left md:text-right bg-surface border border-border px-4 py-3 rounded-xl shadow-sm">
-            <div className="text-[28px] font-extrabold text-primary leading-tight">{score}/{questions.length}</div>
+            <div className="text-[28px] font-extrabold text-primary leading-tight">{gradeResult.score}/{gradeResult.total}</div>
             <div className="text-[13px] text-muted-foreground font-medium">
-              {score / questions.length >= 0.8 ? "Excellent!" : score / questions.length >= 0.6 ? "Good work!" : "Keep studying"}
+              {gradeResult.score / gradeResult.total >= 0.8 ? "Excellent!" : gradeResult.score / gradeResult.total >= 0.6 ? "Good work!" : "Keep studying"}
             </div>
           </div>
         )}
@@ -139,10 +140,10 @@ export function Quiz() {
               })}
             </div>
 
-            {submitted && (
-              <div className={`mt-4 px-4 py-3 rounded-xl text-[13px] font-medium leading-relaxed ${answers[qi] === q.correct ? "bg-emerald-50 text-emerald-800 border border-emerald-100" : "bg-red-50 text-red-800 border border-red-100"}`}>
+            {submitted && gradeResult && (
+              <div className={`mt-4 px-4 py-3 rounded-xl text-[13px] font-medium leading-relaxed ${gradeResult.results[q.n - 1] ? "bg-emerald-50 text-emerald-800 border border-emerald-100" : "bg-red-50 text-red-800 border border-red-100"}`}>
                 <div className="font-bold mb-1">
-                  {answers[qi] === q.correct ? "✓ Correct" : `✕ Incorrect — Correct answer: ${q.options[q.correct]}`}
+                  {gradeResult.results[q.n - 1] ? "✓ Correct" : `✕ Incorrect`}
                 </div>
                 {q.explanation && <div className="opacity-90">{q.explanation}</div>}
               </div>
@@ -153,13 +154,28 @@ export function Quiz() {
 
       {/* Submit */}
       {!submitted ? (
-        <button onClick={() => setSubmitted(true)}
-          disabled={answered < questions.length}
+        <button onClick={async () => {
+            setIsGrading(true);
+            try {
+              // Convert answers map { questionIndex: selectedOptionIndex } to string array for backend
+              // E.g., answers: { 0: 1 } -> string["Option B"]
+              const formattedAnswers = questions.map((q, i) => answers[i] !== undefined ? q.options[answers[i]] : "");
+              
+              const res = await sessionService.gradeQuiz(Number(sessionId), formattedAnswers);
+              setGradeResult(res);
+              setSubmitted(true);
+            } catch (err: any) {
+              alert(err.message || "Failed to grade");
+            } finally {
+              setIsGrading(false);
+            }
+          }}
+          disabled={answered < questions.length || isGrading}
           className="mt-6 w-full bg-primary text-white rounded-xl py-3 text-[14.5px] font-bold hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/20">
-          Submit quiz
+          {isGrading ? "Grading..." : "Submit quiz"}
         </button>
       ) : (
-        <button onClick={() => { setAnswers({}); setSubmitted(false); }}
+        <button onClick={() => { setAnswers({}); setSubmitted(false); setGradeResult(null); }}
           className="mt-6 w-full bg-surface border border-border rounded-xl py-3 text-[14.5px] font-bold hover:bg-background transition-colors">
           Retry quiz
         </button>

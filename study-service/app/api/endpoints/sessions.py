@@ -7,7 +7,7 @@ from app.models.session import StudySession, SessionResource, SessionStatus
 from app.models.group import StudyGroup, GroupMember, GroupRole
 from app.models.resource import Resource
 from app.schemas.session import SessionCreate, SessionUpdate, SessionResponse, SessionSummaryResponse, SessionAttendanceResponse
-from app.schemas.quiz import QuizResponse
+from app.schemas.quiz import QuizResponse, QuizSubmission, QuizResult, QuizQuestionResult
 from app.schemas.common import SuccessResponse
 from app.models.session import StudySession, SessionResource, SessionStatus, MeetingType, SessionAttendance, AttendanceStatus
 from app.core.events import publish_session_completed
@@ -18,11 +18,12 @@ from app.schemas.flashcard import FlashcardDeckResponse, FlashcardGenerateReques
 from app.services import notification_service
 from app.models.notification import NotificationType
 from app.clients import auth_client
+from app.repositories import group_repo
 
 router = APIRouter()
 
 def check_group_membership(db: Session, group_id: int, user_id: int):
-    member = db.query(GroupMember).filter(GroupMember.group_id == group_id, GroupMember.user_id == user_id).first()
+    member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
     if not member:
         raise HTTPException(status_code=403, detail="Not a member of this group")
     return member
@@ -309,6 +310,55 @@ def get_session_quiz(session_id: int, db: Session = Depends(get_db), user: dict 
         raise HTTPException(status_code=404, detail="Quiz not found")
         
     return {"success": True, "data": session.quiz}
+
+@router.post("/{session_id}/quiz/grade", response_model=SuccessResponse[QuizResult])
+def grade_session_quiz(session_id: int, submission: QuizSubmission, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    session = db.query(StudySession).filter(StudySession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    member = group_repo.get_member(db=db, group_id=session.group_id, user_id=user.get("userId"))
+    if not member:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+
+    if not session.quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    questions = session.quiz.questions
+    if len(submission.answers) != len(questions):
+        raise HTTPException(status_code=400, detail="Number of answers does not match number of questions")
+
+    correct_count = 0
+    results = []
+    
+    for idx, question in enumerate(questions):
+        submitted_answer = submission.answers[idx]
+        is_correct = submitted_answer == question.correct_answer
+        if is_correct:
+            correct_count += 1
+            
+        results.append(
+            QuizQuestionResult(
+                id=question.id,
+                correct_answer=question.correct_answer,
+                explanation=question.explanation,
+                is_correct=is_correct
+            )
+        )
+        
+    total = len(questions)
+    percentage = (correct_count / total * 100) if total > 0 else 0
+    passed = percentage >= 70.0
+
+    result = QuizResult(
+        score=correct_count,
+        total=total,
+        percentage=percentage,
+        passed=passed,
+        results=results
+    )
+    
+    return {"success": True, "data": result}
 
 @router.post("/{session_id}/quiz/regenerate", response_model=SuccessResponse[dict])
 def regenerate_session_quiz(session_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):

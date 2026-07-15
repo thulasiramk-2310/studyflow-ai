@@ -154,4 +154,13 @@ async def get_chat_stats(user_id: int, db: Session = Depends(get_db)):
         ChatSession.user_id == user_id,
         ChatSession.deleted_at == None
     ).count()
-    return {"success": True, "data": {"total_ai_chats": count}}
+    
+    questions_count = db.query(ChatMessage).join(
+        ChatSession, ChatMessage.session_id == ChatSession.id
+    ).filter(
+        ChatSession.user_id == user_id,
+        ChatSession.deleted_at == None,
+        ChatMessage.role == 'user'
+    ).count()
+    
+    return {"success": True, "data": {"total_ai_chats": count, "total_questions_asked": questions_count}}

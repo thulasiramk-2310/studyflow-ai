@@ -46,7 +46,8 @@ export function Profile() {
     { label: "Groups joined", value: stats.groupsJoined.toString() },
     { label: "Resources shared", value: stats.resourcesShared.toString() },
     { label: "Sessions hosted", value: stats.sessionsHosted.toString() },
-    { label: "Questions asked", value: "Coming Soon" },
+    { label: "AI Conversations", value: stats.aiConversations.toString() },
+    { label: "AI Questions asked", value: stats.aiQuestionsAsked.toString() },
   ];
 
   const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
@@ -75,7 +76,7 @@ export function Profile() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-5">
         {statCards.map((s, i) => (
           <div key={i} className="bg-surface border border-border rounded-2xl px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div className="text-[12.5px] font-semibold text-muted-foreground">{s.label}</div>

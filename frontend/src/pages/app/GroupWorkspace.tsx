@@ -10,8 +10,9 @@ import { sessionService } from "../../services/session.service";
 import type { Session } from "../../services/session.service";
 import { useAuth } from "../../hooks/useAuth";
 import { StudyPlanModal } from "../../components/study/StudyPlanModal";
+import { StudyRoadmap } from "../../components/groups/StudyRoadmap";
 
-const TABS = ["Overview", "Resources", "Sessions", "Members", "Progress", "AI Assistant"];
+const TABS = ["Overview", "Resources", "Sessions", "Members", "AI Assistant"];
 
 export function GroupWorkspace() {
   const { groupId } = useParams();
@@ -21,6 +22,7 @@ export function GroupWorkspace() {
   const [group, setGroup] = useState<Group | null>(null);
   const [resources, setResources] = useState<Resource[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Overview");
 
@@ -34,16 +36,18 @@ export function GroupWorkspace() {
     if (!groupId) return;
     try {
       setLoading(true);
-      const [g, r, s] = await Promise.all([
+      const [g, r, s, up] = await Promise.all([
         groupService.getGroup(Number(groupId)),
         resourceService.getResources(Number(groupId)),
         sessionService.getGroupSessions(Number(groupId)),
+        groupService.getUpcomingSessions(Number(groupId))
       ]);
       // Sort resources by date
       r.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setGroup(g);
       setResources(r);
       setSessions(s);
+      setUpcomingSessions(up);
     } catch (err) {
       console.error("Failed to load group data", err);
     } finally {
@@ -86,7 +90,6 @@ export function GroupWorkspace() {
 
   const userRole = group.members?.find((m) => m.user_id === Number(user?.id))?.role || "MEMBER";
   const canManageGroup = userRole === "ORGANIZER";
-  const upcomingSessions = sessions.filter(s => s.status === "SCHEDULED" || s.status === "LIVE").slice(0, 3);
   const recentResources = resources.slice(0, 3);
 
   const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
@@ -388,34 +391,6 @@ export function GroupWorkspace() {
             </div>
           )}
 
-          {/* Progress Tab */}
-          {activeTab === "Progress" && (
-            <div className="flex flex-col gap-5">
-              <div className="bg-surface border border-border rounded-2xl p-6">
-                <div className="flex justify-between items-baseline mb-4">
-                  <span className="text-[16px] font-bold flex items-center gap-2"><CheckCircle className="w-5 h-5 text-primary" /> Overall Course Progress</span>
-                  <span className="text-[15px] font-extrabold text-primary">0% complete</span>
-                </div>
-                <div className="h-3 bg-border-soft rounded-full overflow-hidden mb-3">
-                  <div className="h-full w-[0%] bg-gradient-to-r from-primary to-secondary rounded-full" />
-                </div>
-                <div className="flex justify-between text-[13px] text-muted-foreground">
-                  <span>0 of 10 modules covered</span>
-                  <span>Est. completion: TBA</span>
-                </div>
-              </div>
-              <div className="bg-surface border border-border rounded-2xl p-6 text-center">
-                <div className="w-12 h-12 bg-primary-soft text-primary rounded-full flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle className="w-6 h-6" />
-                </div>
-                <h3 className="text-[15px] font-bold mb-1">More detailed analytics coming soon!</h3>
-                <p className="text-[13px] text-muted-foreground max-w-md mx-auto">
-                  Once AI Quiz Generation is completed in the next milestone, this tab will feature detailed analytics, quiz scores, and study recommendations.
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* AI Assistant Tab */}
           {activeTab === "AI Assistant" && (
             <div className="bg-surface border border-border rounded-2xl p-8 text-center flex flex-col items-center">
@@ -434,20 +409,40 @@ export function GroupWorkspace() {
 
           {activeTab === "Overview" && (
             <>
-              {/* Progress (Mocked for now) */}
-          <div className="bg-surface border border-border rounded-2xl p-5">
-            <div className="flex justify-between items-baseline">
-              <span className="text-[14px] font-bold">Course progress</span>
-              <span className="text-[13px] font-bold text-primary">0% complete</span>
-            </div>
-            <div className="mt-3 h-2 bg-border-soft rounded-full overflow-hidden">
-              <div className="h-full w-[0%] bg-gradient-to-r from-primary to-secondary rounded-full" />
-            </div>
-            <div className="flex justify-between mt-2.5 text-[12px] text-muted-foreground">
-              <span>0 of 10 modules covered</span>
-              <span>Est. completion: TBA</span>
-            </div>
-          </div>
+              {/* Group Overview */}
+              <div className="bg-surface border border-border rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                <h3 className="text-[15px] font-bold mb-2 text-foreground">Group Overview</h3>
+                {group.description && (
+                  <div className="mb-4">
+                    <h4 className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Description</h4>
+                    <p className="text-[13.5px] text-foreground leading-relaxed">{group.description}</p>
+                  </div>
+                )}
+                {group.goal && (
+                  <div>
+                    <h4 className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Goal</h4>
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 inline-block">
+                      <p className="text-[13px] font-semibold text-primary-hover flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" /> {group.goal}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {!group.description && !group.goal && (
+                  <p className="text-[13.5px] text-muted-foreground">This group doesn't have a description or goal set.</p>
+                )}
+              </div>
+
+              {/* Study Roadmap */}
+              <StudyRoadmap 
+                groupId={group.id} 
+                items={group.learning_plan || []} 
+                canManage={canManageGroup} 
+                onUpdate={loadData} 
+                progressPercent={(group as any).progress_percent || 0}
+                completedCount={(group as any).completed_items_count || 0}
+              />
+
 
           {/* Resources */}
           <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">

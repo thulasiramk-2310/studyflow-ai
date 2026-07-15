@@ -28,11 +28,16 @@ export function Notifications() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [notifs, setNotifs] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   
   const fetchNotifications = async () => {
     try {
-      const data = await notificationService.getNotifications(0, 50);
+      const [data, unread] = await Promise.all([
+        notificationService.getNotifications(0, 50),
+        notificationService.getUnreadCount()
+      ]);
       setNotifs(data.notifications);
+      setUnreadCount(unread.unread_count);
     } catch (err) {
       console.error(err);
     } finally {
@@ -48,6 +53,7 @@ export function Notifications() {
     try {
       await notificationService.markAllAsRead();
       setNotifs(n => n.map(x => ({ ...x, is_read: true })));
+      setUnreadCount(0);
       toast.success("All notifications marked as read");
     } catch (err) {
       toast.error("Failed to mark all as read");
@@ -59,6 +65,7 @@ export function Notifications() {
     try {
       await notificationService.markAsRead(id);
       setNotifs(n => n.map(x => x.id === id ? { ...x, is_read: true } : x));
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error(err);
     }
@@ -75,7 +82,6 @@ export function Notifications() {
   };
 
   const shown = filter === "unread" ? notifs.filter(n => !n.is_read) : notifs;
-  const unreadCount = notifs.filter(n => !n.is_read).length;
   
   const isToday = (dateStr: string) => {
     const d = new Date(dateStr);

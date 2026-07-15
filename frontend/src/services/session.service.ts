@@ -35,6 +35,13 @@ export interface QuizQuestionResponse {
   explanation: string | null;
 }
 
+export interface QuizGradeResponse {
+  score: number;
+  total: number;
+  passed: boolean;
+  results: Record<number, boolean>;
+}
+
 export interface QuizResponse {
   id: number;
   session_id: number;
@@ -255,6 +262,17 @@ class SessionService {
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
     if (!json.success) throw new Error(json.error?.message || "Failed to regenerate session quiz");
+  }
+
+  async gradeQuiz(sessionId: number, answers: string[]): Promise<QuizGradeResponse> {
+    const res = await fetch(`/api/v1/sessions/${sessionId}/quiz/grade`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ answers }),
+    });
+    const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
+    if (!json.success) throw new Error(json.error?.message || "Failed to grade quiz");
+    return json.data;
   }
 
   async getFlashcards(sessionId: number): Promise<FlashcardDeckResponse> {

@@ -5,7 +5,7 @@ class DashboardStats(BaseModel):
     groups: int
     resources: int
     sessions: int
-    aiChats: int
+    conversations: int
     quizzes: int
     flashcards: int
 
@@ -28,6 +28,6 @@ class RecentResourceItem(BaseModel):
 
 class DashboardResponse(BaseModel):
     stats: DashboardStats
-    upcomingSessions: List[UpcomingSessionItem]
-    recentResources: List[RecentResourceItem]
-    recentActivity: List[RecentActivityItem]
+    upcoming_sessions: List[UpcomingSessionItem]
+    recent_resources: List[RecentResourceItem]
+    recent_activity: List[RecentActivityItem]

@@ -7,7 +7,8 @@ export interface UserProfileStats {
   groupsJoined: number;
   resourcesShared: number;
   sessionsHosted: number;
-  questionsAsked: number;
+  aiConversations: number;
+  aiQuestionsAsked: number;
 }
 
 export const userService = {

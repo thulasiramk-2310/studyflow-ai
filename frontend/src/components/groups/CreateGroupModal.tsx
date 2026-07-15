@@ -12,6 +12,7 @@ interface Props {
 export function CreateGroupModal({ isOpen, onClose, onSuccess }: Props) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [goal, setGoal] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -20,7 +21,7 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }: Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      await groupService.createGroup(name, description);
+      await groupService.createGroup(name, description, goal);
       toast.success("Group created successfully");
       onSuccess();
       onClose();
@@ -60,6 +61,16 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }: Props) {
                 onChange={e => setDescription(e.target.value)}
                 placeholder="What is this group about?"
                 rows={3}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm resize-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Group Goal (Optional)</label>
+              <textarea
+                value={goal}
+                onChange={e => setGoal(e.target.value)}
+                placeholder="e.g. Become interview ready in Machine Learning"
+                rows={2}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm resize-none"
               />
             </div>
