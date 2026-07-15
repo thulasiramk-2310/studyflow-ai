@@ -3,6 +3,7 @@ import logging
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.flashcard import FlashcardDeck, Flashcard, FlashcardDeckStatus
+from app.core.config import settings
 from datetime import datetime
 import time
 import os
@@ -42,6 +43,7 @@ def generate_flashcards_task(session_id: int, group_id: int, resource_ids: list[
             with httpx.Client(timeout=120.0) as client:
                 response = client.post(
                     f"{AI_SERVICE_URL}/api/v1/ai/flashcards",
+                    headers={"X-Internal-Key": settings.INTERNAL_API_KEY},
                     json={
                         "sessionId": session_id,
                         "groupId": group_id,

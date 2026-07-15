@@ -48,9 +48,9 @@ export function Dashboard() {
   const stats = [
     { label: "Groups", value: dashboardData?.stats.groups.toString() || "0", trend: "" },
     { label: "Resources", value: dashboardData?.stats.resources.toString() || "0", trend: "" },
-    { label: "Upcoming", value: dashboardData?.stats.sessions.toString() || "0", trend: "" },
-    { label: "AI Conversations", value: dashboardData?.stats.aiChats.toString() || "0", trend: "" },
-    { label: "Quizzes", value: dashboardData?.stats.quizzes.toString() || "0", trend: "" },
+    { label: "Upcoming", value: dashboardData?.stats.sessions?.toString() || "0", trend: "" },
+    { label: "AI Conversations", value: dashboardData?.stats.conversations?.toString() || "0", trend: "" },
+    { label: "Quizzes", value: dashboardData?.stats.quizzes?.toString() || "0", trend: "" },
     { label: "Flashcards", value: dashboardData?.stats.flashcards.toString() || "0", trend: "" },
   ];
 
@@ -111,12 +111,12 @@ export function Dashboard() {
               <span className="text-[14px] font-bold">Upcoming Sessions</span>
               <Link to="/sessions" className="text-[12.5px] font-semibold text-primary hover:underline flex items-center gap-1">View all <ArrowRight className="w-3.5 h-3.5" /></Link>
             </div>
-            {dashboardData?.upcomingSessions.length === 0 ? (
+            {dashboardData?.upcoming_sessions?.length === 0 ? (
               <div className="px-5 py-6 text-center text-[13px] text-muted-foreground">
                 No upcoming sessions.
               </div>
             ) : (
-              dashboardData?.upcomingSessions.map((s) => {
+              dashboardData?.upcoming_sessions?.map((s) => {
                 const date = new Date(s.scheduled_at);
                 const mon = date.toLocaleString('default', { month: 'short' }).toUpperCase();
                 const day = date.getDate();
@@ -148,13 +148,13 @@ export function Dashboard() {
           {/* Activity */}
           <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div className="px-5 py-4 border-b border-border-soft text-[14px] font-bold">Recent Activity</div>
-            {dashboardData?.recentActivity.length === 0 ? (
+            {dashboardData?.recent_activity?.length === 0 ? (
               <div className="px-5 py-6 text-center text-[13px] text-muted-foreground">
                 No recent activity found.
               </div>
             ) : (
               <div className="flex flex-col">
-                {dashboardData?.recentActivity.map((a, i) => {
+                {dashboardData?.recent_activity?.map((a, i) => {
                   let icon = <Plus className="w-4 h-4" />;
                   let bg = "bg-gray-100 text-gray-600";
                   
@@ -191,13 +191,13 @@ export function Dashboard() {
           {/* Recent Resources */}
           <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div className="px-5 py-4 border-b border-border-soft text-[14px] font-bold">Recent Resources</div>
-            {dashboardData?.recentResources.length === 0 ? (
+            {dashboardData?.recent_resources?.length === 0 ? (
               <div className="px-5 py-6 text-center text-[13px] text-muted-foreground">
                 No resources uploaded.
               </div>
             ) : (
               <div className="flex flex-col">
-                {dashboardData?.recentResources.map((r, i) => (
+                {dashboardData?.recent_resources?.map((r, i) => (
                   <div key={i} className="flex items-center gap-3 px-5 py-3 border-b border-border-soft last:border-0 hover:bg-background transition-colors cursor-pointer">
                     <div className="w-7 h-7 rounded bg-red-50 text-red-600 flex items-center justify-center shrink-0 text-[9px] font-extrabold uppercase">
                       {r.title.split('.').pop()}

@@ -35,7 +35,7 @@ export function GroupWorkspace() {
   const loadData = async () => {
     if (!groupId) return;
     try {
-      setLoading(true);
+      if (!group) setLoading(true);
       const [g, r, s, up] = await Promise.all([
         groupService.getGroup(Number(groupId)),
         resourceService.getResources(Number(groupId)),

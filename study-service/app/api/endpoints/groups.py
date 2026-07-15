@@ -132,6 +132,19 @@ async def get_group(
     group_dict["completed_items_count"] = completed_items_count
     group_dict["progress_percent"] = progress_percent
     group_dict["next_item"] = next_item
+
+    # Add learning_plan to response dictionary
+    lp_out = []
+    if learning_plan:
+        for item in learning_plan:
+            if hasattr(item, "__table__"):
+                item_dict = {c.name: getattr(item, c.name) for c in item.__table__.columns}
+            elif hasattr(item, "dict"):
+                item_dict = item.dict()
+            else:
+                item_dict = dict(item)
+            lp_out.append(item_dict)
+    group_dict["learning_plan"] = lp_out
     
     return {"success": True, "data": group_dict}
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CheckCircle, Circle, Map, Plus, Trash2, GripVertical, Clock, Sparkles } from "lucide-react";
-import { groupService, LearningPlanItem } from "../../services/group.service";
+import { groupService, type LearningPlanItem } from "../../services/group.service";
 import { toast } from "sonner";
 
 interface Props {

@@ -18,6 +18,8 @@ class SessionSummaryResponse(BaseModel):
     class Config:
         from_attributes = True
 
+from datetime import timezone
+
 class SessionBase(BaseModel):
     title: str = Field(..., min_length=2, max_length=100)
     description: Optional[str] = None
@@ -35,6 +37,13 @@ class SessionBase(BaseModel):
         v = v.strip()
         if len(v) < 2:
             raise ValueError('Title must be at least 2 characters after stripping whitespace')
+        return v
+
+    @field_validator('scheduled_at')
+    @classmethod
+    def ensure_utc(cls, v: datetime) -> datetime:
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
         return v
 
 class SessionCreate(SessionBase):
