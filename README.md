@@ -154,6 +154,3 @@ flowchart LR
 - Drag & Drop roadmap reorganization.
 - Progress analytics and insights.
 - AWS Production Deployment.
-
-## 13. License
-MIT License
