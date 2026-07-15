@@ -12,7 +12,7 @@ export interface Notification {
 }
 
 export interface NotificationResponse {
-  notifications: Notification[];
+  data: Notification[];
   total: number;
   unread_count: number;
 }

@@ -36,7 +36,7 @@ export function Notifications() {
         notificationService.getNotifications(0, 50),
         notificationService.getUnreadCount()
       ]);
-      setNotifs(data.notifications);
+      setNotifs(data.data || []);
       setUnreadCount(unread.unread_count);
     } catch (err) {
       console.error(err);
