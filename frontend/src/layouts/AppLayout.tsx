@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "../components/layout/Sidebar";
 import { Topbar } from "../components/layout/Topbar";
 import { SidebarProvider } from "../context/SidebarContext";
+import { FloatingAI } from "../components/ai/FloatingAI";
 
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
@@ -34,7 +35,9 @@ export function AppLayout() {
             </AnimatePresence>
           </main>
         </div>
+        <FloatingAI />
       </div>
     </SidebarProvider>
   );
 }
+

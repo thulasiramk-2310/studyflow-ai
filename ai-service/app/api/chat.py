@@ -18,18 +18,34 @@ def verify_internal_key(x_internal_key: str = Header(...)):
 router = APIRouter(dependencies=[Depends(verify_internal_key)])
 
 async def generate_chat_title(session_id: int, first_query: str):
+    """Generate a title for a chat session using LLM, with fallback to truncated query."""
     db = SessionLocal()
     try:
         import requests
-        prompt = f"Summarize this prompt into a short, professional title of 3-5 words. Do not use quotes or punctuation. Prompt: {first_query}"
+        # Use a very concise prompt with /no_think to skip reasoning for faster response
+        prompt = f"/no_think Summarize this into a 3-5 word title, no quotes or punctuation: {first_query[:200]}"
         payload = {
             "model": settings.OLLAMA_MODEL,
             "prompt": prompt,
-            "stream": False
+            "stream": False,
+            "options": {"num_predict": 20, "temperature": 0.3}
         }
-        res = requests.post(f"{settings.OLLAMA_URL}/api/generate", json=payload, timeout=10)
+        res = requests.post(f"{settings.OLLAMA_URL}/api/generate", json=payload, timeout=30)
         res.raise_for_status()
-        title = res.json().get("response", "").strip().replace('"', '').replace("'", "")[:255]
+        raw = res.json().get("response", "").strip()
+        # Clean up common LLM artifacts
+        title = raw.replace('"', '').replace("'", "").replace("**", "").strip()
+        # Remove leading "Title: " or similar prefixes
+        for prefix in ["Title:", "title:", "Title -", "Summary:"]:
+            if title.startswith(prefix):
+                title = title[len(prefix):].strip()
+        title = title[:100] if title else None
+        
+        if not title:
+            # Fallback: use truncated query
+            title = first_query[:50].strip()
+            if len(first_query) > 50:
+                title += "..."
         
         session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
         if session:
@@ -37,7 +53,19 @@ async def generate_chat_title(session_id: int, first_query: str):
             db.commit()
             logger.info(f"Generated title for session {session_id}: {title}")
     except Exception as e:
-        logger.error(f"Failed to generate title: {e}")
+        logger.warning(f"LLM title generation failed for session {session_id}: {e}. Using fallback.")
+        # Fallback: use truncated query as title
+        try:
+            session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+            if session and session.title == "New Conversation":
+                fallback = first_query[:50].strip()
+                if len(first_query) > 50:
+                    fallback += "..."
+                session.title = fallback
+                db.commit()
+                logger.info(f"Set fallback title for session {session_id}: {fallback}")
+        except Exception as e2:
+            logger.error(f"Failed to set fallback title: {e2}")
     finally:
         db.close()
 
@@ -61,14 +89,20 @@ async def chat_with_documents(request: ChatRequest, background_tasks: Background
             raise HTTPException(status_code=404, detail="Chat session not found")
         if chat_session.user_id != request.userId or chat_session.group_id != request.groupId:
             raise HTTPException(status_code=404, detail="Chat session not found")
+        
+        # Retry title generation if still "New Conversation"
+        if chat_session.title == "New Conversation":
+            background_tasks.add_task(generate_chat_title, session_id, request.query)
 
     else:
-        # Create new session
-        title = "New Conversation"
+        # Create new session with immediate fallback title from query
+        immediate_title = request.query[:50].strip()
+        if len(request.query) > 50:
+            immediate_title += "..."
         chat_session = ChatSession(
             user_id=request.userId,
             group_id=request.groupId,
-            title=title
+            title=immediate_title
         )
         db.add(chat_session)
         db.commit()
@@ -76,7 +110,7 @@ async def chat_with_documents(request: ChatRequest, background_tasks: Background
         session_id = chat_session.id
         logger.info(f"Chat Created: Session {session_id} by User {request.userId}")
         
-        # Dispatch background task for title generation
+        # Dispatch background task for a better AI-generated title
         background_tasks.add_task(generate_chat_title, session_id, request.query)
         
     # Fetch last 4 messages for context

@@ -31,6 +31,7 @@ export function GroupWorkspace() {
   const [aiProposal, setAiProposal] = useState<any>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [targetDuration, setTargetDuration] = useState(60);
 
   const loadData = async () => {
     if (!groupId) return;
@@ -131,7 +132,7 @@ export function GroupWorkspace() {
     try {
       setIsGeneratingPlan(true);
       toast.loading("AI is analyzing group progress...", { id: "generate-plan" });
-      const proposal = await groupService.generateStudyPlan(Number(groupId));
+      const proposal = await groupService.generateStudyPlan(Number(groupId), targetDuration);
       setAiProposal(proposal);
       setIsPlanModalOpen(true);
       toast.success("Study plan generated!", { id: "generate-plan" });
@@ -153,6 +154,10 @@ export function GroupWorkspace() {
         title: aiProposal.title,
         description: aiProposal.description,
         agenda: aiProposal.agenda,
+        objectives: aiProposal.objectives,
+        expected_outcome: aiProposal.expected_outcome,
+        session_type: aiProposal.session_type,
+        learning_path_item_id: aiProposal.learning_path_item_id,
         duration_minutes: aiProposal.duration_minutes,
         scheduled_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Schedule for tomorrow by default
         resource_ids: [], // User can add later, or use AI recommendation if available
@@ -302,6 +307,17 @@ export function GroupWorkspace() {
                 <span className="text-[14px] font-bold">All Sessions ({sessions.length})</span>
                 {canManageGroup && (
                   <div className="flex items-center gap-3">
+                    <select 
+                      value={targetDuration}
+                      onChange={e => setTargetDuration(Number(e.target.value))}
+                      className="text-[12.5px] border border-border-soft rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary bg-surface text-foreground"
+                    >
+                      <option value={30}>30 min</option>
+                      <option value={45}>45 min</option>
+                      <option value={60}>60 min</option>
+                      <option value={90}>90 min</option>
+                      <option value={120}>120 min</option>
+                    </select>
                     <button 
                       onClick={handleGeneratePlan}
                       disabled={isGeneratingPlan}

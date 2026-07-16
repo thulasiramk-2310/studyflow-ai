@@ -40,9 +40,9 @@ export function FlashcardViewer({ flashcards }: FlashcardViewerProps) {
         <span>Card {currentIndex + 1} of {flashcards.length}</span>
         {currentCard.difficulty && (
           <span className={`px-2 py-0.5 text-xs rounded-full ${
-            currentCard.difficulty.toLowerCase() === 'easy' ? 'bg-emerald-100 text-emerald-700' :
-            currentCard.difficulty.toLowerCase() === 'hard' ? 'bg-red-100 text-red-700' :
-            'bg-amber-100 text-amber-700'
+            currentCard.difficulty.toLowerCase() === 'easy' ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
+            currentCard.difficulty.toLowerCase() === 'hard' ? 'bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400' :
+            'bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'
           }`}>
             {currentCard.difficulty}
           </span>
@@ -57,16 +57,16 @@ export function FlashcardViewer({ flashcards }: FlashcardViewerProps) {
         <div className={`w-full h-full transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
           
           {/* Front */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-white border shadow-md backface-hidden rounded-2xl border-surface-200">
-            <span className="absolute top-4 left-4 text-xs font-semibold tracking-wider uppercase text-surface-400">Question</span>
-            <h3 className="text-xl font-medium leading-relaxed text-surface-900">{currentCard.front}</h3>
-            <p className="absolute text-sm bottom-4 text-surface-400 opacity-60">Click to flip</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-card border shadow-md backface-hidden rounded-2xl border-border">
+            <span className="absolute top-4 left-4 text-xs font-semibold tracking-wider uppercase text-muted-foreground">Question</span>
+            <h3 className="text-xl font-medium leading-relaxed text-card-foreground">{currentCard.front}</h3>
+            <p className="absolute text-sm bottom-4 text-muted-foreground opacity-60">Click to flip</p>
           </div>
 
           {/* Back */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-primary-50 border shadow-md backface-hidden rounded-2xl border-primary-200 rotate-y-180">
-            <span className="absolute top-4 left-4 text-xs font-semibold tracking-wider uppercase text-primary-600/70">Answer</span>
-            <p className="text-lg leading-relaxed text-surface-800">{currentCard.back}</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-primary-soft/30 border shadow-md backface-hidden rounded-2xl border-primary/20 rotate-y-180">
+            <span className="absolute top-4 left-4 text-xs font-semibold tracking-wider uppercase text-primary">Answer</span>
+            <p className="text-lg leading-relaxed text-foreground">{currentCard.back}</p>
           </div>
 
         </div>
@@ -77,7 +77,7 @@ export function FlashcardViewer({ flashcards }: FlashcardViewerProps) {
         <button
           onClick={handlePrev}
           disabled={currentIndex === 0}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors rounded-lg text-surface-600 hover:bg-surface-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors rounded-lg text-muted-foreground hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="w-4 h-4" />
           Previous

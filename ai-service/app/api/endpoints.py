@@ -149,12 +149,13 @@ async def generate_session_flashcards(req: FlashcardRequest):
 
 class ScheduleRequest(BaseModel):
     context: str
+    target_duration: int = 60
 
 @router.post("/schedule")
 async def generate_session_schedule(req: ScheduleRequest):
     try:
         from app.services.schedule import generate_schedule
-        schedule_data = generate_schedule(req.context)
+        schedule_data = generate_schedule(req.context, req.target_duration)
         return {"success": True, "data": schedule_data}
     except Exception as e:
         logger.error(f"Error in generate_session_schedule: {e}")

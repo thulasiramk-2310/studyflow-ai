@@ -117,10 +117,11 @@ class GroupService {
     return json.data;
   }
 
-  async generateStudyPlan(groupId: number): Promise<any> {
+  async generateStudyPlan(groupId: number, targetDurationMinutes: number = 60): Promise<any> {
     const res = await fetch(`/api/v1/groups/${groupId}/schedule-agent`, {
       method: "POST",
       headers: this.getHeaders(),
+      body: JSON.stringify({ target_duration_minutes: targetDurationMinutes })
     });
     
     const json = await res.json();

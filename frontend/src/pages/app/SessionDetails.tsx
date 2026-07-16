@@ -376,7 +376,7 @@ export function SessionDetails() {
             <div className="flex flex-col gap-6 animate-[sfFade_0.4s_ease]">
               {/* Summary */}
               {summary?.status === "READY" ? (
-                <div className="bg-white border border-border rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.03)] overflow-hidden">
+                <div className="bg-surface border border-border rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.03)] overflow-hidden">
                   <div className="px-6 py-5 border-b border-border-soft flex items-center justify-between">
                     <h2 className="text-[16px] font-bold text-foreground flex items-center gap-2">
                       <Sparkle className="w-5 h-5 text-primary" /> Session Summary
@@ -428,7 +428,7 @@ export function SessionDetails() {
 
               {/* Quiz */}
               {quiz?.status === "READY" ? (
-                <div className="bg-white border border-border rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.03)] overflow-hidden">
+                <div className="bg-surface border border-border rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.03)] overflow-hidden">
                   <div className="px-6 py-5 border-b border-border-soft flex items-center justify-between">
                     <h2 className="text-[16px] font-bold text-foreground flex items-center gap-2">
                       <Sparkle className="w-5 h-5 text-primary" /> Session Quiz
@@ -454,7 +454,7 @@ export function SessionDetails() {
                   AI Quiz failed to generate. <button onClick={handleRegenerateQuiz} className="underline">Try again</button>
                 </div>
               ) : !quiz ? (
-                <div className="bg-white border border-border rounded-2xl p-4 flex items-center justify-between shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
+                <div className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
                   <div>
                     <h3 className="text-[14px] font-bold text-foreground">AI Quiz</h3>
                     <p className="text-[12.5px] text-muted-foreground mt-0.5">Test your knowledge on this session's materials.</p>
@@ -473,7 +473,7 @@ export function SessionDetails() {
 
               {/* Flashcards */}
               {flashcards?.status === "READY" ? (
-                <div className="bg-white border border-border rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.03)] overflow-hidden">
+                <div className="bg-surface border border-border rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.03)] overflow-hidden">
                   <div className="px-6 py-5 border-b border-border-soft flex items-center justify-between">
                     <h2 className="text-[16px] font-bold text-foreground flex items-center gap-2">
                       <Sparkle className="w-5 h-5 text-primary" /> Flashcards
@@ -493,7 +493,7 @@ export function SessionDetails() {
                   AI Flashcards failed to generate. <button onClick={handleRegenerateFlashcards} className="underline">Try again</button>
                 </div>
               ) : !flashcards ? (
-                <div className="bg-white border border-border rounded-2xl p-4 flex items-center justify-between shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
+                <div className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
                   <div>
                     <h3 className="text-[14px] font-bold text-foreground">AI Flashcards</h3>
                     <p className="text-[12.5px] text-muted-foreground mt-0.5">Memorize key concepts from this session.</p>
@@ -516,16 +516,38 @@ export function SessionDetails() {
           <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div className="px-5 py-4 border-b border-border-soft text-[14px] font-bold">Agenda</div>
             {session.agenda ? (
-              <div className="px-5 py-4 text-[13.5px] whitespace-pre-wrap">{session.agenda}</div>
+              Array.isArray(session.agenda) ? (
+                session.agenda.map((a, i) => (
+                  <div key={i} className="flex flex-col gap-2 px-5 py-4 border-b border-border-soft last:border-0">
+                    <div className="flex items-start gap-4">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[12px] font-bold shrink-0">{i + 1}</div>
+                      <div className="flex-1">
+                        <div className="text-[13.5px] font-semibold">{a.title}</div>
+                        {a.description && (
+                          <div className="text-[12px] text-muted-foreground mt-0.5">{a.description}</div>
+                        )}
+                        <span className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider mt-1.5 inline-block bg-indigo-50 dark:bg-indigo-500/20 px-2 py-0.5 rounded">
+                          {a.activity_type}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[12px] text-muted-foreground shrink-0 font-medium">
+                        <Clock className="w-3.5 h-3.5" /> {a.duration_minutes} min
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-5 py-4 text-[13.5px] whitespace-pre-wrap">{session.agenda}</div>
+              )
             ) : (
               AGENDA.map((a, i) => (
                 <div key={i} className="flex items-start gap-4 px-5 py-4 border-b border-border-soft last:border-0">
-                  <div className="w-7 h-7 rounded-lg bg-primary-soft text-primary flex items-center justify-center text-[12px] font-bold shrink-0">{a.n}</div>
+                  <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[12px] font-bold shrink-0">{a.n}</div>
                   <div className="flex-1">
                     <div className="text-[13.5px] font-semibold">{a.title}</div>
                     <div className="text-[12px] text-muted-foreground mt-0.5">{a.detail}</div>
                   </div>
-                  <div className="flex items-center gap-1 text-[12px] text-muted-foreground shrink-0">
+                  <div className="flex items-center gap-1 text-[12px] text-muted-foreground shrink-0 font-medium">
                     <Clock className="w-3.5 h-3.5" /> {a.dur}
                   </div>
                 </div>

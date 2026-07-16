@@ -73,12 +73,26 @@ export interface FlashcardDeckResponse {
   flashcards: Flashcard[];
 }
 
+export interface AgendaItem {
+  title: string;
+  duration_minutes: number;
+  description: string;
+  activity_type: "revision" | "learning" | "practice" | "discussion" | "quiz" | "break";
+}
+
+export type StudySessionType = "REVISION" | "LECTURE" | "PRACTICE" | "DISCUSSION" | "EXAM_PREP" | "PROJECT" | "INTERVIEW_PREP" | "OTHER";
+
 export interface Session {
   id: number;
   group_id: number;
   title: string;
   description: string | null;
-  agenda: string | null;
+  agenda: AgendaItem[] | null;
+  objectives: string[] | null;
+  expected_outcome: string | null;
+  session_type: StudySessionType;
+  learning_path_item_id: number | null;
+  generated_by_ai: boolean;
   scheduled_at: string;
   duration_minutes: number;
   status: SessionStatus;
@@ -104,7 +118,12 @@ export interface SessionCreateParams {
   group_id: number;
   title: string;
   description?: string;
-  agenda?: string;
+  agenda?: AgendaItem[];
+  objectives?: string[];
+  expected_outcome?: string;
+  session_type?: StudySessionType;
+  learning_path_item_id?: number | null;
+  generated_by_ai?: boolean;
   scheduled_at: string;
   duration_minutes: number;
   meeting_type?: MeetingType;
@@ -116,7 +135,11 @@ export interface SessionCreateParams {
 export interface SessionUpdateParams {
   title?: string;
   description?: string;
-  agenda?: string;
+  agenda?: AgendaItem[];
+  objectives?: string[];
+  expected_outcome?: string;
+  session_type?: StudySessionType;
+  learning_path_item_id?: number | null;
   scheduled_at?: string;
   duration_minutes?: number;
   status?: SessionStatus;

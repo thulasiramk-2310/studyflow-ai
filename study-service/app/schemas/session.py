@@ -1,7 +1,21 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from app.models.session import SessionStatus, SummaryStatus, MeetingType, AttendanceStatus
+from app.models.session import SessionStatus, SummaryStatus, MeetingType, AttendanceStatus, StudySessionType
+from typing import Literal
+
+class AgendaItem(BaseModel):
+    title: str
+    duration_minutes: int = 0
+    description: str = ""
+    activity_type: Literal[
+        "revision",
+        "learning",
+        "practice",
+        "discussion",
+        "quiz",
+        "break"
+    ] = "learning"
 
 class SessionSummaryResponse(BaseModel):
     id: int
@@ -23,7 +37,12 @@ from datetime import timezone
 class SessionBase(BaseModel):
     title: str = Field(..., min_length=2, max_length=100)
     description: Optional[str] = None
-    agenda: Optional[str] = None
+    agenda: Optional[List[AgendaItem]] = None
+    objectives: Optional[List[str]] = None
+    expected_outcome: Optional[str] = None
+    session_type: Optional[StudySessionType] = StudySessionType.OTHER
+    learning_path_item_id: Optional[int] = None
+    generated_by_ai: Optional[bool] = False
     scheduled_at: datetime
     duration_minutes: int
     meeting_type: Optional[MeetingType] = MeetingType.NONE
@@ -54,7 +73,11 @@ class SessionCreate(SessionBase):
 class SessionUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=2, max_length=100)
     description: Optional[str] = None
-    agenda: Optional[str] = None
+    agenda: Optional[List[AgendaItem]] = None
+    objectives: Optional[List[str]] = None
+    expected_outcome: Optional[str] = None
+    session_type: Optional[StudySessionType] = None
+    learning_path_item_id: Optional[int] = None
     scheduled_at: Optional[datetime] = None
     duration_minutes: Optional[int] = None
     status: Optional[SessionStatus] = None

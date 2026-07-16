@@ -19,7 +19,7 @@ export interface NotificationResponse {
 
 export const notificationService = {
   async getNotifications(skip = 0, limit = 50): Promise<NotificationResponse> {
-    const data = await api.get<NotificationResponse>(`/api/v1/notifications?skip=${skip}&limit=${limit}`);
+    const data = await api.get<NotificationResponse>(`/api/v1/notifications/?skip=${skip}&limit=${limit}`);
     return data;
   },
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Text, JSON
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Text, JSON, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -10,6 +10,16 @@ class SessionStatus(str, enum.Enum):
     LIVE = "LIVE"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+
+class StudySessionType(str, enum.Enum):
+    REVISION = "REVISION"
+    LECTURE = "LECTURE"
+    PRACTICE = "PRACTICE"
+    DISCUSSION = "DISCUSSION"
+    EXAM_PREP = "EXAM_PREP"
+    PROJECT = "PROJECT"
+    INTERVIEW_PREP = "INTERVIEW_PREP"
+    OTHER = "OTHER"
 
 class MeetingType(str, enum.Enum):
     NONE = "NONE"
@@ -77,7 +87,13 @@ class StudySession(Base):
     group_id = Column(Integer, ForeignKey("study_groups.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    agenda = Column(Text, nullable=True) # E.g. bullet points
+    agenda = Column(JSON, nullable=True)
+    objectives = Column(JSON, nullable=True)
+    expected_outcome = Column(Text, nullable=True)
+    session_type = Column(Enum(StudySessionType), default=StudySessionType.OTHER, nullable=False)
+    learning_path_item_id = Column(Integer, ForeignKey("learning_plan_items.id", ondelete="SET NULL"), nullable=True)
+    generated_by_ai = Column(Boolean, default=False, nullable=False)
+    
     scheduled_at = Column(DateTime, nullable=False)
     duration_minutes = Column(Integer, nullable=False)
     status = Column(Enum(SessionStatus), default=SessionStatus.SCHEDULED, nullable=False)

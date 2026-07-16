@@ -1,11 +1,17 @@
 import React from 'react';
 import { Clock, RotateCw, Check, X, Sparkles } from 'lucide-react';
 
+import type { AgendaItem, StudySessionType } from '../../services/session.service';
+
 interface AIProposal {
   title: string;
   description: string;
-  agenda: string;
+  agenda: AgendaItem[];
   duration_minutes: number;
+  objectives?: string[];
+  expected_outcome?: string;
+  session_type?: StudySessionType;
+  confidence?: number;
 }
 
 interface StudyPlanModalProps {
@@ -56,12 +62,40 @@ export const StudyPlanModal: React.FC<StudyPlanModalProps> = ({
             <div className="text-[14px] text-foreground leading-relaxed">{proposal.description}</div>
           </div>
 
+          {proposal.objectives && proposal.objectives.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-[12px] font-bold tracking-wider text-muted-foreground uppercase">Objectives</div>
+              <ul className="list-disc pl-5 text-[14px] text-foreground">
+                {proposal.objectives.map((obj, i) => <li key={i}>{obj}</li>)}
+              </ul>
+            </div>
+          )}
+
           <div className="space-y-2">
             <div className="text-[12px] font-bold tracking-wider text-muted-foreground uppercase">Agenda</div>
-            <div className="bg-background rounded-xl p-4 border border-border-soft">
-              <pre className="text-[14px] text-foreground font-sans whitespace-pre-wrap">
-                {proposal.agenda}
-              </pre>
+            <div className="flex flex-col gap-3">
+              {Array.isArray(proposal.agenda) ? proposal.agenda.map((item, idx) => (
+                <div key={idx} className="bg-background rounded-xl p-4 border border-border-soft flex flex-col gap-1">
+                  <div className="flex justify-between items-start">
+                    <span className="font-bold text-[14px] text-foreground">{item.title}</span>
+                    <span className="text-[12px] font-semibold text-muted-foreground bg-surface border border-border-soft px-2 py-0.5 rounded-md whitespace-nowrap">
+                      {item.duration_minutes} min
+                    </span>
+                  </div>
+                  {item.description && (
+                    <span className="text-[13px] text-muted-foreground">{item.description}</span>
+                  )}
+                  <span className="text-[11px] font-semibold uppercase text-primary tracking-wider mt-1 w-fit bg-primary-soft/30 px-2 py-0.5 rounded">
+                    {item.activity_type}
+                  </span>
+                </div>
+              )) : (
+                <div className="bg-background rounded-xl p-4 border border-border-soft">
+                  <pre className="text-[14px] text-foreground font-sans whitespace-pre-wrap">
+                    {typeof proposal.agenda === 'string' ? proposal.agenda : JSON.stringify(proposal.agenda, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           </div>
 

@@ -150,7 +150,13 @@ export function Sessions() {
                   const isLive = s.status === "LIVE";
                   const colors = getColor(s.id);
                   const groupName = groupNames[s.group_id] || `Group #${s.group_id}`;
-                  const agendaItems = s.agenda ? s.agenda.split(/[\n,]+/).map(a => a.trim()).filter(Boolean) : [];
+                  const agendaItems: string[] = s.agenda
+                    ? Array.isArray(s.agenda)
+                      ? s.agenda.map((a: any) => a.title || a)
+                      : typeof s.agenda === 'string'
+                        ? (s.agenda as string).split(/[\n,]+/).map((a: string) => a.trim()).filter(Boolean)
+                        : []
+                    : [];
 
                   return (
                     <Link to={`/sessions/${s.id}`} key={s.id}

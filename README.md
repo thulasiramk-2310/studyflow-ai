@@ -22,7 +22,16 @@ StudyFlow AI is a robust microservices platform that provides a complete end-to-
 - **Database**: PostgreSQL
 - **Infrastructure**: Docker, AWS (ECS, ALB, RDS, S3)
 
-## 4. Architecture
+## 4. AI Agents Architecture
+
+StudyFlow AI is powered by four specialized, decoupled AI agents that operate seamlessly behind the scenes. Users interact naturally with the application while the system intelligent routes tasks to the appropriate agent:
+
+1. **📝 Resource Manager Agent**: Autonomously processes uploaded documents (PDF/DOCX), performs chunking, embedding, and FAISS vector indexing, and tracks processing status.
+2. **📚 RAG Assistant Agent**: Handles the conversational interface, managing chat history, refining queries, and synthesizing answers with citations from the indexed study materials.
+3. **📅 Scheduler Agent**: Analyzes the group's learning path, past sessions, and available resources to generate structured, balanced study agendas and time allocations.
+4. **👥 Group Coordinator Agent**: Silently manages the group's lifecycle by tracking attendance, monitoring learning path progress, generating session summaries, creating quizzes/flashcards, and sending targeted notifications.
+
+## 5. System Architecture
 
 ### 🏗️ Overall System Architecture
 

@@ -5,7 +5,7 @@ from app.services.llm_service import generate_answer
 
 logger = logging.getLogger(__name__)
 
-def generate_schedule(context_str: str) -> dict:
+def generate_schedule(context_str: str, target_duration: int = 60) -> dict:
     """
     Generate a study session schedule proposal based on group context.
     """
@@ -30,25 +30,28 @@ def generate_schedule(context_str: str) -> dict:
     except Exception as e:
         logger.error(f"Failed to generate schedule: {e}")
         # Fallback if parsing fails or LLM is unreachable
-        import random
-        fallbacks = [
-            {
-                "title": "Revision Session (Fallback)",
-                "description": "General revision based on past topics.",
-                "agenda": "- Review past concepts\n- Q&A",
-                "duration_minutes": 60
-            },
-            {
-                "title": "Deep Dive Practice (Fallback)",
-                "description": "Focused practice on difficult concepts.",
-                "agenda": "- 15m theory review\n- 45m problem solving",
-                "duration_minutes": 60
-            },
-            {
-                "title": "Mock Quiz Session (Fallback)",
-                "description": "Test your knowledge with a peer quiz.",
-                "agenda": "- Distribute quiz\n- 30m timed test\n- 15m review answers",
-                "duration_minutes": 45
-            }
-        ]
-        return random.choice(fallbacks)
+        return {
+            "title": "Revision Session (Fallback)",
+            "description": "General revision based on past topics.",
+            "duration_minutes": target_duration,
+            "objectives": ["Review key concepts"],
+            "expected_outcome": "Solidified understanding of previous topics",
+            "session_type": "REVISION",
+            "confidence": 0.1,
+            "learning_path_item_id": None,
+            "resource_ids": [],
+            "agenda": [
+                {
+                    "title": "Review past concepts",
+                    "duration_minutes": target_duration // 2,
+                    "description": "Go over notes and slides",
+                    "activity_type": "revision"
+                },
+                {
+                    "title": "Q&A",
+                    "duration_minutes": target_duration - (target_duration // 2),
+                    "description": "Discuss doubts",
+                    "activity_type": "discussion"
+                }
+            ]
+        }

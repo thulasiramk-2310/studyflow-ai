@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, CheckCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, SkeletonList, EmptyState } from "../../components/shared";
@@ -29,6 +30,7 @@ export function Notifications() {
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const navigate = useNavigate();
   
   const fetchNotifications = async () => {
     try {
@@ -116,6 +118,15 @@ export function Notifications() {
     );
   }
 
+  const handleNotificationClick = (n: Notification) => {
+    markRead(n.id, n.is_read);
+    if (n.entity_type === 'SESSION' && n.entity_id) {
+      navigate(`/sessions/${n.entity_id}`);
+    } else if (n.group_id) {
+      navigate(`/groups/${n.group_id}`);
+    }
+  };
+
   const Section = ({ label, items }: { label: string; items: Notification[] }) =>
     items.length === 0 ? null : (
       <div className="mb-6">
@@ -128,7 +139,7 @@ export function Notifications() {
             return (
               <div key={n.id}
                 className={`flex items-start gap-3.5 px-5 py-4 border-b border-border-soft last:border-0 transition-colors cursor-pointer ${!n.is_read ? "bg-primary-soft/20 hover:bg-primary-soft/30" : "hover:bg-background"}`}
-                onClick={() => markRead(n.id, n.is_read)}>
+                onClick={() => handleNotificationClick(n)}>
                 <div className={`w-8 h-8 rounded-lg ${bg} ${color} flex items-center justify-center shrink-0`}>
                   <Icon className="w-4 h-4" />
                 </div>

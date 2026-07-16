@@ -42,12 +42,25 @@ def create_session(session_in: SessionCreate, db: Session = Depends(get_db), use
     elif session_in.meeting_type == MeetingType.ZOOM and session_in.meeting_url and not session_in.meeting_url.startswith("https://zoom.us/"):
         raise HTTPException(status_code=400, detail="Invalid Zoom URL")
 
+    # Convert Pydantic AgendaItem models to plain dicts for JSON serialization
+    agenda_data = None
+    if session_in.agenda:
+        agenda_data = [item.model_dump() if hasattr(item, 'model_dump') else item for item in session_in.agenda]
+    
+    # Convert objectives list (already JSON-serializable, but be safe)
+    objectives_data = session_in.objectives if session_in.objectives else None
+
     # Create the session
     new_session = StudySession(
         group_id=session_in.group_id,
         title=session_in.title,
         description=session_in.description,
-        agenda=session_in.agenda,
+        agenda=agenda_data,
+        objectives=objectives_data,
+        expected_outcome=session_in.expected_outcome,
+        session_type=session_in.session_type,
+        learning_path_item_id=session_in.learning_path_item_id,
+        generated_by_ai=session_in.generated_by_ai,
         scheduled_at=session_in.scheduled_at,
         duration_minutes=session_in.duration_minutes,
         meeting_type=session_in.meeting_type,
@@ -127,6 +140,13 @@ def update_session(session_id: int, session_in: SessionUpdate, db: Session = Dep
 
     update_data = session_in.model_dump(exclude_unset=True)
     
+    # Convert AgendaItem Pydantic models to plain dicts for JSON serialization
+    if "agenda" in update_data and update_data["agenda"] is not None:
+        update_data["agenda"] = [
+            item.model_dump() if hasattr(item, 'model_dump') else (item if isinstance(item, dict) else dict(item))
+            for item in update_data["agenda"]
+        ]
+
     # Validate meeting URL on update if present
     m_type = update_data.get("meeting_type", session.meeting_type)
     m_url = update_data.get("meeting_url", session.meeting_url)

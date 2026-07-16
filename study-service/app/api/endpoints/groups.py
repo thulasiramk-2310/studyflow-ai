@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Any, Optional
+from pydantic import BaseModel, Field
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
@@ -380,9 +381,13 @@ def promote_member(group_id: int):
 def transfer_ownership(group_id: int):
     raise HTTPException(status_code=501, detail="Not Implemented")
 
+class AgentScheduleRequest(BaseModel):
+    target_duration_minutes: int = Field(default=60, ge=15, le=240)
+
 @router.post("/{group_id}/schedule-agent")
 async def schedule_agent(
     group_id: int,
+    req: AgentScheduleRequest,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -395,7 +400,7 @@ async def schedule_agent(
         
     # 2. Call agent service
     from app.services.agent_service import generate_agentic_schedule
-    proposal = await generate_agentic_schedule(db=db, group_id=group_id)
+    proposal = await generate_agentic_schedule(db=db, group_id=group_id, target_duration_minutes=req.target_duration_minutes)
     
     return {"success": True, "data": proposal}
 
