@@ -106,6 +106,16 @@ export function GroupWorkspace() {
     }
   };
 
+  const handleRegenerateInvite = async () => {
+    try {
+      const newCode = await groupService.regenerateInviteCode(group.id);
+      setGroup({ ...group, invite_code: newCode });
+      toast.success("Invite code regenerated");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to regenerate invite code");
+    }
+  };
+
   const handleCopyInviteCode = async () => {
     try {
       if (group.invite_code) {
@@ -229,6 +239,9 @@ export function GroupWorkspace() {
                 </div>
                 <button onClick={handleCopyInviteCode} className="w-full text-left px-3 py-2 text-[13px] hover:bg-background rounded-lg transition-colors">
                   Copy to Clipboard
+                </button>
+                <button onClick={handleRegenerateInvite} className="w-full text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors mt-1">
+                  Regenerate Code
                 </button>
               </div>
             </div>
@@ -372,9 +385,11 @@ export function GroupWorkspace() {
             <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
               <div className="px-5 py-4 border-b border-border-soft flex justify-between items-center">
                 <span className="text-[14px] font-bold">Group Members ({group.members?.length || 1})</span>
-                <button className="text-[12.5px] font-semibold text-primary hover:underline">
-                  Invite Member
-                </button>
+                {canManageGroup && (
+                  <button className="text-[12.5px] font-semibold text-primary hover:underline">
+                    Invite Member
+                  </button>
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
                 {(group.members || []).map((m) => {

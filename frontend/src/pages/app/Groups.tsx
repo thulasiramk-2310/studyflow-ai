@@ -106,7 +106,11 @@ export function Groups() {
                 </div>
                 <div className="text-right shrink-0 hidden sm:block">
                   <div className="text-[12.5px] font-semibold">{memberCount} members</div>
-                  <div className="text-[11.5px] text-muted-foreground mt-0.5">Invite: <span className="font-mono bg-gray-100 px-1 py-0.5 rounded text-gray-700 select-all">{g.invite_code}</span></div>
+                  {isOrg && (
+                    <div className="text-[11.5px] text-muted-foreground mt-0.5">
+                      Invite: <span className="font-mono bg-surface border border-border px-1 py-0.5 rounded text-foreground select-all">{g.invite_code}</span>
+                    </div>
+                  )}
                 </div>
                 <ChevronRight className="w-4 h-4 text-border shrink-0 ml-2" />
               </Link>
