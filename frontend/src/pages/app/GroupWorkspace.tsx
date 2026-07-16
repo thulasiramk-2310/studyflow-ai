@@ -106,13 +106,14 @@ export function GroupWorkspace() {
     }
   };
 
-  const handleRegenerateInvite = async () => {
+  const handleCopyInviteCode = async () => {
     try {
-      const newCode = await groupService.regenerateInviteCode(group.id);
-      setGroup({ ...group, invite_code: newCode });
-      toast.success("Invite code regenerated");
+      if (group.invite_code) {
+        await navigator.clipboard.writeText(group.invite_code);
+        toast.success("Invite code copied to clipboard!");
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to regenerate invite code");
+      toast.error("Failed to copy invite code");
     }
   };
 
@@ -202,7 +203,8 @@ export function GroupWorkspace() {
         <div className="flex">
           {(group.members || []).slice(0, 4).map((m, i) => {
             const isMe = m.user_id === Number(user?.id);
-            const initials = isMe ? user?.initials : `U${m.user_id}`;
+            const memberInitials = m.name ? m.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : `U${m.user_id}`;
+            const initials = isMe ? user?.initials : memberInitials;
             return (
               <div key={i} className="w-[30px] h-[30px] rounded-full bg-primary text-white flex items-center justify-center text-[10.5px] font-bold border-2 border-background -ml-2 first:ml-0">
                 {initials}
@@ -225,8 +227,8 @@ export function GroupWorkspace() {
                 <div className="px-3 py-2 text-[12px] text-muted-foreground border-b border-border-soft mb-1">
                   Code: <span className="font-mono text-foreground font-semibold select-all bg-background px-1.5 py-0.5 rounded">{group.invite_code}</span>
                 </div>
-                <button onClick={handleRegenerateInvite} className="w-full text-left px-3 py-2 text-[13px] hover:bg-background rounded-lg transition-colors">
-                  Regenerate Code
+                <button onClick={handleCopyInviteCode} className="w-full text-left px-3 py-2 text-[13px] hover:bg-background rounded-lg transition-colors">
+                  Copy to Clipboard
                 </button>
               </div>
             </div>
@@ -377,7 +379,8 @@ export function GroupWorkspace() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
                 {(group.members || []).map((m) => {
                   const isMe = m.user_id === Number(user?.id);
-                  const initials = isMe ? user?.initials : `U${m.user_id}`;
+                  const memberInitials = m.name ? m.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : `U${m.user_id}`;
+                  const initials = isMe ? user?.initials : memberInitials;
                   const name = isMe ? (user?.name + " (You)") : (m.name || `User ${m.user_id}`);
                   
                   return (
@@ -560,7 +563,8 @@ export function GroupWorkspace() {
             </div>
             {(group.members || []).map((m) => {
               const isMe = m.user_id === Number(user?.id);
-              const initials = isMe ? user?.initials : `U${m.user_id}`;
+              const memberInitials = m.name ? m.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : `U${m.user_id}`;
+              const initials = isMe ? user?.initials : memberInitials;
               const name = isMe ? (user?.name + " (You)") : (m.name || `User ${m.user_id}`);
 
               return (
