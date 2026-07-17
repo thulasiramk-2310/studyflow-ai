@@ -13,7 +13,8 @@ logging.basicConfig(
 
 from app.core.database import engine, Base
 import app.models.chat # Ensure models are imported before create_all
-Base.metadata.create_all(bind=engine)
+# Do NOT create tables automatically in production, use Alembic via ECS task instead.
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -35,4 +36,25 @@ def root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "UP", "service": "ai-service"}
+    return {"status": "UP"}
+
+from sqlalchemy import text
+from app.core.database import get_db
+from fastapi import Depends
+import datetime
+
+@app.get("/ready")
+def ready_check(db=Depends(get_db)):
+    ready = {
+        "status": "UP",
+        "service": "ai-service",
+        "version": "1.0.0",
+        "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
+    }
+    try:
+        db.execute(text("SELECT 1"))
+        ready["database"] = "UP"
+    except Exception as e:
+        ready["database"] = "DOWN"
+        ready["status"] = "DOWN"
+    return ready

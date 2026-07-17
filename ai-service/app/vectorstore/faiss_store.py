@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from app.core.config import settings
 import logging
+from app.services.s3_sync import sync_group_index_from_s3, sync_group_index_to_s3
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,9 @@ def add_to_index(group_id: int, resource_id: int, filename: str, chunks: list[di
     """
     group_dir = get_group_dir(group_id)
     
+    # Sync from S3 first (in case it was created by another container)
+    sync_group_index_from_s3(group_id, group_dir)
+    
     # Load or create
     dimension = embeddings.shape[1]
     index = load_or_create_index(group_dir, dimension)
@@ -92,6 +96,9 @@ def add_to_index(group_id: int, resource_id: int, filename: str, chunks: list[di
     metadata["documents"] = len(set(d["resource_id"] for d in documents))
     metadata["total_chunks"] = index.ntotal
     save_metadata(group_dir, metadata)
+    
+    # Sync to S3 after changes
+    sync_group_index_to_s3(group_id, group_dir)
 
 
 def search_index(group_id: int, query_embedding: np.ndarray, top_k: int = 5, threshold: float = 0.2, resource_ids: list[int] = None) -> list[dict]:
@@ -100,6 +107,10 @@ def search_index(group_id: int, query_embedding: np.ndarray, top_k: int = 5, thr
     Optionally filter by resource_ids.
     """
     group_dir = get_group_dir(group_id)
+    
+    # Sync from S3 before searching
+    sync_group_index_from_s3(group_id, group_dir)
+    
     index_path = group_dir / "index.faiss"
     
     if not index_path.exists():

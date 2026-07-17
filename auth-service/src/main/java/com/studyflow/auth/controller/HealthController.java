@@ -18,18 +18,25 @@ public class HealthController {
     public Map<String, String> healthCheck() {
         Map<String, String> health = new HashMap<>();
         health.put("status", "UP");
-        health.put("service", "auth-service");
-        health.put("version", "1.0.0");
-        health.put("timestamp", Instant.now().toString());
+        return health;
+    }
+
+    @GetMapping("/ready")
+    public Map<String, String> readyCheck() {
+        Map<String, String> ready = new HashMap<>();
+        ready.put("status", "UP");
+        ready.put("service", "auth-service");
+        ready.put("version", "1.0.0");
+        ready.put("timestamp", Instant.now().toString());
 
         try {
             jdbcTemplate.execute("SELECT 1");
-            health.put("database", "UP");
+            ready.put("database", "UP");
         } catch (Exception e) {
-            health.put("database", "DOWN");
-            health.put("status", "DOWN");
+            ready.put("database", "DOWN");
+            ready.put("status", "DOWN");
         }
 
-        return health;
+        return ready;
     }
 }

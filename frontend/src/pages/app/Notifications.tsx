@@ -120,9 +120,7 @@ export function Notifications() {
 
   const handleNotificationClick = (n: Notification) => {
     markRead(n.id, n.is_read);
-    if (n.entity_type === 'SESSION' && n.entity_id) {
-      navigate(`/sessions/${n.entity_id}`);
-    } else if (n.group_id) {
+    if (n.group_id) {
       navigate(`/groups/${n.group_id}`);
     }
   };

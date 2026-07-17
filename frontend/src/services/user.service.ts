@@ -22,12 +22,12 @@ export const userService = {
 };
 
 export interface DashboardStats {
-  groups: int;
-  resources: int;
-  sessions: int;
-  conversations: int;
-  quizzes: int;
-  flashcards: int;
+  groups: number;
+  resources: number;
+  sessions: number;
+  conversations: number;
+  quizzes: number;
+  flashcards: number;
 }
 
 export interface RecentActivityItem {

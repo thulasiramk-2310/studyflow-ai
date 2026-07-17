@@ -74,7 +74,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
         group_id: Number(groupId),
         title,
         description,
-        agenda,
+        agenda: agenda ? [{ title: agenda, duration_minutes: duration, description: "", activity_type: "learning" }] : [],
         scheduled_at: scheduledAt,
         duration_minutes: duration,
         resource_ids: selectedResources,

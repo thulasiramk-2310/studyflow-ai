@@ -14,8 +14,8 @@ from slowapi.errors import RateLimitExceeded
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Create tables for now (in a real app, use Alembic)
-Base.metadata.create_all(bind=engine)
+# Do NOT create tables automatically in production, use Alembic via ECS task instead.
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.PROJECT_NAME, root_path="/study")
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
@@ -60,7 +60,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[settings.VITE_API_URL] if hasattr(settings, 'VITE_API_URL') else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -77,10 +77,23 @@ app.include_router(health.router, prefix="/system/health", tags=["system"])
 
 @app.get("/health")
 def health_check():
-    return {
+    return {"status": "UP"}
+
+from sqlalchemy import text
+from app.core.database import get_db
+
+@app.get("/ready")
+def ready_check(db=Depends(get_db)):
+    ready = {
         "status": "UP",
-        "database": "UP",
         "service": "study-service",
         "version": "1.0.0",
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
     }
+    try:
+        db.execute(text("SELECT 1"))
+        ready["database"] = "UP"
+    except Exception as e:
+        ready["database"] = "DOWN"
+        ready["status"] = "DOWN"
+    return ready
