@@ -85,3 +85,22 @@ test_res.pdf
 generate_pdf.py
 real_dummy.pdf
 verify_summaries.py
+
+# Local deploy scripts
+push_*.ps1
+network-config.json
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc

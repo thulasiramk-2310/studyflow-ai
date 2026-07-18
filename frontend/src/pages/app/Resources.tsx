@@ -8,6 +8,7 @@ import type { Resource } from "../../services/resource.service";
 import { groupService } from "../../services/group.service";
 import type { Group } from "../../services/group.service";
 import { DragDropUploader } from "../../components/resources/DragDropUploader";
+import { useAuth } from "../../hooks/useAuth";
 
 const TYPE_FILTERS = ["All", "PDF", "PPT", "DOCX", "MD"] as const;
 type TypeFilter = (typeof TYPE_FILTERS)[number];
@@ -16,6 +17,7 @@ type TypeFilter = (typeof TYPE_FILTERS)[number];
 type EnrichedResource = Resource & { groupName: string; userRole: string };
 
 export function Resources() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<Group[]>([]);
   const [resources, setResources] = useState<EnrichedResource[]>([]);
@@ -30,11 +32,7 @@ export function Resources() {
       setGroups(groupsData);
 
       let allResources: EnrichedResource[] = [];
-      const token = localStorage.getItem("sf_token");
-      let currentUserId = -1;
-      if (token) {
-        try { currentUserId = JSON.parse(atob(token.split('.')[1])).userId; } catch(e) {}
-      }
+      let currentUserId = user ? parseInt(user.id, 10) : -1;
 
       for (const group of groupsData) {
         try {

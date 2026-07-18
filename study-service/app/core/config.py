@@ -6,8 +6,16 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # Database
-    DATABASE_URL: Optional[str] = None
+    DB_HOST: str = "localhost"
+    DB_PORT: str = "5432"
+    DB_USER: str = "studyflow"
+    DB_PASSWORD: str = "studyflow"
+    DB_NAME: str = os.getenv("DB_NAME", "studyflow")
     
+    @property
+    def DATABASE_URL(self) -> str:
+        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
     # JWT
     JWT_SECRET: Optional[str] = None
     JWT_ALGORITHM: str = "HS512"

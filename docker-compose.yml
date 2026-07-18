@@ -6,15 +6,15 @@ services:
     image: postgres:15-alpine
     container_name: studyflow_postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-studyflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-studyflow}
-      POSTGRES_DB: ${POSTGRES_DB:-studyflow_db}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U studyflow -d studyflow_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,9 +29,9 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=studyflow_db
-      - DB_USER=studyflow
-      - DB_PASSWORD=studyflow
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres:
@@ -45,7 +45,7 @@ services:
     ports:
       - "${STUDY_SERVICE_PORT:-8081}:8000"
     environment:
-      - DATABASE_URL=postgresql://studyflow:studyflow@postgres:5432/studyflow_db
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./study-service/alembic:/app/alembic
@@ -62,7 +62,7 @@ services:
     ports:
       - "8002:8002"
     environment:
-      - DATABASE_URL=postgresql://studyflow:studyflow@postgres:5432/studyflow_db
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - STUDY_SERVICE_URL=http://study-service:8000
       - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3:8b}

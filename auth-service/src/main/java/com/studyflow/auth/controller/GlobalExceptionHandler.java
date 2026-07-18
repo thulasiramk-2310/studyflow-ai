@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
         log.error("Runtime exception", ex);
-        return ResponseEntity.badRequest().body(ApiResponse.error("BAD_REQUEST", ex.getMessage()));
+        return ResponseEntity.badRequest().body(ApiResponse.error("BAD_REQUEST", "An unexpected error occurred"));
     }
 
     @ExceptionHandler(Exception.class)

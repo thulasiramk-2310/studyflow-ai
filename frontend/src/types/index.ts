@@ -10,7 +10,6 @@ export interface User {
 
 export interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
 }
 
@@ -24,9 +23,7 @@ export interface LoginRequest {
 
 /** POST /auth/login  – response body */
 export interface LoginResponse {
-  token: string;
-  /** Some Spring Boot starters also return the user inline; optional here */
-  user?: User;
+  user: User;
 }
 
 /** POST /auth/register  – request body */
@@ -38,8 +35,7 @@ export interface RegisterRequest {
 
 /** POST /auth/register  – response body (same shape as login) */
 export interface RegisterResponse {
-  token: string;
-  user?: User;
+  user: User;
 }
 
 /** GET /auth/me  – response body */

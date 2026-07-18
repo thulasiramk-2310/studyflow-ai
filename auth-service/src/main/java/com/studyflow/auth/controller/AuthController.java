@@ -17,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.Map;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 
 @RestController
 @RequestMapping("/auth")
@@ -38,6 +40,10 @@ public class AuthController {
                 .orElse(null);
 
         if (user == null || !passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            if (user == null) {
+                // dummy match to prevent timing attacks
+                passwordEncoder.matches(loginRequest.getPassword(), "$2a$10$dummyhashdummyhashdummyhashdummyhashdummyhashdum");
+            }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("UNAUTHORIZED", "Invalid email or password"));
         }
@@ -48,14 +54,38 @@ public class AuthController {
         String jwt = tokenProvider.generateToken(authentication, user);
         UserDto userDto = new UserDto(user.getId().toString(), user.getName(), user.getEmail(), "https://i.pravatar.cc/150?u=" + user.getEmail());
 
-        return ResponseEntity.ok(ApiResponse.success(new AuthResponse(jwt, userDto)));
+        ResponseCookie jwtCookie = ResponseCookie.from("jwt", jwt)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .body(ApiResponse.success(new AuthResponse(userDto)));
     }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest registerRequest) {
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("EMAIL_TAKEN", "Email is already taken!"));
+            // Dummy hash to prevent timing attacks
+            passwordEncoder.matches(registerRequest.getPassword(), "$2a$10$dummyhashdummyhashdummyhashdummyhashdummyhashdum");
+            // Return dummy response with parity
+            UserDto dummyDto = new UserDto("00000000-0000-0000-0000-000000000000", registerRequest.getName(), registerRequest.getEmail(), "https://i.pravatar.cc/150?u=" + registerRequest.getEmail());
+            
+            ResponseCookie dummyCookie = ResponseCookie.from("jwt", "dummy_token")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+                
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, dummyCookie.toString())
+                    .body(ApiResponse.success(new AuthResponse(dummyDto)));
         }
 
         User user = new User(
@@ -71,7 +101,17 @@ public class AuthController {
         
         UserDto userDto = new UserDto(user.getId().toString(), user.getName(), user.getEmail(), "https://i.pravatar.cc/150?u=" + user.getEmail());
 
-        return ResponseEntity.ok(ApiResponse.success(new AuthResponse(jwt, userDto)));
+        ResponseCookie jwtCookie = ResponseCookie.from("jwt", jwt)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .body(ApiResponse.success(new AuthResponse(userDto)));
     }
 
     @GetMapping("/me")
@@ -91,5 +131,20 @@ public class AuthController {
 
         UserDto userDto = new UserDto(user.getId().toString(), user.getName(), user.getEmail(), "https://i.pravatar.cc/150?u=" + user.getEmail());
         return ResponseEntity.ok(ApiResponse.success(userDto));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout() {
+        ResponseCookie clearCookie = ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
+                .body(ApiResponse.success("Logged out successfully"));
     }
 }

@@ -1,12 +1,14 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Request, HTTPException, status
 import jwt
 from app.core.config import settings
 
-security = HTTPBearer()
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
+def get_current_user(request: Request):
+    token = request.cookies.get("jwt")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS512"])
         user_id: int = payload.get("userId")

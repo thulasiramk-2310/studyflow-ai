@@ -13,10 +13,7 @@ export interface Resource {
 
 class ResourceService {
   private getHeaders() {
-    const token = localStorage.getItem("sf_token");
-    return {
-      Authorization: `Bearer ${token}`,
-    };
+    return {};
   }
 
   async uploadResource(groupId: number, file: File): Promise<Resource> {
@@ -27,6 +24,7 @@ class ResourceService {
     const res = await fetch("/api/v1/resources/upload", {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: formData,
     });
     
@@ -41,7 +39,8 @@ class ResourceService {
   async getResources(groupId: number): Promise<Resource[]> {
     const res = await fetch(`/api/v1/resources/?group_id=${groupId}`, {
       method: "GET",
-      headers: { ...this.getHeaders(), "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
     });
     
     const json = await res.json();
@@ -56,6 +55,7 @@ class ResourceService {
     const res = await fetch(`/api/v1/resources/${resourceId}`, {
       method: "DELETE",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     
     const json = await res.json();
@@ -68,6 +68,7 @@ class ResourceService {
     const res = await fetch(`/api/v1/resources/download/${resourceId}`, {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Failed to download resource");
     

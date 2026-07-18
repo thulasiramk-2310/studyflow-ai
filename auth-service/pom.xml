@@ -36,6 +36,11 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+
         <!-- JWT dependencies for later use -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

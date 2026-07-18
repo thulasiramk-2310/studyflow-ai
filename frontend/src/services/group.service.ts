@@ -38,10 +38,8 @@ export interface Group {
 
 class GroupService {
   private getHeaders() {
-    const token = localStorage.getItem("sf_token");
     return {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     };
   }
 
@@ -49,6 +47,7 @@ class GroupService {
     const res = await fetch("/api/v1/groups/", {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     
     const json = await res.json();
@@ -63,6 +62,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}/sessions?upcoming=true&limit=3`, {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     
     const json = await res.json();
@@ -77,6 +77,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}`, {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     
     const json = await res.json();
@@ -91,6 +92,7 @@ class GroupService {
     const res = await fetch("/api/v1/groups/", {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify({ name, description, goal }),
     });
     
@@ -106,6 +108,7 @@ class GroupService {
     const res = await fetch("/api/v1/groups/join", {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify({ inviteCode }),
     });
     
@@ -121,6 +124,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}/schedule-agent`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify({ target_duration_minutes: targetDurationMinutes })
     });
     
@@ -137,6 +141,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}/leave`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     
     const json = await res.json();
@@ -149,6 +154,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}/members/${userId}`, {
       method: "DELETE",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     
     const json = await res.json();
@@ -162,6 +168,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}/roadmap`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify(data),
     });
     
@@ -176,6 +183,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}/roadmap/${itemId}`, {
       method: "PUT",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify(data),
     });
     
@@ -190,6 +198,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}/roadmap/${itemId}`, {
       method: "DELETE",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     
     const json = await res.json();
@@ -202,6 +211,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}/roadmap/reorder`, {
       method: "PUT",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify(items),
     });
     
@@ -215,6 +225,7 @@ class GroupService {
     const res = await fetch(`/api/v1/groups/${groupId}/invite-code`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     
     const json = await res.json();

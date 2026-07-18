@@ -13,7 +13,15 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "qwen3:8b"
 
     # Database
-    DATABASE_URL: str
+    DB_HOST: str = "localhost"
+    DB_PORT: str = "5432"
+    DB_USER: str = "studyflow"
+    DB_PASSWORD: str = "studyflow"
+    DB_NAME: str = os.getenv("DB_NAME", "studyflow")
+    
+    @property
+    def DATABASE_URL(self) -> str:
+        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     # Internal service-to-service authentication key
     INTERNAL_API_KEY: str = "dev_internal_key_change_me"

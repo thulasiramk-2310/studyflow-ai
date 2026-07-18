@@ -3,8 +3,8 @@
  * ─────────────────────────────────────────────────────────────────────────
  * Thin fetch wrapper that:
  *  - Points every request at the Spring Boot base URL
- *  - Reads the JWT from localStorage and attaches it as
- *    "Authorization: Bearer <token>" on every request automatically
+ *  - Uses credentials: "include" to automatically attach
+ *    HttpOnly session cookies on every request
  *  - Parses JSON responses and throws a structured ApiError on non-2xx
  *  - Exposes get / post helpers used by the rest of the service layer
  */
@@ -18,8 +18,6 @@
  *                at the real server, e.g. https://api.studyflow.ai
  */
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
-const TOKEN_KEY = "sf_token";
-
 // ─── Internal helper ───────────────────────────────────────────────────────
 
 async function request<T>(
@@ -27,20 +25,15 @@ async function request<T>(
   path: string,
   body?: unknown
 ): Promise<T> {
-  const token = localStorage.getItem(TOKEN_KEY);
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers,
+    credentials: "include",
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 

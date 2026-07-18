@@ -149,10 +149,8 @@ export interface SessionUpdateParams {
 
 class SessionService {
   private getHeaders() {
-    const token = localStorage.getItem("sf_token");
     return {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     };
   }
 
@@ -160,6 +158,7 @@ class SessionService {
     const res = await fetch("/api/v1/sessions/", {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error?.message || "Failed to fetch sessions");
@@ -170,6 +169,7 @@ class SessionService {
     const res = await fetch(`/api/v1/groups/${groupId}/sessions`, {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error?.message || "Failed to fetch group sessions");
@@ -180,6 +180,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}`, {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error?.message || "Failed to fetch session");
@@ -190,6 +191,7 @@ class SessionService {
     const res = await fetch("/api/v1/sessions/", {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify(params),
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
@@ -201,6 +203,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}`, {
       method: "PUT",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify(params),
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
@@ -212,6 +215,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/join`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
     if (!json.success) throw new Error(json.error?.message || "Failed to join session");
@@ -222,6 +226,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/attendance`, {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error?.message || "Failed to fetch attendance");
@@ -232,6 +237,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/complete`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
     if (!json.success) throw new Error(json.error?.message || "Failed to complete session");
@@ -242,6 +248,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/status`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify({ status }),
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
@@ -253,6 +260,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/summary`, {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error?.message || "Failed to fetch session summary");
@@ -263,6 +271,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/summary/regenerate`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
     if (!json.success) throw new Error(json.error?.message || "Failed to regenerate session summary");
@@ -272,6 +281,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/quiz`, {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error?.message || "Failed to fetch session quiz");
@@ -282,6 +292,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/quiz/regenerate`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
     if (!json.success) throw new Error(json.error?.message || "Failed to regenerate session quiz");
@@ -291,6 +302,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/quiz/grade`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify({ answers }),
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
@@ -302,6 +314,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/flashcards`, {
       method: "GET",
       headers: this.getHeaders(),
+      credentials: "include",
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error?.message || "Failed to fetch flashcards");
@@ -312,6 +325,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/flashcards/generate`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify({ count }),
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
@@ -322,6 +336,7 @@ class SessionService {
     const res = await fetch(`/api/v1/sessions/${sessionId}/flashcards/regenerate`, {
       method: "POST",
       headers: this.getHeaders(),
+      credentials: "include",
       body: JSON.stringify({ count }),
     });
     const json = await res.json().catch(() => ({ success: false, error: { message: "Failed to parse response" } }));
