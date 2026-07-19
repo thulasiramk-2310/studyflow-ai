@@ -80,7 +80,19 @@ resource "aws_lb_target_group" "api_gateway" {
   }
 }
 
+# Adding count above turns this into an indexed resource; tell Terraform it's
+# the same rule (avoids a destroy/recreate of the working HTTP forward rule).
+moved {
+  from = aws_lb_listener_rule.api_gateway
+  to   = aws_lb_listener_rule.api_gateway[0]
+}
+
+# Only forward HTTP traffic to the gateway when there is no certificate.
+# With a cert present, the HTTP listener's default action redirects to HTTPS,
+# so this forward rule must not exist (otherwise it would intercept /* and
+# skip the redirect).
 resource "aws_lb_listener_rule" "api_gateway" {
+  count        = var.acm_certificate_arn == "" ? 1 : 0
   listener_arn = aws_lb_listener.http.arn
   priority     = 100
 
