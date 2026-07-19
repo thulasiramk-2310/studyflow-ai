@@ -16,10 +16,14 @@ def generate_quiz(group_id: int, resource_ids: list[int]) -> dict:
     query = "key concepts, definitions, important points, facts"
     query_embeddings = generate_embeddings([query])
     
+    # threshold=0.0: for generation we want the resource's content broadly
+    # (scoped by resource_ids), not relevance-filtered against a generic query
+    # like chat does. The default 0.2 threshold would drop all chunks here.
     top_results = search_index(
-        group_id=group_id, 
-        query_embedding=query_embeddings[0], 
-        top_k=20, 
+        group_id=group_id,
+        query_embedding=query_embeddings[0],
+        top_k=20,
+        threshold=0.0,
         resource_ids=resource_ids
     )
     
@@ -51,7 +55,7 @@ def generate_quiz(group_id: int, resource_ids: list[int]) -> dict:
             if "questions" not in parsed:
                 raise ValueError("Missing 'questions' array in JSON")
                 
-            parsed["model"] = settings.OLLAMA_MODEL
+            parsed["model"] = settings.GROQ_MODEL
             return parsed
             
         except json.JSONDecodeError as e:

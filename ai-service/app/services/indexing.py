@@ -17,7 +17,9 @@ def update_resource_status(resource_id: int, status: str):
     Call study-service to update the resource status.
     """
     try:
-        url = f"{settings.STUDY_SERVICE_URL}/resources/{resource_id}/status"
+        # study-service serves routes at root (the /api/v1 prefix is added by the
+        # API gateway for external clients only); internal calls go direct.
+        url = f"{settings.STUDY_SERVICE_URL}/resources/{resource_id}/internal-status"
         response = requests.put(url, json={"status": status}, headers={"X-Internal-Key": settings.INTERNAL_API_KEY})
         response.raise_for_status()
         logger.info(f"Updated resource {resource_id} status to {status}")

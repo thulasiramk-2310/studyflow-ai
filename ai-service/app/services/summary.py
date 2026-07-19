@@ -20,10 +20,14 @@ def generate_summary(group_id: int, resource_ids: list[int]) -> dict:
     
     # We fetch top 15 chunks, which should be enough for a session summary
     # without blowing up the context window.
+    # threshold=0.0: retrieve the resource's content broadly (scoped by resource_ids)
+    # rather than relevance-filtering against a generic query; the default 0.2
+    # threshold would drop all chunks here.
     top_results = search_index(
-        group_id=group_id, 
-        query_embedding=query_embeddings[0], 
-        top_k=15, 
+        group_id=group_id,
+        query_embedding=query_embeddings[0],
+        top_k=15,
+        threshold=0.0,
         resource_ids=resource_ids
     )
     
@@ -60,7 +64,7 @@ def generate_summary(group_id: int, resource_ids: list[int]) -> dict:
             if "executive_summary" not in parsed:
                 raise ValueError("Missing executive_summary in JSON")
                 
-            parsed["model"] = settings.OLLAMA_MODEL
+            parsed["model"] = settings.GROQ_MODEL
             return parsed
             
         except json.JSONDecodeError as e:

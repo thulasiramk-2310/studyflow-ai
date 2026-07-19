@@ -16,11 +16,15 @@ def generate_flashcards(group_id: int, resource_ids: list[int], count: int = 15)
     query = "key concepts, definitions, important points, facts, terminology"
     query_embeddings = generate_embeddings([query])
     
-    # We ask for a bit more chunks than quiz to ensure enough content for ~15-30 flashcards
+    # We ask for a bit more chunks than quiz to ensure enough content for ~15-30 flashcards.
+    # threshold=0.0: retrieve the resource's content broadly (scoped by resource_ids)
+    # rather than relevance-filtering against a generic query; the default 0.2
+    # threshold would drop all chunks here.
     top_results = search_index(
-        group_id=group_id, 
-        query_embedding=query_embeddings[0], 
-        top_k=30, 
+        group_id=group_id,
+        query_embedding=query_embeddings[0],
+        top_k=30,
+        threshold=0.0,
         resource_ids=resource_ids
     )
     
@@ -52,7 +56,7 @@ def generate_flashcards(group_id: int, resource_ids: list[int], count: int = 15)
             if "flashcards" not in parsed:
                 raise ValueError("Missing 'flashcards' array in JSON")
                 
-            parsed["model"] = settings.OLLAMA_MODEL
+            parsed["model"] = settings.GROQ_MODEL
             return parsed
             
         except json.JSONDecodeError as e:
