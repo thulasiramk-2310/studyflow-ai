@@ -12,7 +12,7 @@ export function Quiz() {
   const [session, setSession] = useState<Session | null>(null);
   const [quizData, setQuizData] = useState<QuizResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [answers, setAnswers] = useState<Record<number, number | string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [gradeResult, setGradeResult] = useState<QuizGradeResponse | null>(null);
   const [isGrading, setIsGrading] = useState(false);
@@ -116,28 +116,47 @@ export function Quiz() {
             <div className="text-[15px] font-bold leading-snug">{q.question}</div>
 
             <div className="flex flex-col gap-2 mt-4">
-              {q.options.map((opt, oi) => {
-                const isSel = answers[qi] === oi;
-                const isCorrect = oi === q.correct;
-                let border = "border-border", bg = "bg-surface", textColor = "text-foreground", dotBg = "bg-border-soft", dotText = "text-muted-foreground";
-
-                if (submitted) {
-                  if (isCorrect) { border = "border-emerald-300"; bg = "bg-emerald-50"; textColor = "text-emerald-800"; dotBg = "bg-emerald-500"; dotText = "text-white"; }
-                  else if (isSel) { border = "border-red-300"; bg = "bg-red-50"; textColor = "text-red-800"; dotBg = "bg-red-500"; dotText = "text-white"; }
-                } else if (isSel) {
-                  border = "border-primary"; bg = "bg-primary-soft"; textColor = "text-primary"; dotBg = "bg-primary"; dotText = "text-white";
-                }
-
-                return (
-                  <button key={oi} onClick={() => pick(qi, oi)}
-                    className={`flex items-center gap-3 border rounded-xl px-4 py-3 text-left transition-all w-full ${border} ${bg} ${submitted ? "cursor-default" : "cursor-pointer hover:border-primary/40"}`}>
-                    <div className={`w-6 h-6 rounded-full ${dotBg} ${dotText} flex items-center justify-center text-[11px] font-bold shrink-0`}>
-                      {submitted && isCorrect ? "✓" : submitted && isSel && !isCorrect ? "✕" : LETTERS[oi]}
+              {q.question_type === "SHORT" || (!q.options || q.options.length === 0) ? (
+                <div className="mt-2">
+                  <textarea
+                    value={(answers[qi] as string) || ""}
+                    onChange={(e) => {
+                      if (!submitted) setAnswers(prev => ({ ...prev, [qi]: e.target.value }));
+                    }}
+                    disabled={submitted}
+                    placeholder="Type your answer here..."
+                    className={`w-full bg-surface border rounded-xl px-4 py-3 text-[14px] min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${submitted ? "cursor-default opacity-80" : "border-border hover:border-primary/40"} ${submitted && gradeResult ? (gradeResult.results[q.n - 1] ? "border-emerald-300" : "border-red-300") : ""}`}
+                  />
+                  {submitted && gradeResult && !gradeResult.results[q.n - 1] && q.correct_answer && (
+                    <div className="mt-3 text-[13px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                      <span className="font-bold">Correct Answer:</span> {q.correct_answer}
                     </div>
-                    <span className={`text-[13.5px] font-medium ${textColor}`}>{opt}</span>
-                  </button>
-                );
-              })}
+                  )}
+                </div>
+              ) : (
+                q.options.map((opt, oi) => {
+                  const isSel = answers[qi] === oi;
+                  const isCorrect = oi === q.correct;
+                  let border = "border-border", bg = "bg-surface", textColor = "text-foreground", dotBg = "bg-border-soft", dotText = "text-muted-foreground";
+
+                  if (submitted) {
+                    if (isCorrect) { border = "border-emerald-300"; bg = "bg-emerald-50"; textColor = "text-emerald-800"; dotBg = "bg-emerald-500"; dotText = "text-white"; }
+                    else if (isSel) { border = "border-red-300"; bg = "bg-red-50"; textColor = "text-red-800"; dotBg = "bg-red-500"; dotText = "text-white"; }
+                  } else if (isSel) {
+                    border = "border-primary"; bg = "bg-primary-soft"; textColor = "text-primary"; dotBg = "bg-primary"; dotText = "text-white";
+                  }
+
+                  return (
+                    <button key={oi} onClick={() => pick(qi, oi)}
+                      className={`flex items-center gap-3 border rounded-xl px-4 py-3 text-left transition-all w-full ${border} ${bg} ${submitted ? "cursor-default" : "cursor-pointer hover:border-primary/40"}`}>
+                      <div className={`w-6 h-6 rounded-full ${dotBg} ${dotText} flex items-center justify-center text-[11px] font-bold shrink-0`}>
+                        {submitted && isCorrect ? "✓" : submitted && isSel && !isCorrect ? "✕" : LETTERS[oi]}
+                      </div>
+                      <span className={`text-[13.5px] font-medium ${textColor}`}>{opt}</span>
+                    </button>
+                  );
+                })
+              )}
             </div>
 
             {submitted && gradeResult && (
@@ -157,9 +176,13 @@ export function Quiz() {
         <button onClick={async () => {
             setIsGrading(true);
             try {
-              // Convert answers map { questionIndex: selectedOptionIndex } to string array for backend
-              // E.g., answers: { 0: 1 } -> string["Option B"]
-              const formattedAnswers = questions.map((q, i) => answers[i] !== undefined ? q.options[answers[i]] : "");
+              // Convert answers map { questionIndex: selectedOptionIndex | string } to string array for backend
+              const formattedAnswers = questions.map((q, i) => {
+                const ans = answers[i];
+                if (ans === undefined) return "";
+                if (typeof ans === "string") return ans;
+                return q.options[ans] || "";
+              });
               
               const res = await sessionService.gradeQuiz(Number(sessionId), formattedAnswers);
               setGradeResult(res);

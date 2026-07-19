@@ -154,24 +154,25 @@ export function GroupWorkspace() {
     }
   };
 
-  const handleCreateSession = async () => {
-    if (!groupId || !aiProposal) return;
+  const handleCreateSession = async (editedProposal?: any, scheduledAt?: string) => {
+    const finalProposal = editedProposal || aiProposal;
+    if (!groupId || !finalProposal) return;
     try {
       setIsCreatingSession(true);
       toast.loading("Creating session...", { id: "create-session" });
       
       const newSession = await sessionService.createSession({
         group_id: Number(groupId),
-        title: aiProposal.title,
-        description: aiProposal.description,
-        agenda: aiProposal.agenda,
-        objectives: aiProposal.objectives,
-        expected_outcome: aiProposal.expected_outcome,
-        session_type: aiProposal.session_type,
-        learning_path_item_id: aiProposal.learning_path_item_id,
-        duration_minutes: aiProposal.duration_minutes,
-        scheduled_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Schedule for tomorrow by default
-        resource_ids: [], // User can add later, or use AI recommendation if available
+        title: finalProposal.title,
+        description: finalProposal.description,
+        agenda: finalProposal.agenda,
+        objectives: finalProposal.objectives,
+        expected_outcome: finalProposal.expected_outcome,
+        session_type: finalProposal.session_type,
+        learning_path_item_id: finalProposal.learning_path_item_id,
+        duration_minutes: finalProposal.duration_minutes,
+        scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        resource_ids: resources.map(r => r.id), // Attach all group resources so AI can generate content
         generated_by: "AI"
       });
       
@@ -471,7 +472,7 @@ export function GroupWorkspace() {
               <StudyRoadmap 
                 groupId={group.id} 
                 items={group.learning_plan || []} 
-                canManage={canManageGroup} 
+                canManage={true} 
                 onUpdate={loadData} 
                 progressPercent={(group as any).progress_percent || 0}
                 completedCount={(group as any).completed_items_count || 0}
