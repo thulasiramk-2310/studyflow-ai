@@ -133,7 +133,7 @@ resource "aws_ecs_task_definition" "auth" {
       { name = "DB_PORT", value = "5432" },
       { name = "DB_NAME", value = "studyflow" },
       { name = "DB_USER", value = "postgres" },
-      { name = "CORS_ALLOWED_ORIGINS", value = "http://${var.alb_dns_name},http://localhost:5173" }
+      { name = "CORS_ALLOWED_ORIGINS", value = "https://${var.frontend_domain},http://localhost:5173" }
     ]
     secrets = [
       {

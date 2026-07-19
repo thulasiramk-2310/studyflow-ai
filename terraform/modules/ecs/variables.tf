@@ -86,3 +86,9 @@ variable "alb_dns_name" {
   description = "The DNS name of the ALB"
   type        = string
 }
+
+variable "frontend_domain" {
+  description = "CloudFront domain serving the frontend (added to CORS allowed origins)"
+  type        = string
+  default     = ""
+}

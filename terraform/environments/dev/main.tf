@@ -126,6 +126,7 @@ module "ecs" {
   ecs_task_role_arn            = module.iam.ecs_task_role_arn
   api_gateway_target_group_arn = module.alb.api_gateway_target_group_arn
   alb_dns_name                 = module.alb.alb_dns_name
+  frontend_domain              = module.frontend.cloudfront_domain_name
   repository_urls              = module.ecr.repository_urls
   db_host                      = module.rds.db_instance_address
   s3_bucket_name               = module.s3.bucket_id

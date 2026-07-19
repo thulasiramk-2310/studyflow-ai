@@ -27,7 +27,7 @@ resource "aws_ecs_task_definition" "study" {
       { name = "STORAGE_BACKEND", value = "s3" },
       { name = "AWS_S3_BUCKET", value = var.s3_bucket_name },
       { name = "AWS_DEFAULT_REGION", value = "ap-south-1" },
-      { name = "CORS_ALLOWED_ORIGINS", value = "http://${var.alb_dns_name},http://localhost:5173" }
+      { name = "CORS_ALLOWED_ORIGINS", value = "https://${var.frontend_domain},http://localhost:5173" }
     ]
     secrets = [
       {
