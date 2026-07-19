@@ -52,9 +52,10 @@ export function Quiz() {
 
   // Pre-process questions to find the correct index based on `correct_answer`
   const questions = quizData.questions.map((q, i) => {
-    const opts = q.options || ["True", "False"];
+    const isShort = q.question_type === "SHORT";
+    const opts = q.options || (isShort ? [] : ["True", "False"]);
     let correctIdx = opts.findIndex(o => o.trim().toLowerCase() === q.correct_answer?.trim().toLowerCase());
-    if (correctIdx === -1) {
+    if (correctIdx === -1 && opts.length > 0) {
       // Fallback logic if exact string matching fails
       correctIdx = opts.findIndex(o => q.correct_answer?.toLowerCase().includes(o.toLowerCase()) || o.toLowerCase().includes(q.correct_answer?.toLowerCase() || ''));
       if (correctIdx === -1) correctIdx = 0; // Default fallback to avoid crashes
@@ -62,8 +63,10 @@ export function Quiz() {
     return {
       n: i + 1,
       question: q.question,
+      question_type: q.question_type,
       options: opts,
       correct: correctIdx,
+      correct_answer: q.correct_answer,
       explanation: q.explanation
     };
   });
@@ -198,10 +201,20 @@ export function Quiz() {
           {isGrading ? "Grading..." : "Submit quiz"}
         </button>
       ) : (
-        <button onClick={() => { setAnswers({}); setSubmitted(false); setGradeResult(null); }}
-          className="mt-6 w-full bg-surface border border-border rounded-xl py-3 text-[14.5px] font-bold hover:bg-background transition-colors">
-          Retry quiz
-        </button>
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <Link 
+            to={`/sessions/${sessionId}`}
+            className="flex-1 bg-primary text-white text-center rounded-xl py-3 text-[14.5px] font-bold hover:bg-primary-hover transition-colors shadow-sm shadow-primary/20"
+          >
+            Return to Session
+          </Link>
+          <button 
+            onClick={() => { setAnswers({}); setSubmitted(false); setGradeResult(null); }}
+            className="flex-1 bg-surface border border-border rounded-xl py-3 text-[14.5px] font-bold hover:bg-background transition-colors"
+          >
+            Retry Quiz
+          </button>
+        </div>
       )}
     </div>
   );
