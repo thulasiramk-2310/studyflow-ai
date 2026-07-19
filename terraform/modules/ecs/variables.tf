@@ -45,15 +45,25 @@ variable "s3_bucket_name" {
 
 variable "ai_service_url" {
   type    = string
-  default = "http://ai.studyflow.internal:8000"
+  default = "http://ai.studyflow.internal:8002"
+}
+
+variable "auth_service_url" {
+  type    = string
+  default = "http://auth.studyflow.internal:8080"
+}
+
+variable "study_service_url" {
+  type    = string
+  default = "http://study.studyflow.internal:8000"
 }
 
 variable "db_credentials_secret_arn" {
   type = string
 }
 
-variable "ollama_base_url" {
-  description = "Base URL for Ollama AI model"
+variable "groq_api_key_secret_arn" {
+  description = "ARN for Groq API Key secret"
   type        = string
 }
 

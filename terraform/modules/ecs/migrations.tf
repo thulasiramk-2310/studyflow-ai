@@ -10,7 +10,7 @@ resource "aws_ecs_task_definition" "study_migration" {
   container_definitions = jsonencode([
     {
       name      = "study-migration"
-      image     = "${var.repository_urls["study-service"]}:v5"
+      image     = "${var.repository_urls["study-service"]}:latest"
       essential = true
       command   = ["alembic", "upgrade", "head"]
       
@@ -54,7 +54,7 @@ resource "aws_ecs_task_definition" "auth_migration" {
   container_definitions = jsonencode([
     {
       name      = "auth-migration"
-      image     = "${var.repository_urls["auth-service"]}:v2"
+      image     = "${var.repository_urls["auth-service"]}:latest"
       essential = true
       command   = ["java", "-jar", "app.jar", "--spring.flyway.enabled=true", "--spring.main.web-application-type=none"]
       
@@ -86,6 +86,59 @@ resource "aws_ecs_task_definition" "auth_migration" {
         logDriver = "awslogs"
         options = {
           "awslogs-group"         = "/ecs/${var.project_name}-auth-service-${var.environment}"
+          "awslogs-region"        = "ap-south-1"
+          "awslogs-stream-prefix" = "migration"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_ecs_task_definition" "ai_migration" {
+  family                   = "${var.project_name}-ai-migration-${var.environment}"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = var.ecs_task_execution_role_arn
+  task_role_arn            = var.ecs_task_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "ai-migration"
+      image     = "${var.repository_urls["ai-service"]}:latest"
+      essential = true
+      command   = ["alembic", "upgrade", "head"]
+      
+      environment = [
+        { name = "ENVIRONMENT", value = var.environment },
+        { name = "DB_HOST", value = split(":", var.db_host)[0] },
+        { name = "DB_PORT", value = "5432" },
+        { name = "DB_NAME", value = "studyflow" },
+        { name = "GROQ_MODEL", value = "llama-3.1-8b-instant" }
+      ]
+      secrets = [
+        {
+          name      = "GROQ_API_KEY"
+          valueFrom = var.groq_api_key_secret_arn
+        },
+        {
+          name      = "DB_USER"
+          valueFrom = "${var.db_credentials_secret_arn}:username::"
+        },
+        {
+          name      = "DB_PASSWORD"
+          valueFrom = "${var.db_credentials_secret_arn}:password::"
+        },
+        {
+          name      = "INTERNAL_API_KEY"
+          valueFrom = var.internal_api_key_secret_arn
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/${var.project_name}-ai-service-${var.environment}"
           "awslogs-region"        = "ap-south-1"
           "awslogs-stream-prefix" = "migration"
         }

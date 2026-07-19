@@ -37,7 +37,8 @@ module "security" {
 module "iam" {
   source = "../../modules/iam"
 
-  environment = var.environment
+  environment    = var.environment
+  s3_bucket_name = module.s3.bucket_id
 }
 
 module "secrets" {
@@ -65,8 +66,7 @@ module "monitoring" {
   ecs_cluster_name      = module.ecs.cluster_name
   rds_identifier        = module.rds.db_instance_id
   alb_arn_suffix        = module.alb.alb_arn_suffix
-  ec2_instance_id       = module.ec2_ai.instance_id
-  enable_ec2_monitoring = true
+  enable_ec2_monitoring = false
   enable_alb_monitoring = true
 }
 
@@ -107,16 +107,7 @@ module "ecs" {
   db_credentials_secret_arn    = module.secrets.db_credentials_secret_arn
   jwt_secret_arn               = module.secrets.jwt_secret_arn
   internal_api_key_secret_arn  = module.secrets.internal_api_key_secret_arn
-  ollama_base_url              = "http://${module.ec2_ai.private_ip}:11434"
+  groq_api_key_secret_arn      = "arn:aws:secretsmanager:ap-south-1:809809510670:secret:studyflow-groq-api-key-dev-zy5K8R"
 }
 
-module "ec2_ai" {
-  source = "../../modules/ec2_ai"
 
-  project_name              = "studyflow"
-  environment               = var.environment
-  subnet_id                 = module.networking.private_ai_subnet_ids[0]
-  security_group_id         = module.security.ai_gpu_sg_id
-  iam_instance_profile_name = module.iam.ec2_ai_profile_name
-  instance_type             = "t3.micro"
-}

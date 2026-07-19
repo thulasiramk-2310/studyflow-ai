@@ -36,6 +36,7 @@ variable "alb_arn_suffix" {
 variable "ec2_instance_id" {
   description = "The ID of the EC2 AI instance"
   type        = string
+  default     = ""
 }
 
 variable "enable_ec2_monitoring" {

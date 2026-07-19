@@ -94,9 +94,7 @@ output "security_group_database_id" {
   value = module.security.database_sg_id
 }
 
-output "security_group_ai_gpu_id" {
-  value = module.security.ai_gpu_sg_id
-}
+
 
 output "ecs_execution_role_arn" {
   value = module.iam.ecs_execution_role_arn
@@ -106,13 +104,9 @@ output "ecs_task_role_arn" {
   value = module.iam.ecs_task_role_arn
 }
 
-output "ec2_ai_profile_name" {
-  value = module.iam.ec2_ai_profile_name
-}
 
-output "ec2_ai_role_arn" {
-  value = module.iam.ec2_ai_role_arn
-}
+
+
 
 output "db_credentials_secret_arn" {
   value = module.secrets.db_credentials_secret_arn
@@ -155,10 +149,4 @@ output "db_name" {
   value = module.rds.db_name
 }
 
-output "ec2_ai_instance_id" {
-  value = module.ec2_ai.instance_id
-}
 
-output "ec2_ai_private_ip" {
-  value = module.ec2_ai.private_ip
-}

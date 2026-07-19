@@ -12,6 +12,18 @@ resource "aws_s3_bucket_versioning" "data_bucket_versioning" {
   }
 }
 
+resource "aws_s3_bucket_cors_configuration" "data_bucket_cors" {
+  bucket = aws_s3_bucket.data_bucket.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "HEAD"]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "data_bucket_sse" {
   bucket = aws_s3_bucket.data_bucket.id
 

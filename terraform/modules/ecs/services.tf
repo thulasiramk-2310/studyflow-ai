@@ -10,7 +10,7 @@ resource "aws_ecs_task_definition" "study" {
 
   container_definitions = jsonencode([{
     name      = "study-service"
-    image     = "${var.repository_urls["study-service"]}:v6"
+    image     = "${var.repository_urls["study-service"]}:latest"
     essential = true
     portMappings = [{
       containerPort = 8000
@@ -23,8 +23,11 @@ resource "aws_ecs_task_definition" "study" {
       { name = "DB_NAME", value = "studyflow" },
       { name = "DB_USER", value = "postgres" },
       { name = "AI_SERVICE_URL", value = var.ai_service_url },
-      { name = "S3_BUCKET_NAME", value = var.s3_bucket_name },
-      { name = "AWS_DEFAULT_REGION", value = "ap-south-1" }
+      { name = "AUTH_SERVICE_URL", value = var.auth_service_url },
+      { name = "STORAGE_BACKEND", value = "s3" },
+      { name = "AWS_S3_BUCKET", value = var.s3_bucket_name },
+      { name = "AWS_DEFAULT_REGION", value = "ap-south-1" },
+      { name = "CORS_ALLOWED_ORIGINS", value = "http://${var.alb_dns_name},http://localhost:5173" }
     ]
     secrets = [
       {
@@ -64,7 +67,7 @@ resource "aws_ecs_task_definition" "ai" {
 
   container_definitions = jsonencode([{
     name      = "ai-service"
-    image     = "${var.repository_urls["ai-service"]}:v2"
+    image     = "${var.repository_urls["ai-service"]}:latest"
     essential = true
     portMappings = [{
       containerPort = 8002
@@ -72,13 +75,22 @@ resource "aws_ecs_task_definition" "ai" {
       protocol      = "tcp"
     }]
     environment = [
-      { name = "OLLAMA_BASE_URL", value = var.ollama_base_url },
+      { name = "GROQ_MODEL", value = "llama-3.1-8b-instant" },
       { name = "DB_HOST", value = var.db_host },
       { name = "DB_PORT", value = "5432" },
       { name = "DB_NAME", value = "studyflow" },
-      { name = "DB_USER", value = "postgres" }
+      { name = "DB_USER", value = "postgres" },
+      { name = "STORAGE_BACKEND", value = "s3" },
+      { name = "AWS_S3_BUCKET", value = var.s3_bucket_name },
+      { name = "AWS_DEFAULT_REGION", value = "ap-south-1" },
+      { name = "AWS_REGION", value = "ap-south-1" },
+      { name = "STUDY_SERVICE_URL", value = var.study_service_url }
     ]
     secrets = [
+      {
+        name      = "GROQ_API_KEY"
+        valueFrom = var.groq_api_key_secret_arn
+      },
       {
         name      = "DB_PASSWORD"
         valueFrom = "${var.db_credentials_secret_arn}:password::"

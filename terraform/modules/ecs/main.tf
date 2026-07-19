@@ -90,7 +90,7 @@ resource "aws_ecs_task_definition" "api_gateway" {
 
   container_definitions = jsonencode([{
     name      = "api-gateway"
-    image     = "${var.repository_urls["api-gateway"]}:v3"
+    image     = "${var.repository_urls["api-gateway"]}:latest"
     essential = true
     portMappings = [{
       containerPort = 8000
@@ -121,7 +121,7 @@ resource "aws_ecs_task_definition" "auth" {
 
   container_definitions = jsonencode([{
     name      = "auth-service"
-    image     = "${var.repository_urls["auth-service"]}:v2"
+    image     = "${var.repository_urls["auth-service"]}:latest"
     essential = true
     portMappings = [{
       containerPort = 8080
