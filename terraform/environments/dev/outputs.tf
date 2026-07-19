@@ -150,3 +150,23 @@ output "db_name" {
 }
 
 
+
+output "app_url" {
+  description = "The app URL (frontend + API, one origin over HTTPS)"
+  value       = "https://${module.frontend.cloudfront_domain_name}"
+}
+
+output "frontend_bucket" {
+  description = "S3 bucket to sync the built frontend into"
+  value       = module.frontend.bucket_id
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID (for cache invalidations)"
+  value       = module.frontend.distribution_id
+}
+
+output "cloudfront_domain_name" {
+  description = "CloudFront domain (e.g. dxxxx.cloudfront.net)"
+  value       = module.frontend.cloudfront_domain_name
+}

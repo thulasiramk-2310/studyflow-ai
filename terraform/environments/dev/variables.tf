@@ -33,3 +33,8 @@ variable "availability_zones" {
 variable "single_nat_gateway" {
   default = true
 }
+
+variable "domain_name" {
+  description = "Root domain registered at the registrar (e.g. example.com)"
+  type        = string
+}

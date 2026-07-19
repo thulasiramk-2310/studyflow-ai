@@ -10,6 +10,21 @@ provider "aws" {
   }
 }
 
+# CloudFront requires its ACM certificate in us-east-1, regardless of where the
+# rest of the stack lives (ap-south-1).
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project     = "StudyFlowAI"
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    }
+  }
+}
+
 module "networking" {
   source = "../../modules/networking"
 
@@ -78,6 +93,16 @@ module "rds" {
   security_group_ids = [module.security.database_sg_id]
   db_username        = module.secrets.db_username
   db_password        = module.secrets.db_password
+}
+
+# Frontend on CloudFront (S3 origin) with /api + /auth routed to the ALB, so
+# everything is served from one origin over HTTPS — no custom domain needed.
+# A custom domain can be added later via the aliases/acm_certificate_arn inputs.
+module "frontend" {
+  source = "../../modules/frontend"
+
+  environment  = var.environment
+  alb_dns_name = module.alb.alb_dns_name
 }
 
 module "alb" {
