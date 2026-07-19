@@ -415,8 +415,8 @@ def add_learning_plan_item(
 ):
     user_id = current_user.get("userId")
     member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
-    if not member or member.role != GroupRole.ORGANIZER:
-        raise HTTPException(status_code=403, detail="Only organizers can add learning plan items")
+    if not member:
+        raise HTTPException(status_code=403, detail="Must be a member to add learning plan items")
         
     item = group_repo.add_learning_plan_item(db=db, group_id=group_id, item_in=item_in, user_id=user_id)
     return {"success": True, "data": item}
@@ -430,8 +430,8 @@ def reorder_learning_plan_items(
 ):
     user_id = current_user.get("userId")
     member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
-    if not member or member.role != GroupRole.ORGANIZER:
-        raise HTTPException(status_code=403, detail="Only organizers can reorder learning plan items")
+    if not member:
+        raise HTTPException(status_code=403, detail="Must be a member to reorder learning plan items")
         
     group_repo.reorder_learning_plan_items(db=db, group_id=group_id, items_in=items_in)
     return {"success": True, "data": {"message": "Items reordered successfully"}}
@@ -446,8 +446,8 @@ def update_learning_plan_item(
 ):
     user_id = current_user.get("userId")
     member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
-    if not member or member.role != GroupRole.ORGANIZER:
-        raise HTTPException(status_code=403, detail="Only organizers can update learning plan items")
+    if not member:
+        raise HTTPException(status_code=403, detail="Must be a member to update learning plan items")
         
     db_item = group_repo.get_learning_plan_item(db=db, item_id=item_id)
     if not db_item or db_item.group_id != group_id:
@@ -465,8 +465,8 @@ def delete_learning_plan_item(
 ):
     user_id = current_user.get("userId")
     member = group_repo.get_member(db=db, group_id=group_id, user_id=user_id)
-    if not member or member.role != GroupRole.ORGANIZER:
-        raise HTTPException(status_code=403, detail="Only organizers can delete learning plan items")
+    if not member:
+        raise HTTPException(status_code=403, detail="Must be a member to delete learning plan items")
         
     db_item = group_repo.get_learning_plan_item(db=db, item_id=item_id)
     if not db_item or db_item.group_id != group_id:
