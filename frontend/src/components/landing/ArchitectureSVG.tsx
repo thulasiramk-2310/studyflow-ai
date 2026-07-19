@@ -15,14 +15,14 @@ export function ArchitectureSVG() {
   const Node = ({ icon: Icon, title, subtitle, className = "" }: any) => (
     <motion.div
       variants={itemVariants}
-      className={`relative z-10 flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm w-64 ${className}`}
+      className={`relative z-10 flex items-center gap-4 p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm w-64 ${className}`}
     >
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${className.includes('bg-') ? 'bg-white/50' : 'bg-gray-50'}`}>
-        <Icon className={`w-5 h-5 ${className.includes('text-') ? 'text-inherit' : 'text-gray-700'}`} />
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${className.includes('bg-') ? 'bg-white/50 dark:bg-white/10' : 'bg-gray-50 dark:bg-gray-800'}`}>
+        <Icon className={`w-5 h-5 ${className.includes('text-') ? 'text-inherit' : 'text-gray-700 dark:text-gray-300'}`} />
       </div>
       <div>
-        <h3 className="font-semibold text-gray-900 text-sm">{title}</h3>
-        {subtitle && <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">{subtitle}</p>}
+        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{title}</h3>
+        {subtitle && <p className="text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">{subtitle}</p>}
       </div>
     </motion.div>
   );
@@ -41,7 +41,7 @@ export function ArchitectureSVG() {
             {/* Main vertical pipeline */}
             <motion.path
               d="M 336 70 L 336 120 M 336 190 L 336 240 M 336 310 L 336 360 M 336 430 L 336 480 M 336 550 L 336 600"
-              stroke="#E5E7EB" strokeWidth="2" strokeDasharray="4 4" fill="none"
+              stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" fill="none"
               initial={{ pathLength: 0, opacity: 0 }}
               whileInView={{ pathLength: 1, opacity: 1 }}
               viewport={{ once: true }} transition={{ duration: 1.5, ease: "easeInOut" }}
@@ -79,7 +79,7 @@ export function ArchitectureSVG() {
         
         <Node icon={Server} title="API Gateway" subtitle="Nginx / Routing" className="border-gray-300 shadow-md" />
 
-        <Node icon={ShieldCheck} title="Study Service" subtitle="Spring Boot + PostgreSQL" className="border-blue-200 bg-blue-50/50 text-blue-700" />
+        <Node icon={ShieldCheck} title="Study Service" subtitle="FastAPI + PostgreSQL" className="border-blue-200 bg-blue-50/50 text-blue-700" />
         
         <Node icon={Cpu} title="AI Service" subtitle="FastAPI + Groq" className="border-purple-200 bg-purple-50/50 text-purple-700" />
 
