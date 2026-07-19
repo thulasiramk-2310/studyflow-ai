@@ -60,7 +60,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.VITE_API_URL] if hasattr(settings, 'VITE_API_URL') else ["*"],
+    allow_origins=settings.CORS_ALLOWED_ORIGINS.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

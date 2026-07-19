@@ -5,7 +5,7 @@ import logging
 import PyPDF2
 from typing import List
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks, Header
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -141,7 +141,7 @@ async def get_resources(
     # Fetch uploader names
     user_ids = list({r.uploaded_by for r in resources})
     users = await auth_client.get_users_batch(user_ids)
-    user_map = {u["id"]: u["name"] for u in users}
+    user_map = {int(u["id"]): u["name"] for u in users}
     
     # Hydrate resources with uploader name
     hydrated_resources = []
@@ -205,6 +205,28 @@ def download_resource(
             media_type=resource.mime_type
         )
 
+@router.get("/{resource_id}/download-url")
+def get_resource_download_url(
+    resource_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user.get("userId")
+    resource = resource_repo.get_resource_by_id(db=db, resource_id=resource_id)
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+        
+    member = group_repo.get_member(db=db, group_id=resource.group_id, user_id=user_id)
+    if not member:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+        
+    url = storage.get_download_url(resource.storage_path)
+    if not url.startswith("http"):
+        # For local dev, fallback to the direct download endpoint
+        url = f"/api/v1/resources/download/{resource_id}"
+        
+    return {"success": True, "data": {"url": url}}
+
 
 @router.delete("/{resource_id}")
 def delete_resource(
@@ -263,6 +285,31 @@ def update_resource_status(
     member = group_repo.get_member(db=db, group_id=resource.group_id, user_id=user_id)
     if not member:
         raise HTTPException(status_code=403, detail="Not a member of this group")
+        
+    valid_statuses = [s.value for s in ResourceStatus]
+    if request.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Invalid status")
+        
+    resource.status = request.status
+    db.commit()
+    db.refresh(resource)
+    return resource
+
+
+@router.put("/{resource_id}/internal-status", response_model=ResourceResponse)
+def internal_update_resource_status(
+    resource_id: int,
+    request: StatusUpdateRequest,
+    db: Session = Depends(get_db),
+    internal_key: str = Header(None, alias="X-Internal-Key")
+):
+    from app.core.config import settings
+    if internal_key != settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid internal key")
+        
+    resource = resource_repo.get_resource_by_id(db, resource_id)
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
         
     valid_statuses = [s.value for s in ResourceStatus]
     if request.status not in valid_statuses:

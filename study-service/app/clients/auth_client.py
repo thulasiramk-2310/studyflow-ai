@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional
 import os
 from app.core.config import settings
 
-AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth-service:8080")
+AUTH_SERVICE_URL = getattr(settings, "AUTH_SERVICE_URL", "http://auth-service:8080")
 
 def _internal_headers() -> dict:
     """Headers for internal service-to-service calls."""

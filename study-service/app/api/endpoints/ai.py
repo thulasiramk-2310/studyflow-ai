@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
-AI_SERVICE_URL = "http://ai-service:8002/api/v1/ai"
+AI_SERVICE_URL = f"{settings.AI_SERVICE_URL}/api/v1/ai"
 
 class ChatRequest(BaseModel):
     groupId: int
