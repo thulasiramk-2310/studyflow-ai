@@ -24,12 +24,17 @@ export default defineConfig({
   server: {
     proxy: {
       "/auth": {
-        target: "http://localhost:8000",
+        target: "http://studyflow-alb-dev-2122782669.ap-south-1.elb.amazonaws.com",
         changeOrigin: true,
         secure: false,
       },
       "/api": {
-        target: "http://localhost:8000",
+        target: "http://studyflow-alb-dev-2122782669.ap-south-1.elb.amazonaws.com",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/internal": {
+        target: "http://studyflow-alb-dev-2122782669.ap-south-1.elb.amazonaws.com",
         changeOrigin: true,
         secure: false,
       },

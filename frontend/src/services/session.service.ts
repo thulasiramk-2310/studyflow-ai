@@ -1,3 +1,5 @@
+import { BASE_URL } from "./api.client";
+
 export type SessionStatus = "DRAFT" | "SCHEDULED" | "LIVE" | "COMPLETED" | "CANCELLED";
 export type MeetingType = "NONE" | "GOOGLE_MEET" | "ZOOM" | "MICROSOFT_TEAMS" | "DISCORD" | "OTHER";
 export type AttendanceStatus = "PRESENT" | "ABSENT";
@@ -155,7 +157,7 @@ class SessionService {
   }
 
   async getSessions(): Promise<Session[]> {
-    const res = await fetch("/api/v1/sessions/", {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -166,7 +168,7 @@ class SessionService {
   }
 
   async getGroupSessions(groupId: number): Promise<Session[]> {
-    const res = await fetch(`/api/v1/groups/${groupId}/sessions`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/sessions`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -177,7 +179,7 @@ class SessionService {
   }
 
   async getSession(sessionId: number): Promise<Session> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -188,7 +190,7 @@ class SessionService {
   }
 
   async createSession(params: SessionCreateParams): Promise<Session> {
-    const res = await fetch("/api/v1/sessions/", {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -200,7 +202,7 @@ class SessionService {
   }
 
   async updateSession(sessionId: number, params: SessionUpdateParams): Promise<Session> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}`, {
       method: "PUT",
       headers: this.getHeaders(),
       credentials: "include",
@@ -212,7 +214,7 @@ class SessionService {
   }
 
   async joinSession(sessionId: number): Promise<{ meeting_url?: string; meeting_type?: MeetingType }> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/join`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/join`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -223,7 +225,7 @@ class SessionService {
   }
 
   async getSessionAttendance(sessionId: number): Promise<SessionAttendanceResponse[]> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/attendance`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/attendance`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -234,7 +236,7 @@ class SessionService {
   }
 
   async completeSession(sessionId: number): Promise<Session> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/complete`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/complete`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -245,7 +247,7 @@ class SessionService {
   }
 
   async updateSessionStatus(sessionId: number, status: "LIVE" | "COMPLETED" | "CANCELLED"): Promise<Session> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/status`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/status`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -257,7 +259,7 @@ class SessionService {
   }
 
   async getSessionSummary(sessionId: number): Promise<SessionSummary> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/summary`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/summary`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -268,7 +270,7 @@ class SessionService {
   }
 
   async regenerateSessionSummary(sessionId: number): Promise<void> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/summary/regenerate`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/summary/regenerate`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -278,7 +280,7 @@ class SessionService {
   }
 
   async getSessionQuiz(sessionId: number): Promise<QuizResponse> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/quiz`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/quiz`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -289,7 +291,7 @@ class SessionService {
   }
 
   async regenerateSessionQuiz(sessionId: number): Promise<void> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/quiz/regenerate`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/quiz/regenerate`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -299,7 +301,7 @@ class SessionService {
   }
 
   async gradeQuiz(sessionId: number, answers: string[]): Promise<QuizGradeResponse> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/quiz/grade`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/quiz/grade`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -311,7 +313,7 @@ class SessionService {
   }
 
   async getFlashcards(sessionId: number): Promise<FlashcardDeckResponse> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/flashcards`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/flashcards`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -322,7 +324,7 @@ class SessionService {
   }
 
   async generateFlashcards(sessionId: number, count: number = 15): Promise<void> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/flashcards/generate`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/flashcards/generate`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -333,7 +335,7 @@ class SessionService {
   }
 
   async regenerateFlashcards(sessionId: number, count: number = 15): Promise<void> {
-    const res = await fetch(`/api/v1/sessions/${sessionId}/flashcards/regenerate`, {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${sessionId}/flashcards/regenerate`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",

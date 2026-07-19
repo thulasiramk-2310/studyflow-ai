@@ -1,3 +1,5 @@
+import { BASE_URL } from "./api.client";
+
 export interface GroupMember {
   user_id: number;
   role: "ORGANIZER" | "MEMBER";
@@ -44,7 +46,7 @@ class GroupService {
   }
 
   async getGroups(): Promise<Group[]> {
-    const res = await fetch("/api/v1/groups/", {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -59,7 +61,7 @@ class GroupService {
   }
 
   async getUpcomingSessions(groupId: number): Promise<any[]> {
-    const res = await fetch(`/api/v1/groups/${groupId}/sessions?upcoming=true&limit=3`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/sessions?upcoming=true&limit=3`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -74,7 +76,7 @@ class GroupService {
   }
 
   async getGroup(groupId: number): Promise<Group> {
-    const res = await fetch(`/api/v1/groups/${groupId}`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
@@ -89,7 +91,7 @@ class GroupService {
   }
 
   async createGroup(name: string, description?: string, goal?: string): Promise<Group> {
-    const res = await fetch("/api/v1/groups/", {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -105,7 +107,7 @@ class GroupService {
   }
 
   async joinGroup(inviteCode: string): Promise<Group> {
-    const res = await fetch("/api/v1/groups/join", {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/join`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -121,7 +123,7 @@ class GroupService {
   }
 
   async generateStudyPlan(groupId: number, targetDurationMinutes: number = 60): Promise<any> {
-    const res = await fetch(`/api/v1/groups/${groupId}/schedule-agent`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/schedule-agent`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -138,7 +140,7 @@ class GroupService {
 
 
   async leaveGroup(groupId: number): Promise<void> {
-    const res = await fetch(`/api/v1/groups/${groupId}/leave`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/leave`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -151,7 +153,7 @@ class GroupService {
   }
 
   async removeMember(groupId: number, userId: number): Promise<void> {
-    const res = await fetch(`/api/v1/groups/${groupId}/members/${userId}`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/members/${userId}`, {
       method: "DELETE",
       headers: this.getHeaders(),
       credentials: "include",
@@ -165,7 +167,7 @@ class GroupService {
 
   // --- Learning Plan Endpoints ---
   async addLearningPlanItem(groupId: number, data: { title: string, description?: string, estimated_sessions?: number }): Promise<LearningPlanItem> {
-    const res = await fetch(`/api/v1/groups/${groupId}/roadmap`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/roadmap`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -180,7 +182,7 @@ class GroupService {
   }
 
   async updateLearningPlanItem(groupId: number, itemId: number, data: { title?: string, description?: string, status?: string, estimated_sessions?: number }): Promise<LearningPlanItem> {
-    const res = await fetch(`/api/v1/groups/${groupId}/roadmap/${itemId}`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/roadmap/${itemId}`, {
       method: "PUT",
       headers: this.getHeaders(),
       credentials: "include",
@@ -195,7 +197,7 @@ class GroupService {
   }
 
   async deleteLearningPlanItem(groupId: number, itemId: number): Promise<void> {
-    const res = await fetch(`/api/v1/groups/${groupId}/roadmap/${itemId}`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/roadmap/${itemId}`, {
       method: "DELETE",
       headers: this.getHeaders(),
       credentials: "include",
@@ -208,7 +210,7 @@ class GroupService {
   }
 
   async reorderLearningPlanItems(groupId: number, items: { id: number, order: number }[]): Promise<void> {
-    const res = await fetch(`/api/v1/groups/${groupId}/roadmap/reorder`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/roadmap/reorder`, {
       method: "PUT",
       headers: this.getHeaders(),
       credentials: "include",
@@ -222,7 +224,7 @@ class GroupService {
   }
 
   async regenerateInviteCode(groupId: number): Promise<string> {
-    const res = await fetch(`/api/v1/groups/${groupId}/invite-code`, {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}/invite-code`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",

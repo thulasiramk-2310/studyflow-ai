@@ -17,7 +17,7 @@
  * Production   → Set VITE_API_BASE_URL in your build environment to point
  *                at the real server, e.g. https://api.studyflow.ai
  */
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 // ─── Internal helper ───────────────────────────────────────────────────────
 
 async function request<T>(

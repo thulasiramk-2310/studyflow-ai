@@ -1,3 +1,5 @@
+import { BASE_URL } from "./api.client";
+
 export interface Resource {
   id: number;
   group_id: number;
@@ -21,7 +23,7 @@ class ResourceService {
     formData.append("file", file);
     formData.append("group_id", groupId.toString());
 
-    const res = await fetch("/api/v1/resources/upload", {
+    const res = await fetch(`${BASE_URL}/api/v1/resources/upload`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
@@ -37,7 +39,7 @@ class ResourceService {
   }
 
   async getResources(groupId: number): Promise<Resource[]> {
-    const res = await fetch(`/api/v1/resources/?group_id=${groupId}`, {
+    const res = await fetch(`${BASE_URL}/api/v1/resources/?group_id=${groupId}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -52,7 +54,7 @@ class ResourceService {
   }
 
   async deleteResource(resourceId: number): Promise<void> {
-    const res = await fetch(`/api/v1/resources/${resourceId}`, {
+    const res = await fetch(`${BASE_URL}/api/v1/resources/${resourceId}`, {
       method: "DELETE",
       headers: this.getHeaders(),
       credentials: "include",
@@ -65,21 +67,37 @@ class ResourceService {
   }
 
   async downloadResource(resourceId: number, filename: string): Promise<void> {
-    const res = await fetch(`/api/v1/resources/download/${resourceId}`, {
+    const res = await fetch(`${BASE_URL}/api/v1/resources/${resourceId}/download-url`, {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
     });
-    if (!res.ok) throw new Error("Failed to download resource");
+    if (!res.ok) throw new Error("Failed to fetch download URL");
+    const json = await res.json();
+    if (!json.success || !json.data?.url) throw new Error("Failed to get download URL");
     
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
+    const url = json.data.url;
+    
+    const fetchOpts: RequestInit = {
+      method: "GET"
+    };
+    if (url.startsWith("http") && !url.includes(window.location.hostname)) {
+      fetchOpts.credentials = "omit"; 
+    } else {
+      fetchOpts.credentials = "include"; 
+    }
+    
+    const downloadRes = await fetch(url, fetchOpts);
+    if (!downloadRes.ok) throw new Error("Failed to download resource");
+    
+    const blob = await downloadRes.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = blobUrl;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(blobUrl);
     document.body.removeChild(a);
   }
 
