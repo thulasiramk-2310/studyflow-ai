@@ -81,7 +81,7 @@ export function ArchitectureSVG() {
 
         <Node icon={ShieldCheck} title="Study Service" subtitle="Spring Boot + PostgreSQL" className="border-blue-200 bg-blue-50/50 text-blue-700" />
         
-        <Node icon={Cpu} title="AI Service" subtitle="FastAPI + Ollama" className="border-purple-200 bg-purple-50/50 text-purple-700" />
+        <Node icon={Cpu} title="AI Service" subtitle="FastAPI + Groq" className="border-purple-200 bg-purple-50/50 text-purple-700" />
 
         <Node icon={Database} title="FAISS Vector DB" subtitle="Similarity Retrieval" className="border-rose-200 bg-rose-50/50 text-rose-700" />
 
