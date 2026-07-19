@@ -8,3 +8,9 @@ variable "s3_bucket_name" {
   type        = string
   default     = ""
 }
+
+variable "github_repo" {
+  description = "GitHub repository for OIDC in the format owner/repo"
+  type        = string
+  default     = "thulasiramk-2310/studyflow-ai"
+}

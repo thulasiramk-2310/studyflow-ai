@@ -76,8 +76,8 @@ resource "aws_security_group" "service" {
 
   ingress {
     description     = "Study Service from Gateway"
-    from_port       = 8001
-    to_port         = 8001
+    from_port       = 8000
+    to_port         = 8000
     protocol        = "tcp"
     security_groups = [aws_security_group.gateway.id]
   }
@@ -138,29 +138,3 @@ resource "aws_security_group" "database" {
   }
 }
 
-# 5. AI GPU Instance Security Group (AI Service -> GPU EC2)
-resource "aws_security_group" "ai_gpu" {
-  name        = "studyflow-ai-gpu-sg-${var.environment}"
-  description = "Allow traffic from AI Service to Ollama EC2 instance"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    description     = "Ollama API from AI Service"
-    from_port       = 11434
-    to_port         = 11434
-    protocol        = "tcp"
-    security_groups = [aws_security_group.service.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "studyflow-ai-gpu-sg-${var.environment}"
-    Environment = var.environment
-  }
-}

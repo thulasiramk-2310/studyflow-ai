@@ -66,14 +66,18 @@ data "aws_iam_policy_document" "ecs_task_policy" {
     ]
   }
 
-  # Allow ECS Execution Role to create CloudWatch log groups
+  # Allow ECS Execution Role to create CloudWatch log groups and streams
   statement {
     effect = "Allow"
     actions = [
-      "logs:CreateLogGroup"
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogStreams"
     ]
     resources = [
-      "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/studyflow-*"
+      "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/studyflow-*",
+      "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/studyflow-*:*"
     ]
   }
 }
@@ -88,36 +92,3 @@ resource "aws_iam_role_policy_attachment" "ecs_task_role_policy_attachment" {
   policy_arn = aws_iam_policy.ecs_task_policy.arn
 }
 
-# 3. EC2 AI Role (Allows the GPU instance to connect via SSM and access S3 if needed)
-data "aws_iam_policy_document" "ec2_assume_role" {
-  statement {
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-    actions = ["sts:AssumeRole"]
-  }
-}
-
-resource "aws_iam_role" "ec2_ai_role" {
-  name               = "studyflow-ec2-ai-role-${var.environment}"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
-}
-
-# Attach SSM Core to allow session manager connections (no SSH keys needed)
-resource "aws_iam_role_policy_attachment" "ec2_ai_ssm_policy" {
-  role       = aws_iam_role.ec2_ai_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-# Attach the same S3/Secrets policy to the EC2 instance for simplicity
-resource "aws_iam_role_policy_attachment" "ec2_ai_custom_policy" {
-  role       = aws_iam_role.ec2_ai_role.name
-  policy_arn = aws_iam_policy.ecs_task_policy.arn
-}
-
-resource "aws_iam_instance_profile" "ec2_ai_profile" {
-  name = "studyflow-ec2-ai-profile-${var.environment}"
-  role = aws_iam_role.ec2_ai_role.name
-}

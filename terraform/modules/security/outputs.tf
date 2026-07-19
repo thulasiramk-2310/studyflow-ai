@@ -14,8 +14,4 @@ output "database_sg_id" {
   value = aws_security_group.database.id
 }
 
-output "ai_gpu_sg_id" {
-  value = aws_security_group.ai_gpu.id
-}
-
 
