@@ -1,0 +1,42 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api-gateway/**'
+      - 'auth-service/**'
+      - 'study-service/**'
+      - 'ai-service/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'api-gateway/**'
+      - 'auth-service/**'
+      - 'study-service/**'
+      - 'ai-service/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build API Gateway
+        run: docker build -t studyflow-api-gateway:test ./api-gateway
+
+      - name: Build Auth Service
+        run: docker build -t studyflow-auth-service:test ./auth-service
+
+      - name: Build Study Service
+        run: docker build -t studyflow-study-service:test ./study-service
+
+      - name: Build AI Service
+        run: docker build -t studyflow-ai-service:test ./ai-service
