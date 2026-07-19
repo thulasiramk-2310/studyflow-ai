@@ -34,6 +34,26 @@ resource "aws_cloudfront_origin_access_control" "site" {
   signing_protocol                  = "sigv4"
 }
 
+# SPA routing on the S3 behavior only: rewrite extensionless paths (app routes
+# like /dashboard) to /index.html. This replaces a distribution-wide custom
+# error response, which would otherwise rewrite the API's own 403/404 responses
+# into the HTML page and break the frontend.
+resource "aws_cloudfront_function" "spa_rewrite" {
+  name    = "${var.project_name}-spa-rewrite-${var.environment}"
+  runtime = "cloudfront-js-2.0"
+  comment = "Rewrite extensionless paths to /index.html for SPA routing"
+  publish = true
+  code    = <<-EOT
+    function handler(event) {
+      var request = event.request;
+      if (!request.uri.includes('.')) {
+        request.uri = '/index.html';
+      }
+      return request;
+    }
+  EOT
+}
+
 resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   default_root_object = "index.html"
@@ -70,6 +90,11 @@ resource "aws_cloudfront_distribution" "site" {
 
     # AWS managed CachingOptimized policy.
     cache_policy_id = data.aws_cloudfront_cache_policy.caching_optimized.id
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.spa_rewrite.arn
+    }
   }
 
   # Route /auth/* and /api/* to the ALB, uncached, forwarding cookies/headers.
@@ -95,21 +120,6 @@ resource "aws_cloudfront_distribution" "site" {
 
     cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer.id
-  }
-
-  # SPA routing: serve index.html for client-side routes instead of S3 404/403.
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
-  }
-
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
   }
 
   restrictions {
