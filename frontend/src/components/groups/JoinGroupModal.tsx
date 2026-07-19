@@ -32,25 +32,25 @@ export function JoinGroupModal({ isOpen, onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-[sfFadeIn_0.2s_ease-out]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">Join Study Group</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-[sfFadeIn_0.2s_ease-out]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Join Study Group</h2>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Invite Code</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Invite Code</label>
             <input
               type="text"
               required
               value={inviteCode}
               onChange={e => setInviteCode(e.target.value.toUpperCase())}
               placeholder="e.g. A7K9QP"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm uppercase"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm uppercase"
             />
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               Ask the group organizer for the 6-character invite code.
             </p>
           </div>
@@ -58,7 +58,7 @@ export function JoinGroupModal({ isOpen, onClose, onSuccess }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+              className="px-5 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
             >
               Cancel
             </button>

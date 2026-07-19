@@ -98,10 +98,10 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl animate-[sfFadeIn_0.2s_ease-out] my-auto">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-2xl shadow-xl animate-[sfFadeIn_0.2s_ease-out] my-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-soft sticky top-0 bg-white rounded-t-2xl z-10">
           <h2 className="text-lg font-bold">Schedule Study Session</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
