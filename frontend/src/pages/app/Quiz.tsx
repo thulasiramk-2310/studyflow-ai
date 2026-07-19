@@ -128,9 +128,9 @@ export function Quiz() {
                     }}
                     disabled={submitted}
                     placeholder="Type your answer here..."
-                    className={`w-full bg-surface border rounded-xl px-4 py-3 text-[14px] min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${submitted ? "cursor-default opacity-80" : "border-border hover:border-primary/40"} ${submitted && gradeResult ? (gradeResult.results[q.n - 1] ? "border-emerald-300" : "border-red-300") : ""}`}
+                    className={`w-full bg-surface border rounded-xl px-4 py-3 text-[14px] min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${submitted ? "cursor-default opacity-80" : "border-border hover:border-primary/40"} ${submitted && gradeResult ? (gradeResult.results[q.n - 1]?.is_correct ? "border-emerald-300" : "border-red-300") : ""}`}
                   />
-                  {submitted && gradeResult && !gradeResult.results[q.n - 1] && q.correct_answer && (
+                  {submitted && gradeResult && !gradeResult.results[q.n - 1]?.is_correct && q.correct_answer && (
                     <div className="mt-3 text-[13px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
                       <span className="font-bold">Correct Answer:</span> {q.correct_answer}
                     </div>
@@ -163,9 +163,9 @@ export function Quiz() {
             </div>
 
             {submitted && gradeResult && (
-              <div className={`mt-4 px-4 py-3 rounded-xl text-[13px] font-medium leading-relaxed ${gradeResult.results[q.n - 1] ? "bg-emerald-50 text-emerald-800 border border-emerald-100" : "bg-red-50 text-red-800 border border-red-100"}`}>
+              <div className={`mt-4 px-4 py-3 rounded-xl text-[13px] font-medium leading-relaxed ${gradeResult.results[q.n - 1]?.is_correct ? "bg-emerald-50 text-emerald-800 border border-emerald-100" : "bg-red-50 text-red-800 border border-red-100"}`}>
                 <div className="font-bold mb-1">
-                  {gradeResult.results[q.n - 1] ? "✓ Correct" : `✕ Incorrect`}
+                  {gradeResult.results[q.n - 1]?.is_correct ? "✓ Correct" : `✕ Incorrect`}
                 </div>
                 {q.explanation && <div className="opacity-90">{q.explanation}</div>}
               </div>

@@ -37,11 +37,19 @@ export interface QuizQuestionResponse {
   explanation: string | null;
 }
 
+export interface QuizGradeResultItem {
+  id: number;
+  correct_answer: string;
+  explanation: string | null;
+  is_correct: boolean;
+}
+
 export interface QuizGradeResponse {
   score: number;
   total: number;
+  percentage?: number;
   passed: boolean;
-  results: Record<number, boolean>;
+  results: QuizGradeResultItem[];
 }
 
 export interface QuizResponse {
