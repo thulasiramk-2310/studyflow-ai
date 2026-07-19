@@ -14,13 +14,13 @@ StudyFlow AI is a robust microservices platform that provides a complete end-to-
 - Real-time updates and notifications.
 
 ## 3. Tech Stack
-- **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS
 - **API Gateway**: Nginx
-- **Auth Service**: Spring Boot, Spring Security, JWT
+- **Auth Service**: Spring Boot, Spring Security, JWT (HttpOnly cookies)
 - **Study Service**: FastAPI
-- **AI Service**: FastAPI, LangChain, LangGraph, FAISS, Ollama, Qwen3
-- **Database**: PostgreSQL
-- **Infrastructure**: Docker, AWS (ECS, ALB, RDS, S3)
+- **AI Service**: FastAPI, FAISS, Sentence-Transformers (all-MiniLM-L6-v2), Groq API (llama-3.1-8b-instant)
+- **Database**: PostgreSQL (Amazon RDS)
+- **Infrastructure**: Docker, Terraform, AWS (ECS Fargate, ALB, RDS, S3, CloudFront, ECR, Secrets Manager, Cloud Map)
 
 ## 4. AI Agents Architecture
 
@@ -76,8 +76,8 @@ flowchart LR
     User[User Question] --> QueryEmbedding[Question Embedding]
     QueryEmbedding --> FAISS
     FAISS --> Context[Top Relevant Chunks]
-    Context --> Qwen[Qwen Model]
-    Qwen --> Answer[AI Response]
+    Context --> Groq[Groq LLM]
+    Groq --> Answer[AI Response]
 ```
 
 ### 📚 Learning Workflow
@@ -100,20 +100,28 @@ flowchart TD
 
 ### ☁️ AWS Deployment Architecture
 
+The frontend and API are served from a single CloudFront origin: static assets
+come from S3, while `/api/*` and `/auth/*` are routed to the ALB. This keeps the
+whole app on one HTTPS origin, so the `Secure`, `SameSite=Lax` session cookie
+works without a custom domain or CORS.
+
 ```mermaid
 flowchart TD
-    Internet --> ALB[Application Load Balancer]
-    ALB --> FE[ECS - Frontend]
-    ALB --> GW[ECS - API Gateway]
+    Internet --> CF[CloudFront]
+    CF -->|static| S3FE[(S3 - Frontend build)]
+    CF -->|/api, /auth| ALB[Application Load Balancer]
+    ALB --> GW[ECS - API Gateway - Nginx]
     GW --> AUTH[ECS - Auth Service]
     GW --> STUDY[ECS - Study Service]
-    GW --> AI[ECS - AI Service]
+    STUDY --> AI[ECS - AI Service]
     AUTH --> RDS[(Amazon RDS)]
     STUDY --> RDS
     AI --> RDS
-    STUDY --> S3[(Amazon S3)]
+    STUDY --> S3[(Amazon S3 - Uploads)]
     AI --> S3
-    AI --> FAISS[(Vector Store)]
+    AI --> GROQ[Groq API]
+    AI --> FAISS[(FAISS Vector Store)]
+    ECS -.secrets.-> SM[Secrets Manager]
 ```
 
 ### 🔌 Microservices Communication
@@ -133,33 +141,68 @@ flowchart LR
     AI --> FAISS
 ```
 
-## 5. Folder Structure
+## 6. Folder Structure
 - `frontend/` - React frontend application.
 - `auth-service/` - Spring Boot authentication service.
 - `study-service/` - FastAPI study service.
 - `ai-service/` - FastAPI AI service.
 - `api-gateway/` - Nginx API Gateway routing.
+- `terraform/` - Infrastructure as Code (modules + environments).
+- `scripts/` - Deployment helper scripts.
 
-## 6. Installation
-*(To be completed)*
+## 7. Local Development (Docker)
 
-## 7. Local Development
-*(To be completed)*
+The whole stack runs locally with Docker Compose.
+
+```bash
+# 1. Create a .env at the repo root (see Environment Variables below)
+# 2. Start Postgres + all services
+docker compose up --build
+
+# Frontend dev server (separate terminal)
+cd frontend && npm install && npm run dev
+```
+
+Services (local):
+- Frontend (Vite): http://localhost:5173
+- API Gateway (Nginx): http://localhost:8000
+- Auth Service: http://localhost:8080
+- Study Service: http://localhost:8081
+- AI Service: http://localhost:8002
 
 ## 8. Environment Variables
-*(To be completed)*
 
-## 9. Docker Setup
-*(To be completed)*
+Set at the repo root `.env` (git-ignored). Required keys:
 
-## 10. Terraform Deployment
-*(To be completed)*
+| Variable | Purpose |
+| --- | --- |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Database credentials |
+| `JWT_SECRET` | Signing key shared by auth + study services |
+| `INTERNAL_API_KEY` | Shared secret for service-to-service calls |
+| `GROQ_API_KEY` | Groq API key for the AI service |
+| `GROQ_MODEL` | Groq model id (e.g. `llama-3.1-8b-instant`) |
 
-## 11. Screenshots
-*(To be completed)*
+In AWS these are injected from **Secrets Manager**, never hardcoded.
 
-## 12. Future Roadmap
-- AI Recommendations for next topics.
-- Drag & Drop roadmap reorganization.
+## 9. AWS Deployment (Terraform)
+
+Infrastructure lives under `terraform/` (modules + `environments/dev`). Images are
+built and pushed to ECR, then ECS services run them behind the ALB; the frontend
+is built and synced to S3 behind CloudFront.
+
+```bash
+# Provision / update infrastructure
+cd terraform/environments/dev
+terraform init
+terraform apply
+
+# Redeploy the frontend (build -> S3 -> CloudFront invalidation)
+bash scripts/deploy-frontend.sh
+```
+
+## 10. Future Roadmap
+- Custom domain + HTTPS on CloudFront (Route 53 / ACM modules are scaffolded).
+- AI recommendations for next topics.
+- Drag & drop roadmap reorganization.
 - Progress analytics and insights.
-- AWS Production Deployment.
+- CI/CD-driven deploys.
