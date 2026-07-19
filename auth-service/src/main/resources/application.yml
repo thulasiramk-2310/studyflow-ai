@@ -31,3 +31,13 @@ springdoc:
     path: /auth/docs
   api-docs:
     path: /auth/v3/api-docs
+
+management:
+  endpoints:
+    web:
+      base-path: /auth/actuator
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

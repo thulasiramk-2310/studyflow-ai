@@ -17,7 +17,7 @@ public class InternalController {
 
     private final UserRepository userRepository;
 
-    @Value("${internal.api.key:dev_internal_key_change_me}")
+    @Value("${internal.api.key}")
     private String internalApiKey;
 
     public InternalController(UserRepository userRepository) {
