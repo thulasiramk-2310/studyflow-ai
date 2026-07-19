@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+import os
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "StudyFlow AI Service"
@@ -9,22 +10,24 @@ class Settings(BaseSettings):
     STUDY_SERVICE_URL: str = "http://study-service:8000"
     
     # LLM Settings
-    OLLAMA_URL: str = "http://host.docker.internal:11434"
-    OLLAMA_MODEL: str = "qwen3:8b"
+    GROQ_API_KEY: str
+    GROQ_MODEL: str = "llama-3.1-8b-instant"
 
     # Database
     DB_HOST: str = "localhost"
     DB_PORT: str = "5432"
     DB_USER: str = "studyflow"
-    DB_PASSWORD: str = "studyflow"
+    DB_PASSWORD: str
     DB_NAME: str = os.getenv("DB_NAME", "studyflow")
     
     @property
     def DATABASE_URL(self) -> str:
-        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        from urllib.parse import quote_plus
+        password = quote_plus(self.DB_PASSWORD) if self.DB_PASSWORD else ""
+        return f"postgresql://{self.DB_USER}:{password}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     # Internal service-to-service authentication key
-    INTERNAL_API_KEY: str = "dev_internal_key_change_me"
+    INTERNAL_API_KEY: str
 
     # Storage
     STORAGE_BACKEND: str = "local" # 'local' or 's3'

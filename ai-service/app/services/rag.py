@@ -11,8 +11,13 @@ def generate_rag_response(group_id: int, query: str, top_k: int = 3, history_mes
     """
     Orchestrates the Retrieval-Augmented Generation (RAG) pipeline.
     """
-    # 1. Check if index exists
+    # 1. Check if index exists (sync from S3 first if available)
     group_dir = get_group_dir(group_id)
+    
+    # Try to sync from S3 before checking local path
+    from app.services.s3_sync import sync_group_index_from_s3
+    sync_group_index_from_s3(group_id, group_dir)
+    
     index_path = group_dir / "index.faiss"
     
     if not index_path.exists():

@@ -21,18 +21,10 @@ async def generate_chat_title(session_id: int, first_query: str):
     """Generate a title for a chat session using LLM, with fallback to truncated query."""
     db = SessionLocal()
     try:
-        import requests
-        # Use a very concise prompt with /no_think to skip reasoning for faster response
-        prompt = f"/no_think Summarize this into a 3-5 word title, no quotes or punctuation: {first_query[:200]}"
-        payload = {
-            "model": settings.OLLAMA_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"num_predict": 20, "temperature": 0.3}
-        }
-        res = requests.post(f"{settings.OLLAMA_URL}/api/generate", json=payload, timeout=30)
-        res.raise_for_status()
-        raw = res.json().get("response", "").strip()
+        from app.services.llm_service import generate_answer
+        # Use a very concise prompt to get a short title
+        prompt = f"Summarize this into a 3-5 word title, no quotes or punctuation: {first_query[:200]}"
+        raw = generate_answer(prompt)
         # Clean up common LLM artifacts
         title = raw.replace('"', '').replace("'", "").replace("**", "").strip()
         # Remove leading "Title: " or similar prefixes
@@ -136,7 +128,7 @@ async def chat_with_documents(request: ChatRequest, background_tasks: Background
         role="ai",
         content=chat_response.answer,
         citations=[c.model_dump() for c in chat_response.citations],
-        model=settings.OLLAMA_MODEL,
+        model=settings.GROQ_MODEL,
         latency_ms=latency_ms,
         retrieved_chunk_count=len(chat_response.citations)
     )

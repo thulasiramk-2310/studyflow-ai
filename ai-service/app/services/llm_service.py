@@ -7,28 +7,32 @@ logger = logging.getLogger(__name__)
 
 def generate_answer(prompt: str) -> str:
     """
-    Sends a stateless prompt to the local Ollama instance and returns the generated answer.
-    Raises HTTPException (504) if the LLM service hangs or fails.
+    Sends a stateless prompt to the Groq API and returns the generated answer.
     """
-    url = f"{settings.OLLAMA_URL}/api/generate"
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
     payload = {
-        "model": settings.OLLAMA_MODEL,
-        "prompt": prompt,
+        "model": settings.GROQ_MODEL,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
         "stream": False
     }
     
     try:
-        # 120 second timeout to prevent hanging forever
-        logger.info(f"Sending prompt to Ollama ({settings.OLLAMA_MODEL})")
-        response = requests.post(url, json=payload, timeout=120.0)
+        logger.info(f"Sending prompt to Groq ({settings.GROQ_MODEL})")
+        response = requests.post(url, headers=headers, json=payload, timeout=30.0)
         response.raise_for_status()
         
         data = response.json()
-        return data.get("response", "").strip()
+        return data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
         
     except requests.exceptions.Timeout:
-        logger.error("Ollama service timed out.")
+        logger.error("Groq service timed out.")
         raise HTTPException(status_code=504, detail="LLM service Gateway Timeout")
     except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to communicate with Ollama: {e}")
+        logger.error(f"Failed to communicate with Groq: {e}")
         raise HTTPException(status_code=502, detail="LLM service Bad Gateway")
