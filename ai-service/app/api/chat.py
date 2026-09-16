@@ -5,7 +5,8 @@ from datetime import datetime
 from app.core.database import get_db, SessionLocal
 from app.models.chat import ChatSession, ChatMessage
 from app.schemas.chat import ChatRequest, ChatResponse, ChatCitation, ChatSessionResponse, ChatMessageResponse
-from app.services.rag import generate_rag_response
+from app.services.agent_chat import run_agent_chat
+from app.guardrails import GuardrailViolation, guard_input
 from app.core.config import settings
 import logging
 
@@ -68,9 +69,17 @@ async def chat_with_documents(request: ChatRequest, background_tasks: Background
     """
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
-    
+
     if request.userId is None:
         raise HTTPException(status_code=401, detail="User ID is required")
+
+    # Input guardrails: reject prompt injection, mask PII before the LLM sees it.
+    try:
+        guarded = guard_input(request.query)
+    except GuardrailViolation as violation:
+        logger.warning(f"Blocked chat message | rule={violation.rule} | user={request.userId}")
+        raise HTTPException(status_code=400, detail=violation.message)
+    guarded_query = guarded.message
 
     session_id = request.sessionId
     
@@ -84,12 +93,14 @@ async def chat_with_documents(request: ChatRequest, background_tasks: Background
         
         # Retry title generation if still "New Conversation"
         if chat_session.title == "New Conversation":
-            background_tasks.add_task(generate_chat_title, session_id, request.query)
+            background_tasks.add_task(generate_chat_title, session_id, guarded_query)
 
     else:
-        # Create new session with immediate fallback title from query
-        immediate_title = request.query[:50].strip()
-        if len(request.query) > 50:
+        # Create new session with immediate fallback title from query.
+        # The guarded query is used throughout so PII never reaches the title
+        # LLM call or the database.
+        immediate_title = guarded_query[:50].strip()
+        if len(guarded_query) > 50:
             immediate_title += "..."
         chat_session = ChatSession(
             user_id=request.userId,
@@ -103,22 +114,28 @@ async def chat_with_documents(request: ChatRequest, background_tasks: Background
         logger.info(f"Chat Created: Session {session_id} by User {request.userId}")
         
         # Dispatch background task for a better AI-generated title
-        background_tasks.add_task(generate_chat_title, session_id, request.query)
+        background_tasks.add_task(generate_chat_title, session_id, guarded_query)
         
     # Fetch last 4 messages for context
     history_messages = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc()).all()
     recent_history = history_messages[-4:] if history_messages else []
 
-    # Call RAG Pipeline
+    # Run the agent graph. Guardrails already ran on `request.query` above, so
+    # `guarded_query` is the injection-checked, PII-masked message.
     start_time = datetime.utcnow()
-    chat_response = generate_rag_response(request.groupId, request.query, history_messages=recent_history)
+    chat_response = run_agent_chat(
+        group_id=request.groupId,
+        query=guarded_query,
+        user_id=request.userId,
+        history=recent_history,
+    )
     latency_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
     
     # Save User Message
     user_msg = ChatMessage(
         session_id=session_id,
         role="user",
-        content=request.query,
+        content=guarded_query,
     )
     db.add(user_msg)
     

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "studyflow-agents": {
+      "type": "http",
+      "url": "http://localhost:8002/mcp",
+      "headers": {
+        "X-Internal-Key": "${INTERNAL_API_KEY}"
+      }
+    }
+  }
+}

@@ -10,8 +10,11 @@ class Settings(BaseSettings):
     STUDY_SERVICE_URL: str = "http://study-service:8000"
     
     # LLM Settings
-    GROQ_API_KEY: str
+    # GROQ_API_KEY is optional so tests and offline evals can import the app
+    # without credentials; GroqProvider raises at call time when it is empty.
+    GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.1-8b-instant"
+    LLM_PROVIDER: str = "groq"  # 'groq' or 'mock'
 
     # Database
     DB_HOST: str = "localhost"

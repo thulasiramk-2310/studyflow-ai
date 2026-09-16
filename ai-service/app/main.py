@@ -30,6 +30,12 @@ app.add_middleware(RequestIDMiddleware)
 
 app.include_router(api_router, prefix="/api/v1")
 
+# MCP surface: the four agents exposed as tools. Mounted at the app root rather
+# than under /api/v1 so the endpoint path is the one advertised in .mcp.json.
+from app.mcp.server import router as mcp_router
+
+app.include_router(mcp_router)
+
 @app.get("/")
 def root():
     return {"message": "StudyFlow AI Service"}

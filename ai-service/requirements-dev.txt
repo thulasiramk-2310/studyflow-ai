@@ -1,0 +1,10 @@
+# Test dependencies for the AI service.
+#
+# Pins mirror requirements.txt for everything the test suite touches. The heavy
+# runtime-only packages (torch, sentence-transformers, faiss-cpu) are omitted:
+# the tests inject stubs at the retrieval seam and never import them, which is
+# asserted in tests/test_agent_graph.py.
+-r requirements.txt
+
+pytest==8.2.2
+httpx==0.27.0
