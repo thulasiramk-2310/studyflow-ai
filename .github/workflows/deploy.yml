@@ -36,6 +36,10 @@ jobs:
         run: |
           pip install -r requirements.txt pytest
           python -m pytest -q
+      - name: deploy script tests
+        run: |
+          bash deploy/tests/test_remote_deploy.sh
+          python -m pytest -q -p no:cacheprovider scripts/tests
 
   build:
     needs: test
@@ -110,17 +114,26 @@ jobs:
           ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
           echo "VM=ubuntu@${{ secrets.VM_HOST }}" >> "$GITHUB_ENV"
           echo "START=$(date +%s)" >> "$GITHUB_ENV"
-      - name: Upload compose files and frontend
+      - name: Upload release config and frontend
         run: |
-          scp docker-compose.yml docker-compose.prod.yml "$VM:/opt/studyflow/"
-          scp deploy/Caddyfile deploy/remote_deploy.sh deploy/backup.sh "$VM:/opt/studyflow/deploy/"
-          ssh "$VM" "mkdir -p /opt/studyflow/frontend/releases/${{ github.sha }}"
+          ssh "$VM" "mkdir -p /opt/studyflow/releases/${{ github.sha }} /opt/studyflow/deploy /opt/studyflow/frontend/releases/${{ github.sha }}"
+          scp docker-compose.yml docker-compose.prod.yml deploy/Caddyfile deploy/remote_deploy.sh "$VM:/opt/studyflow/releases/${{ github.sha }}/"
+          scp deploy/backup.sh "$VM:/opt/studyflow/deploy/"
           scp -r dist/. "$VM:/opt/studyflow/frontend/releases/${{ github.sha }}/"
       - name: Deploy
         run: |
-          ssh "$VM" "chmod +x /opt/studyflow/deploy/*.sh && /opt/studyflow/deploy/remote_deploy.sh ${{ github.sha }}"
+          ssh "$VM" "chmod +x /opt/studyflow/deploy/backup.sh && bash /opt/studyflow/releases/${{ github.sha }}/remote_deploy.sh ${{ github.sha }}"
           ssh "$VM" "cd /opt/studyflow/frontend && ln -sfn releases/${{ github.sha }} current.new && mv -T current.new current"
           echo "DEPLOYED=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Wait for HTTPS
+        # On the first deploy Caddy is still obtaining its certificate.
+        run: |
+          for _ in $(seq 1 24); do
+            curl -sf -o /dev/null "$APP_URL/health" && exit 0
+            sleep 5
+          done
+          echo "$APP_URL/health not reachable over HTTPS after 120s"
+          exit 1
       - name: Seed demo data
         env:
           DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
@@ -130,7 +143,7 @@ jobs:
           DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
         run: bash scripts/smoke_test.sh "$APP_URL" | tee smoke.txt
       - name: Mark as last good
-        run: ssh "$VM" "echo ${{ github.sha }} > /opt/studyflow/.last-good-tag && ls -1dt /opt/studyflow/frontend/releases/* | tail -n +6 | xargs -r rm -rf"
+        run: ssh "$VM" "echo ${{ github.sha }} > /opt/studyflow/.last-good-tag && for d in /opt/studyflow/frontend/releases /opt/studyflow/releases; do ls -1dt \$d/* | tail -n +6 | xargs -r rm -rf; done"
       - name: Roll back
         if: failure()
         env:
@@ -140,7 +153,7 @@ jobs:
           if [ -z "$GOOD" ]; then echo "No previous good deploy to roll back to"; exit 1; fi
           echo "Rolling back to $GOOD"
           # shellcheck disable=SC2029  # $GOOD is meant to expand locally
-          ssh "$VM" "/opt/studyflow/deploy/remote_deploy.sh $GOOD && cd /opt/studyflow/frontend && ln -sfn releases/$GOOD current.new && mv -T current.new current"
+          ssh "$VM" "bash /opt/studyflow/releases/$GOOD/remote_deploy.sh $GOOD && cd /opt/studyflow/frontend && ln -sfn releases/$GOOD current.new && mv -T current.new current"
           bash scripts/smoke_test.sh "$APP_URL"
       - name: Summary
         if: always()
