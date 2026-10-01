@@ -1,0 +1,157 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/thulasiramk-2310
+  APP_URL: https://studyflow-ai.duckdns.org
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: ai-service tests
+        working-directory: ai-service
+        run: |
+          pip install -r requirements-dev.txt
+          python -m pytest -q
+      - name: study-service tests
+        working-directory: study-service
+        run: |
+          pip install -r requirements.txt pytest
+          python -m pytest -q
+
+  build:
+    needs: test
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      matrix:
+        include:
+          - name: auth
+            context: auth-service
+          - name: study
+            context: study-service
+          - name: ai
+            context: ai-service
+          - name: gateway
+            context: api-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/studyflow-${{ matrix.name }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/studyflow-${{ matrix.name }}:latest
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  frontend:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: ""
+          VITE_DEMO_EMAIL: demo@studyflow.ai
+          VITE_DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+        run: npm ci && npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+  deploy:
+    needs: [build, frontend]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+          echo "VM=ubuntu@${{ secrets.VM_HOST }}" >> "$GITHUB_ENV"
+          echo "START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Upload compose files and frontend
+        run: |
+          scp docker-compose.yml docker-compose.prod.yml "$VM:/opt/studyflow/"
+          scp deploy/Caddyfile deploy/remote_deploy.sh deploy/backup.sh "$VM:/opt/studyflow/deploy/"
+          ssh "$VM" "mkdir -p /opt/studyflow/frontend/releases/${{ github.sha }}"
+          scp -r dist/. "$VM:/opt/studyflow/frontend/releases/${{ github.sha }}/"
+      - name: Deploy
+        run: |
+          ssh "$VM" "chmod +x /opt/studyflow/deploy/*.sh && /opt/studyflow/deploy/remote_deploy.sh ${{ github.sha }}"
+          ssh "$VM" "cd /opt/studyflow/frontend && ln -sfn releases/${{ github.sha }} current.new && mv -T current.new current"
+          echo "DEPLOYED=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Seed demo data
+        env:
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+        run: python3 scripts/seed_demo.py --base-url "$APP_URL"
+      - name: Smoke test
+        env:
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+        run: bash scripts/smoke_test.sh "$APP_URL" | tee smoke.txt
+      - name: Mark as last good
+        run: ssh "$VM" "echo ${{ github.sha }} > /opt/studyflow/.last-good-tag && ls -1dt /opt/studyflow/frontend/releases/* | tail -n +6 | xargs -r rm -rf"
+      - name: Roll back
+        if: failure()
+        env:
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+        run: |
+          GOOD=$(ssh "$VM" "cat /opt/studyflow/.last-good-tag 2>/dev/null" || true)
+          if [ -z "$GOOD" ]; then echo "No previous good deploy to roll back to"; exit 1; fi
+          echo "Rolling back to $GOOD"
+          # shellcheck disable=SC2029  # $GOOD is meant to expand locally
+          ssh "$VM" "/opt/studyflow/deploy/remote_deploy.sh $GOOD && cd /opt/studyflow/frontend && ln -sfn releases/$GOOD current.new && mv -T current.new current"
+          bash scripts/smoke_test.sh "$APP_URL"
+      - name: Summary
+        if: always()
+        run: |
+          END=$(date +%s)
+          {
+            echo "### Deploy ${{ github.sha }}"
+            echo "- Deploy job time: $(( END - START ))s"
+            [ -n "${DEPLOYED:-}" ] && echo "- Deploy step (pull + restart): $(( DEPLOYED - START ))s"
+            echo "- Smoke test:"
+            echo '```'
+            cat smoke.txt 2>/dev/null || echo "not run"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
