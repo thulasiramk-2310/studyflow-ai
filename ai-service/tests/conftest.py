@@ -8,6 +8,13 @@ suite reaches the network.
 from __future__ import annotations
 
 import os
+import tempfile
+
+# Some modules create their storage directories at import time. Point them at a
+# scratch directory so the suite never writes to /app (not writable in CI).
+_TEST_DATA_DIR = tempfile.mkdtemp(prefix="ai-service-tests-")
+os.environ["UPLOAD_PATH"] = os.path.join(_TEST_DATA_DIR, "uploads")
+os.environ["AI_STORAGE_DIR"] = os.path.join(_TEST_DATA_DIR, "ai-storage")
 
 os.environ.setdefault("DB_PASSWORD", "test-password")
 os.environ.setdefault("INTERNAL_API_KEY", "test-internal-key")
