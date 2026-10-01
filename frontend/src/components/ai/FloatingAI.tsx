@@ -3,6 +3,7 @@ import { X, Send, Sparkles, FileText, BookOpen, BrainCircuit, Calendar, Lightbul
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { aiService, type ChatCitation } from "../../services/ai.service";
+import { RichText } from "../shared/RichText";
 import { groupService, type Group } from "../../services/group.service";
 
 interface Message {
@@ -95,10 +96,12 @@ export function FloatingAI() {
       if (res.sessionId && res.sessionId !== sessionId) {
         setSessionId(res.sessionId);
       }
-    } catch {
+    } catch (err: any) {
+      // Show the server's message (guardrail block, AI unavailable, rate limit) when there is one.
+      const msg = err?.status && err.message ? err.message : "Sorry, something went wrong. Try again.";
       setMessages(prev => {
         const next = [...prev];
-        next[next.length - 1] = { role: "ai", content: "❌ Sorry, something went wrong. Try again." };
+        next[next.length - 1] = { role: "ai", content: `❌ ${msg}` };
         return next;
       });
     } finally {
@@ -255,7 +258,7 @@ export function FloatingAI() {
                           </div>
                         ) : (
                           <>
-                            <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap">{m.content}</p>
+                            <RichText text={m.content} className="text-[12.5px] leading-relaxed" />
                             {m.citations && m.citations.length > 0 && (
                               <div className="mt-2 pt-2 border-t border-border/50 flex flex-col gap-1">
                                 {m.citations.slice(0, 2).map((c, ci) => (
