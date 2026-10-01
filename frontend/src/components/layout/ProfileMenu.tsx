@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../context/ThemeContext";
 import { toast } from "sonner";
+import { Avatar } from "../ui";
 
 interface ProfileMenuProps {
   onClose: () => void;
@@ -43,16 +44,14 @@ export function ProfileMenu({ onClose }: ProfileMenuProps) {
         ref={menuRef}
         role="menu"
         aria-label="Profile menu"
-        className="fixed top-[54px] right-5 w-[272px] bg-surface border border-border rounded-[14px] shadow-[0_16px_44px_rgba(15,23,42,0.18)] z-[71] overflow-hidden animate-[sfModal_0.16s_ease] focus:outline-none"
+        className="fixed top-[52px] right-5 w-[272px] bg-surface border border-border rounded-xl shadow-float z-[71] overflow-hidden animate-[sfModal_0.16s_ease] focus:outline-none"
       >
         {/* User info */}
         <div className="flex items-center gap-3 p-4 border-b border-border-soft">
-          <div className="w-[38px] h-[38px] rounded-full bg-gradient-to-br from-primary to-secondary text-white flex items-center justify-center text-[13px] font-bold shrink-0">
-            {user?.initials ?? "AO"}
-          </div>
+          <Avatar name={user?.name ?? "?"} />
           <div className="min-w-0">
-            <div className="text-[13.5px] font-bold">{user?.name}</div>
-            <div className="text-[11.5px] text-muted-foreground truncate">{user?.email ?? "ada@studyflow.ai"}</div>
+            <div className="text-sm font-bold">{user?.name}</div>
+            <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
           </div>
         </div>
 
@@ -61,7 +60,7 @@ export function ProfileMenu({ onClose }: ProfileMenuProps) {
           <Link
             to="/profile"
             role="menuitem"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-foreground hover:bg-background transition-colors"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
             onClick={onClose}
           >
             <User className="w-4 h-4 text-muted-foreground" /> View profile
@@ -69,7 +68,7 @@ export function ProfileMenu({ onClose }: ProfileMenuProps) {
           <Link
             to="/settings"
             role="menuitem"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-foreground hover:bg-background transition-colors"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
             onClick={onClose}
           >
             <Settings className="w-4 h-4 text-muted-foreground" /> Settings
@@ -78,17 +77,17 @@ export function ProfileMenu({ onClose }: ProfileMenuProps) {
 
         {/* Theme picker */}
         <div className="px-3 pb-2 pt-1 border-t border-border-soft">
-          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Theme</div>
+          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Theme</div>
           <div className="flex gap-1.5">
             {THEMES.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 role="menuitem"
                 onClick={() => { setTheme(key); toast.success(`Theme set to ${label}`); }}
-                className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-[11.5px] font-semibold transition-colors ${
+                className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
                   theme === key
-                    ? "bg-primary text-white"
-                    : "bg-background text-muted-foreground hover:bg-border-soft"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-border"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -102,7 +101,7 @@ export function ProfileMenu({ onClose }: ProfileMenuProps) {
         <div className="p-1.5 border-t border-border-soft">
           <button
             role="menuitem"
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-semibold text-destructive hover:bg-destructive/10 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-danger hover:bg-danger-soft transition-colors"
             onClick={handleLogout}
           >
             <LogOut className="w-4 h-4" /> Sign out

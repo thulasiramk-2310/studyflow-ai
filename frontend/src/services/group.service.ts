@@ -36,6 +36,9 @@ export interface Group {
   created_at: string;
   updated_at: string | null;
   members?: GroupMember[];
+  progress_percent?: number;
+  completed_items_count?: number;
+  total_items_count?: number;
 }
 
 class GroupService {
