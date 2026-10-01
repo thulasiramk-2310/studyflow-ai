@@ -36,12 +36,25 @@ def create_group(db: Session, group_in: StudyGroupCreate, user_id: int):
         created_by=user_id
     )
     db.add(db_group)
-    db.commit()
+
+    # The group and its organizer must be created atomically. A group whose
+    # creator is not a member is unusable and undeletable: every route guards on
+    # membership, and deletion additionally requires the ORGANIZER role.
+    # flush() assigns db_group.id without ending the transaction, so both rows
+    # land in a single commit.
+    try:
+        db.flush()
+        db.add(GroupMember(
+            group_id=db_group.id,
+            user_id=user_id,
+            role=GroupRole.ORGANIZER,
+        ))
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     db.refresh(db_group)
-    
-    # Add creator as ORGANIZER
-    add_member(db, db_group.id, user_id, GroupRole.ORGANIZER)
-    
     return db_group
 
 def update_group(db: Session, db_group: StudyGroup, group_in: StudyGroupUpdate):

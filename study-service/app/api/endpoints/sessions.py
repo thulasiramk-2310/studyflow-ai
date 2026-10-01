@@ -70,17 +70,27 @@ def create_session(session_in: SessionCreate, db: Session = Depends(get_db), use
         generated_by=session_in.generated_by
     )
     db.add(new_session)
-    db.commit()
-    db.refresh(new_session)
 
-    # Attach resources
-    for r_id in session_in.resource_ids:
-        # Verify resource belongs to the group
-        resource = db.query(Resource).filter(Resource.id == r_id, Resource.group_id == session_in.group_id).first()
-        if resource:
-            sess_res = SessionResource(session_id=new_session.id, resource_id=r_id)
-            db.add(sess_res)
-    db.commit()
+    # The session and its resource links must be created atomically, otherwise a
+    # failure while attaching resources leaves a session that claims to cover
+    # material it is not linked to. flush() assigns new_session.id without
+    # ending the transaction, so every row lands in one commit.
+    try:
+        db.flush()
+
+        # Attach resources
+        for r_id in session_in.resource_ids:
+            # Verify resource belongs to the group
+            resource = db.query(Resource).filter(Resource.id == r_id, Resource.group_id == session_in.group_id).first()
+            if resource:
+                sess_res = SessionResource(session_id=new_session.id, resource_id=r_id)
+                db.add(sess_res)
+
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     db.refresh(new_session)
 
     # Notify members
