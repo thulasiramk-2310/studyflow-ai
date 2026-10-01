@@ -12,6 +12,8 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const demoEmail = import.meta.env.VITE_DEMO_EMAIL as string | undefined;
+  const demoPassword = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
 
   // Navigate to the page the user was trying to reach, or dashboard
   const from =
@@ -139,6 +141,25 @@ export function Login() {
               )}
             </button>
           </form>
+
+          {demoEmail && demoPassword && (
+            <div className="mt-4 rounded-lg border border-border bg-muted/40 px-3.5 py-3 text-[13px] text-muted-foreground">
+              <div className="font-semibold text-foreground">Try the demo</div>
+              <div className="mt-1">
+                {demoEmail} / {demoPassword}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail(demoEmail);
+                  setPassword(demoPassword);
+                }}
+                className="mt-2 font-semibold text-primary hover:underline"
+              >
+                Fill in demo login
+              </button>
+            </div>
+          )}
 
           <div className="mt-5 text-center text-[13px] text-muted-foreground font-medium">
             No account?{" "}
