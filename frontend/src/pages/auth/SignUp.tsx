@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkle, Logo } from "../../components/Icons";
+import { Button, Input } from "../../components/ui";
 import { useAuth } from "../../hooks/useAuth";
 
 export function SignUp() {
@@ -29,112 +29,25 @@ export function SignUp() {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center bg-background min-h-screen p-6 animate-[sfFade_0.25s_ease]">
-      <div className="w-full max-w-[440px] bg-surface border border-border rounded-2xl shadow-[0_8px_30px_rgba(15,23,42,0.06)] p-9">
-        <div className="flex items-center gap-2.5 font-bold text-[15px] text-primary">
-          <Logo className="w-5 h-5" /> StudyFlow AI
+    <div>
+      <h1 className="font-serif text-2xl text-foreground">Create your account</h1>
+      <p className="mt-1 text-base text-muted-foreground">Start a study group and bring your notes.</p>
+
+      <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit}>
+        <Input label="Full name" type="text" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" />
+        <Input label="Email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@university.edu" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="Password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="8+ characters" />
+          <Input label="Confirm password" type="password" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Repeat password" />
         </div>
+        {error && <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
+        <Button type="submit" loading={isLoading} className="w-full">{isLoading ? "Creating account…" : "Create account"}</Button>
+      </form>
 
-        <h1 className="mt-4 text-[22px] font-extrabold tracking-tight text-foreground">
-          Create your account
-        </h1>
-        <p className="mt-1 text-muted-foreground text-[13.5px] font-medium">
-          Start learning with your group in minutes.
-        </p>
-
-        {error && (
-          <div className="mt-3 bg-destructive/10 border border-destructive/30 text-destructive text-[12.5px] font-semibold px-3.5 py-2.5 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        <form
-          className="mt-5 flex flex-col gap-3.5"
-          onSubmit={handleSubmit}
-        >
-          <div>
-            <label className="block text-[12.5px] font-semibold mb-1.5 text-foreground">
-              Full name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
-              className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-[12.5px] font-semibold mb-1.5 text-foreground">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@university.edu"
-              className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[12.5px] font-semibold mb-1.5 text-foreground">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="8+ characters"
-                className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-[12.5px] font-semibold mb-1.5 text-foreground">
-                Confirm
-              </label>
-              <input
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Repeat password"
-                className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                required
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-primary text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm shadow-primary/20 mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                Creating account…
-              </>
-            ) : (
-              "Create account"
-            )}
-          </button>
-        </form>
-
-        <div className="mt-5 text-center text-[13px] text-muted-foreground font-medium">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="font-semibold text-foreground hover:text-primary transition-colors"
-          >
-            Sign in
-          </Link>
-        </div>
-      </div>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link to="/login" className="font-semibold text-primary-text hover:underline">Sign in</Link>
+      </p>
     </div>
   );
 }
