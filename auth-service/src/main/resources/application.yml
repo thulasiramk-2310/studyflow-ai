@@ -12,12 +12,17 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-  flyway:
-    enabled: false
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+  flyway:
+    enabled: true
+    # The database is shared with study-service, so the schema is often
+    # non-empty when auth-service first starts. Baselining at 0 (not the
+    # default 1) makes sure V1 still runs in that case.
+    baseline-on-migrate: true
+    baseline-version: 0
 
 jwt:
   secret: ${JWT_SECRET}
