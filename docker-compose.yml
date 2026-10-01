@@ -38,6 +38,12 @@ services:
       default:
         aliases:
           - auth.studyflow.internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,6 +70,12 @@ services:
       default:
         aliases:
           - study.studyflow.internal
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,6 +100,12 @@ services:
     volumes:
       - shared_uploads:/app/uploads
       - ai_storage:/app/ai-storage
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
     depends_on:
       postgres:
         condition: service_healthy
@@ -104,9 +122,17 @@ services:
     environment:
       - NGINX_RESOLVER=127.0.0.11
     depends_on:
-      - auth-service
-      - study-service
-      - ai-service
+      auth-service:
+        condition: service_healthy
+      study-service:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
 volumes:
   postgres_data:
