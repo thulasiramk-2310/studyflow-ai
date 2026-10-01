@@ -95,8 +95,9 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - STUDY_SERVICE_URL=http://study-service:8000
-      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3:8b}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-20b}
+      - LLM_PROVIDER=${LLM_PROVIDER:-groq}
     volumes:
       - shared_uploads:/app/uploads
       - ai_storage:/app/ai-storage

@@ -75,7 +75,7 @@ resource "aws_ecs_task_definition" "ai" {
       protocol      = "tcp"
     }]
     environment = [
-      { name = "GROQ_MODEL", value = "llama-3.1-8b-instant" },
+      { name = "GROQ_MODEL", value = "openai/gpt-oss-20b" },
       { name = "DB_HOST", value = var.db_host },
       { name = "DB_PORT", value = "5432" },
       { name = "DB_NAME", value = "studyflow" },

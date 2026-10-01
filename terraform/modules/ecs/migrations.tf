@@ -115,7 +115,7 @@ resource "aws_ecs_task_definition" "ai_migration" {
         { name = "DB_HOST", value = split(":", var.db_host)[0] },
         { name = "DB_PORT", value = "5432" },
         { name = "DB_NAME", value = "studyflow" },
-        { name = "GROQ_MODEL", value = "llama-3.1-8b-instant" }
+        { name = "GROQ_MODEL", value = "openai/gpt-oss-20b" }
       ]
       secrets = [
         {

@@ -18,7 +18,7 @@ StudyFlow AI is a robust microservices platform that provides a complete end-to-
 - **API Gateway**: Nginx
 - **Auth Service**: Spring Boot, Spring Security, JWT (HttpOnly cookies)
 - **Study Service**: FastAPI
-- **AI Service**: FastAPI, FAISS, Sentence-Transformers (all-MiniLM-L6-v2), Groq API (llama-3.1-8b-instant)
+- **AI Service**: FastAPI, FAISS, Sentence-Transformers (all-MiniLM-L6-v2), Groq API (openai/gpt-oss-20b)
 - **Database**: PostgreSQL (Amazon RDS)
 - **Infrastructure**: Docker, Terraform, AWS (ECS Fargate, ALB, RDS, S3, CloudFront, ECR, Secrets Manager, Cloud Map)
 
@@ -180,7 +180,7 @@ Set at the repo root `.env` (git-ignored). Required keys:
 | `JWT_SECRET` | Signing key shared by auth + study services |
 | `INTERNAL_API_KEY` | Shared secret for service-to-service calls |
 | `GROQ_API_KEY` | Groq API key for the AI service |
-| `GROQ_MODEL` | Groq model id (e.g. `llama-3.1-8b-instant`) |
+| `GROQ_MODEL` | Groq model id (e.g. `openai/gpt-oss-20b`) |
 
 In AWS these are injected from **Secrets Manager**, never hardcoded.
 
