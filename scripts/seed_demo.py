@@ -57,6 +57,8 @@ class Client:
                 return e.code, json.loads(raw)
             except ValueError:
                 return e.code, raw.decode(errors="replace")
+        except urllib.error.URLError as e:
+            fail(f"cannot reach {self.base_url}: {e.reason}")
 
     def json(self, method: str, path: str, payload: dict | None = None):
         body = json.dumps(payload).encode() if payload is not None else None
