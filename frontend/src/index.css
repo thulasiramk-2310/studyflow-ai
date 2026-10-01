@@ -4,76 +4,62 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* #FAFAFA */
-    --foreground: 222 47% 11%; /* #111827 */
-    
-    --surface: 0 0% 100%; /* #FFFFFF */
-    
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215 16% 47%; /* #6B7280 */
-    
-    --text-muted: 215 16% 47%; 
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
-    --border: 220 13% 91%; /* #E5E7EB */
-    --border-soft: 220 14% 96%; /* Lighter border */
-    
-    --input: 220 13% 91%;
-
-    /* Primary Accent (Dynamic via CSS variable, defaults to Ocean Blue) */
-    --primary: 221 83% 53%; /* #2563EB */
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 221 83% 45%; 
-    --primary-soft: 221 83% 96%; 
-
-    /* Secondary Accent defaults to the same as Primary for now */
+    --background: 43 30% 95%;        /* #F7F5F0 */
+    --sidebar: 44 26% 92%;           /* #EFECE4 */
+    --surface: 0 0% 100%;            /* #FFFFFF */
+    --card: var(--surface);
+    --card-foreground: var(--foreground);
+    --popover: var(--surface);
+    --popover-foreground: var(--foreground);
+    --muted: 43 33% 94%;             /* #F4F1EA */
+    --foreground: 45 8% 10%;         /* #1C1B18 */
+    --muted-foreground: 44 6% 45%;   /* #7A766B */
+    --text-muted: var(--muted-foreground);
+    --border: 42 26% 87%;            /* #E6E1D6 */
+    --border-soft: 42 26% 91%;
+    --input: var(--border);
+    --primary: 153 32% 18%;          /* #1F3D2F */
+    --primary-hover: 166 37% 14%;    /* #16302A */
+    --primary-soft: 135 21% 92%;     /* #E6EFE8 */
+    --primary-text: 153 32% 18%;     /* #1F3D2F */
+    --primary-foreground: 45 33% 94%;
     --secondary: var(--primary);
-    --secondary-foreground: 0 0% 100%;
+    --secondary-foreground: var(--primary-foreground);
     --secondary-soft: var(--primary-soft);
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-
+    --accent: var(--muted);
+    --accent-foreground: var(--foreground);
+    --success: 150 45% 30%;  --success-soft: 140 30% 92%;
+    --warning: 33 70% 38%;   --warning-soft: 40 70% 92%;
+    --danger: 4 60% 44%;     --danger-soft: 6 70% 95%;
+    --info: 205 55% 38%;     --info-soft: 205 55% 94%;
+    --destructive: var(--danger);
+    --destructive-foreground: 0 0% 100%;
     --ring: var(--primary);
-    --radius: 0.5rem; /* Enterprise design usually has slightly less rounded borders */
+    --radius: 10px;
+    --font-sans: "Inter", system-ui, sans-serif;
+    --font-serif: "Instrument Serif", Georgia, serif;
+    --shadow-float: 0 24px 48px -24px rgba(31, 61, 47, 0.35);
   }
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 0 0% 98%;
-    --surface: 223 47% 13%; 
-    --muted: 223 47% 11%;
-    --muted-foreground: 215 16% 57%;
-    --text-muted: 215 16% 57%; 
-    --popover: 222 47% 11%;
-    --popover-foreground: 215 20.2% 65.1%;
-    --card: 222 47% 11%;
-    --card-foreground: 0 0% 98%;
-    --border: 217 33% 22%;
-    --border-soft: 217 33% 18%; 
-    --input: 217 33% 22%;
-    
-    --primary: 221 83% 53%;
+    --background: 240 8% 4%;         /* #0B0B0D */
+    --sidebar: 240 9% 6%;            /* #0F0F12 */
+    --surface: 240 11% 8%;           /* #111116 */
+    --muted: 240 12% 10%;            /* #17171D */
+    --foreground: 240 9% 91%;        /* #E6E6EA */
+    --muted-foreground: 240 5% 57%;  /* #8B8B96 */
+    --border: 240 10% 13%;           /* #1F1F26 */
+    --border-soft: 240 10% 11%;
+    --primary: 150 45% 34%;          /* #2F7D55 */
+    --primary-hover: 149 45% 39%;    /* #368F61 */
+    --primary-soft: 150 31% 12%;     /* #15291F */
+    --primary-text: 148 50% 66%;     /* #7FD4A6 */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 221 83% 60%;
-    --primary-soft: 221 50% 20%;
-    
-    --secondary: var(--primary);
-    --secondary-foreground: 0 0% 100%;
-    --secondary-soft: var(--primary-soft);
-    
-    --accent: 217 33% 22%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --ring: var(--primary);
+    --success: 148 50% 60%;  --success-soft: 150 31% 12%;
+    --warning: 38 75% 62%;   --warning-soft: 36 40% 12%;
+    --danger: 4 75% 68%;     --danger-soft: 4 40% 13%;
+    --info: 205 70% 68%;     --info-soft: 205 40% 13%;
+    --font-sans: "Geist", "Inter", system-ui, sans-serif;
+    --shadow-float: 0 24px 48px -24px rgba(0, 0, 0, 0.7);
   }
 }
 
@@ -83,6 +69,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
   }
 }
 
