@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { useTheme, ACCENT_COLORS, type AccentColor } from "../../context/ThemeContext";
+import { useTheme } from "../../context/ThemeContext";
 import { Sun, Moon, Laptop, Save } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { PageHeader } from "../../components/shared";
@@ -26,7 +26,7 @@ const DISPLAY_THEMES = [
 export function Settings() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("Appearance");
-  const { theme, setTheme, accent, setAccent } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [notifOn, setNotifOn] = useState([true, true, false, true]);
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
@@ -63,21 +63,6 @@ export function Settings() {
               </div>
             </div>
 
-            <div className="bg-surface border border-border rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-              <div className="text-[14px] font-bold mb-1">Accent colour</div>
-              <div className="text-[12.5px] text-muted-foreground mb-4">Choose the primary colour used across StudyFlow AI.</div>
-              <div className="flex gap-3.5 flex-wrap">
-                {(Object.entries(ACCENT_COLORS) as [AccentColor, {hex: string}][]).map(([name, {hex}]) => (
-                  <button key={name} onClick={() => { setAccent(name); toast.success(`Accent set to ${name}`); }} className="text-center">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white text-lg font-bold transition-all ${accent === name ? "ring-2 ring-offset-2 ring-foreground" : ""}`}
-                      style={{ backgroundColor: hex }}>
-                      {accent === name ? "✓" : ""}
-                    </div>
-                    <div className={`text-[11.5px] font-semibold mt-1.5 ${accent === name ? "text-foreground" : "text-muted-foreground"}`}>{name}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
           </>
         )}
 
