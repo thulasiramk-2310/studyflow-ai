@@ -31,8 +31,9 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 # Copy source code
 COPY . .
 
-# Change ownership to appuser
-RUN chown -R appuser:appgroup /app
+# Change ownership to appuser. Data dirs must exist in the image so fresh
+# named volumes mounted there inherit appuser ownership.
+RUN mkdir -p /app/uploads /app/ai-storage && chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 8002
@@ -40,4 +41,4 @@ EXPOSE 8002
 # STOPSIGNAL for graceful shutdown
 STOPSIGNAL SIGTERM
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--proxy-headers", "--forwarded-allow-ips", "*"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8002 --proxy-headers --forwarded-allow-ips '*'"]

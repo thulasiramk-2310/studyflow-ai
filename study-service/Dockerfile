@@ -16,8 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code
 COPY . .
 
-# Change ownership to appuser
-RUN chown -R appuser:appgroup /app
+# Change ownership to appuser. Data dirs must exist in the image so fresh
+# named volumes mounted there inherit appuser ownership.
+RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 8000
