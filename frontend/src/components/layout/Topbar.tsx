@@ -1,18 +1,35 @@
-import { useState, useEffect } from "react";
-import { Search, Plus, Bell, Menu } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Plus, Bell, Menu, Users, KeyRound, CalendarPlus, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ProfileMenu } from "./ProfileMenu";
 import { SearchModal } from "../shared/SearchModal";
 import { useSidebar } from "../../context/SidebarContext";
 import { useAuth } from "../../hooks/useAuth";
 import { Breadcrumb } from "../shared/Breadcrumb";
-import { toast } from "sonner";
-
 import { notificationService } from "../../services/notification.service";
+import { groupService, type Group } from "../../services/group.service";
+import { CreateGroupModal } from "../groups/CreateGroupModal";
+import { JoinGroupModal } from "../groups/JoinGroupModal";
+import { CreateSessionModal } from "../sessions/CreateSessionModal";
+import { DragDropUploader } from "../resources/DragDropUploader";
+import { Avatar, Button, ThemeToggle } from "../ui";
+
+type NewAction = "group" | "join" | "session" | "upload" | null;
+
+const NEW_ITEMS = [
+  { key: "group" as const, label: "New group", icon: Users },
+  { key: "join" as const, label: "Join group", icon: KeyRound },
+  { key: "session" as const, label: "New session", icon: CalendarPlus },
+  { key: "upload" as const, label: "Upload notes", icon: Upload },
+];
 
 export function Topbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNewOpen, setIsNewOpen] = useState(false);
+  const [action, setAction] = useState<NewAction>(null);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const newRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toggle: toggleSidebar } = useSidebar();
@@ -20,7 +37,6 @@ export function Topbar() {
 
   useEffect(() => {
     if (!user) return;
-
     const fetchUnread = async () => {
       try {
         const data = await notificationService.getUnreadCount();
@@ -34,94 +50,91 @@ export function Topbar() {
     return () => clearInterval(interval);
   }, [user]);
 
-  // Global Cmd+K shortcut
+  // Global Ctrl/Cmd+K shortcut
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setIsSearchOpen(v => !v);
+        setIsSearchOpen((v) => !v);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const handleCreate = () => {
-    navigate("/groups");
-    toast.success("Let's create a new group!", { description: "Fill in the group details below." });
+  // Close the "New" menu on outside click or Escape
+  useEffect(() => {
+    if (!isNewOpen) return;
+    const onDown = (e: MouseEvent) => { if (!newRef.current?.contains(e.target as Node)) setIsNewOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setIsNewOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [isNewOpen]);
+
+  const startAction = (a: NewAction) => {
+    setIsNewOpen(false);
+    if (a !== "upload") return setAction(a);
+    // The uploader picks its default group on mount, so open it once groups are loaded.
+    groupService.getGroups().then((gs) => { setGroups(gs); setAction("upload"); }).catch(() => navigate("/resources"));
   };
+  const done = () => { setAction(null); navigate(0); };
 
   return (
     <>
-      <header className="h-[58px] shrink-0 bg-surface border-b border-border flex items-center gap-3 px-4 md:px-6 shadow-sm z-10 relative">
-        {/* Mobile hamburger */}
-        <button
-          onClick={toggleSidebar}
-          aria-label="Open navigation"
-          className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-background transition-colors"
-        >
-          <Menu className="w-5 h-5" />
+      <header className="relative z-10 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur md:px-6">
+        <button onClick={toggleSidebar} aria-label="Open navigation" className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted md:hidden">
+          <Menu className="h-5 w-5" />
         </button>
 
-        {/* Search bar — hidden on mobile, always open on sm+ */}
-        <button
-          onClick={() => setIsSearchOpen(true)}
-          className="hidden sm:flex flex-1 max-w-[380px] items-center gap-2 bg-background border border-border rounded-lg px-3 py-1.5 text-muted-foreground hover:border-primary/40 transition-all text-left"
-        >
-          <Search className="w-4 h-4 shrink-0" />
-          <span className="flex-1 text-[13px]">Search…</span>
-          <kbd className="hidden lg:inline-block text-[11px] font-medium font-sans border border-border rounded px-1.5 bg-surface text-muted-foreground shrink-0">⌘K</kbd>
-        </button>
-
-        {/* Breadcrumb — only on desktop */}
-        <div className="hidden lg:flex flex-1 items-center px-2">
+        <div className="hidden min-w-0 flex-1 items-center lg:flex">
           <Breadcrumb />
         </div>
 
-        <div className="flex-1 sm:flex-none" />
+        <button
+          onClick={() => setIsSearchOpen(true)}
+          className="hidden w-full max-w-[320px] items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-left text-muted-foreground transition-colors hover:border-primary/40 sm:flex"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-sm">Search or jump to…</span>
+          <kbd className="hidden shrink-0 rounded border border-border bg-muted px-1.5 font-sans text-xs text-muted-foreground lg:inline-block">Ctrl K</kbd>
+        </button>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2.5">
-          {/* Mobile search icon */}
-          <button
-            onClick={() => setIsSearchOpen(true)}
-            aria-label="Open search"
-            className="sm:hidden w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-background transition-colors"
-          >
-            <Search className="w-4 h-4" />
+        <div className="flex-1 lg:hidden" />
+
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setIsSearchOpen(true)} aria-label="Open search" className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted sm:hidden">
+            <Search className="h-4 w-4" />
           </button>
 
-          {/* Create button */}
-          <button
-            onClick={handleCreate}
-            className="hidden sm:flex items-center gap-1.5 bg-primary text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold hover:bg-primary-hover transition-colors shadow-sm shadow-primary/20"
-          >
-            <Plus className="w-4 h-4" strokeWidth={3} /> Create
-          </button>
+          <div className="relative" ref={newRef}>
+            <Button size="sm" icon={Plus} onClick={() => setIsNewOpen((v) => !v)} aria-haspopup="menu" aria-expanded={isNewOpen} className="hidden sm:inline-flex">
+              New
+            </Button>
+            {isNewOpen && (
+              <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-border bg-surface p-1 shadow-float">
+                {NEW_ITEMS.map(({ key, label, icon: Icon }) => (
+                  <button key={key} role="menuitem" onClick={() => startAction(key)} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-muted">
+                    <Icon className="h-4 w-4 text-muted-foreground" />{label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-          {/* Notifications */}
-          <button 
-            className="p-2 relative rounded-full hover:bg-border-soft transition-colors"
-            onClick={() => navigate('/notifications')}
-            title="Notifications"
-          >
-            <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+          <ThemeToggle />
+
+          <button onClick={() => navigate("/notifications")} title="Notifications" aria-label="Notifications" className="relative grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+            <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1.5 w-[14px] h-[14px] bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white leading-none">
-                {unreadCount > 99 ? '99+' : unreadCount}
+              <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-xs font-bold leading-none text-primary-foreground">
+                {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
           </button>
 
-          {/* Profile avatar */}
-          <button
-            onClick={() => setIsMenuOpen(v => !v)}
-            className="w-[34px] h-[34px] rounded-full bg-gradient-to-br from-primary to-secondary text-white flex items-center justify-center text-[12.5px] font-bold shrink-0 ring-2 ring-primary/20 shadow-sm hover:ring-primary/40 transition-all cursor-pointer"
-            aria-label="Open profile menu"
-            aria-haspopup="true"
-            aria-expanded={isMenuOpen}
-          >
-            {user?.initials ?? "AO"}
+          <button onClick={() => setIsMenuOpen((v) => !v)} aria-label="Open profile menu" aria-haspopup="true" aria-expanded={isMenuOpen} className="ml-1 rounded-full">
+            <Avatar name={user?.name ?? "?"} />
           </button>
         </div>
 
@@ -129,6 +142,10 @@ export function Topbar() {
       </header>
 
       {isSearchOpen && <SearchModal onClose={() => setIsSearchOpen(false)} />}
+      <CreateGroupModal isOpen={action === "group"} onClose={() => setAction(null)} onSuccess={done} />
+      <JoinGroupModal isOpen={action === "join"} onClose={() => setAction(null)} onSuccess={done} />
+      <CreateSessionModal isOpen={action === "session"} onClose={() => setAction(null)} onSuccess={done} />
+      {action === "upload" && <DragDropUploader groups={groups} onUploadSuccess={done} onClose={() => setAction(null)} />}
     </>
   );
 }
