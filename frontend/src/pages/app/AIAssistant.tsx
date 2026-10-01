@@ -6,7 +6,7 @@ import { AIAssistantSkeleton } from "../../components/skeletons";
 import { groupService, type Group } from "../../services/group.service";
 import { resourceService, type Resource } from "../../services/resource.service";
 import { aiService, type ChatSession, type ChatMessage } from "../../services/ai.service";
-import { RichText } from "../../components/shared/RichText";
+import { RichText } from "../../components/ui";
 
 const SUGGESTIONS = [
   "Summarize my notes",
