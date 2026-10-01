@@ -1,0 +1,54 @@
+# Production overrides for the single-VM deployment.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+services:
+  postgres:
+    ports: !reset []
+    restart: unless-stopped
+
+  auth-service:
+    image: ghcr.io/thulasiramk-2310/studyflow-auth:${IMAGE_TAG:?set IMAGE_TAG}
+    build: !reset null
+    ports: !reset []
+    restart: unless-stopped
+
+  study-service:
+    image: ghcr.io/thulasiramk-2310/studyflow-study:${IMAGE_TAG:?set IMAGE_TAG}
+    build: !reset null
+    ports: !reset []
+    volumes: !override
+      - shared_uploads:/app/uploads
+    restart: unless-stopped
+
+  ai-service:
+    image: ghcr.io/thulasiramk-2310/studyflow-ai:${IMAGE_TAG:?set IMAGE_TAG}
+    build: !reset null
+    ports: !reset []
+    restart: unless-stopped
+
+  api-gateway:
+    image: ghcr.io/thulasiramk-2310/studyflow-gateway:${IMAGE_TAG:?set IMAGE_TAG}
+    build: !reset null
+    ports: !reset []
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: studyflow_caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - SITE_ADDRESS=${SITE_ADDRESS:-studyflow-ai.duckdns.org}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${FRONTEND_DIR:-/opt/studyflow/frontend}:/srv/frontend:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
