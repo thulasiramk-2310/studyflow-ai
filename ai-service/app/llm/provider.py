@@ -20,6 +20,7 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+AI_UNAVAILABLE_DETAIL = "AI is temporarily unavailable. Please try again in a minute."
 
 
 @runtime_checkable
@@ -66,10 +67,11 @@ class GroqProvider:
             return data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
         except requests.exceptions.Timeout:
             logger.error("Groq service timed out.")
-            raise HTTPException(status_code=504, detail="LLM service Gateway Timeout")
+            raise HTTPException(status_code=503, detail=AI_UNAVAILABLE_DETAIL)
         except requests.exceptions.RequestException as e:
+            # Covers HTTP errors (429 quota, 5xx) and connection failures.
             logger.error(f"Failed to communicate with Groq: {e}")
-            raise HTTPException(status_code=502, detail="LLM service Bad Gateway")
+            raise HTTPException(status_code=503, detail=AI_UNAVAILABLE_DETAIL)
 
 
 class MockProvider:

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import pytest
+import requests
 from fastapi import HTTPException
 
 from app.llm.provider import (
+    AI_UNAVAILABLE_DETAIL,
     GroqProvider,
     LLMProvider,
     MockProvider,
@@ -78,3 +80,40 @@ def test_llm_service_delegates_to_the_active_provider():
     set_provider(MockProvider(responses=["routed through the provider"]))
 
     assert generate_answer("prompt") == "routed through the provider"
+
+
+
+class _FakeResponse:
+    def __init__(self, status_code: int):
+        self.status_code = status_code
+
+    def raise_for_status(self):
+        raise requests.exceptions.HTTPError(f"{self.status_code} error", response=self)
+
+    def json(self):
+        return {}
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        _FakeResponse(429),
+        _FakeResponse(500),
+        requests.exceptions.Timeout("slow"),
+        requests.exceptions.ConnectionError("down"),
+    ],
+)
+def test_groq_failures_map_to_a_single_503(monkeypatch, failure):
+    def fake_post(*args, **kwargs):
+        if isinstance(failure, Exception):
+            raise failure
+        return failure
+
+    monkeypatch.setattr("app.llm.provider.requests.post", fake_post)
+    provider = GroqProvider(api_key="test-key")
+
+    with pytest.raises(HTTPException) as exc:
+        provider.complete("hello")
+
+    assert exc.value.status_code == 503
+    assert exc.value.detail == AI_UNAVAILABLE_DETAIL

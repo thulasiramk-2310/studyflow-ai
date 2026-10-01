@@ -43,6 +43,14 @@ def _internal_headers(request: Request) -> dict:
         "X-Internal-Key": settings.INTERNAL_API_KEY,
     }
 
+def upstream_error(response: httpx.Response) -> HTTPException:
+    """Turn an ai-service error response into an HTTPException with a readable detail."""
+    try:
+        detail = response.json().get("detail", response.text)
+    except ValueError:
+        detail = response.text
+    return HTTPException(status_code=response.status_code, detail=detail)
+
 @router.post("/chat")
 @limiter.limit("20/minute")
 async def chat_with_documents(
@@ -64,7 +72,7 @@ async def chat_with_documents(
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+            raise upstream_error(e.response)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"AI Service Error: {str(e)}")
 
@@ -86,7 +94,7 @@ async def retrieve_documents(
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+            raise upstream_error(e.response)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"AI Service Error: {str(e)}")
 
@@ -108,7 +116,7 @@ async def get_chat_sessions(
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+            raise upstream_error(e.response)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"AI Service Error: {str(e)}")
 
@@ -131,7 +139,7 @@ async def get_chat_session(
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+            raise upstream_error(e.response)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"AI Service Error: {str(e)}")
 
@@ -154,6 +162,6 @@ async def delete_chat_session(
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+            raise upstream_error(e.response)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"AI Service Error: {str(e)}")
