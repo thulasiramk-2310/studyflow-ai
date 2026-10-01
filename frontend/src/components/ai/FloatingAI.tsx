@@ -3,7 +3,7 @@ import { X, Send, Sparkles, FileText, BookOpen, BrainCircuit, Calendar, Lightbul
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { aiService, type ChatCitation } from "../../services/ai.service";
-import { RichText } from "../shared/RichText";
+import { RichText } from "../ui";
 import { groupService, type Group } from "../../services/group.service";
 
 interface Message {
