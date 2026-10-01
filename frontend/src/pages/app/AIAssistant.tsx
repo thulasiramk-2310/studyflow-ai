@@ -6,6 +6,7 @@ import { AIAssistantSkeleton } from "../../components/skeletons";
 import { groupService, type Group } from "../../services/group.service";
 import { resourceService, type Resource } from "../../services/resource.service";
 import { aiService, type ChatSession, type ChatMessage } from "../../services/ai.service";
+import { RichText } from "../../components/shared/RichText";
 
 const SUGGESTIONS = [
   "Summarize my notes",
@@ -114,12 +115,13 @@ export function AIAssistant() {
       }
 
     } catch (err: any) {
+      // apiClient throws an Error carrying the HTTP status and the server's message.
+      const status: number | undefined = err?.status;
       let errorMsg = "Sorry, I encountered an error. Please try again.";
-      if (err.response?.status === 404) errorMsg = "No indexed documents found.";
-      else if (err.response?.status === 429) errorMsg = "Rate limit exceeded. Please wait a moment.";
-      else if (err.response?.status === 503) errorMsg = "AI Service unavailable.";
-      else if (err.message === "Network Error") errorMsg = "Network error. Please check your connection.";
-      else if (err.response?.data?.detail) errorMsg = err.response.data.detail;
+      if (status === 404) errorMsg = "No indexed documents found.";
+      else if (status === 429) errorMsg = "Rate limit exceeded. Please wait a moment.";
+      else if (status && err.message) errorMsg = err.message;
+      else if (err instanceof TypeError) errorMsg = "Network error. Please check your connection.";
 
       setMessages(prev => {
         const next = [...prev];
@@ -247,7 +249,7 @@ export function AIAssistant() {
                     </div>
                   ) : (
                     <>
-                      <p className="text-[13.5px] leading-relaxed">{m.content}</p>
+                      <RichText text={m.content} className="text-[13.5px] leading-relaxed" />
                       {m.citations && m.citations.length > 0 && (
                         <div className="mt-4 pt-3 border-t border-border/50 flex flex-col gap-2">
                           <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Sources</div>

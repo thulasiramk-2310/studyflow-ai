@@ -9,3 +9,4 @@ export { PageHeader } from "./PageHeader";
 export { SectionHeader } from "./SectionHeader";
 export { ProgressCard } from "./ProgressCard";
 export { SearchModal } from "./SearchModal";
+export { RichText } from "./RichText";
