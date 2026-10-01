@@ -1,5 +1,6 @@
 # Stage 1: Build the application
-FROM maven:3.9.6-eclipse-temurin-17-alpine AS builder
+# Ubuntu-based images: the Alpine variants are amd64-only, and the VM is ARM64.
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
 LABEL org.opencontainers.image.title="StudyFlow AI Auth Service Builder" \
       org.opencontainers.image.description="Builder image for Auth Service" \
@@ -16,7 +17,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Stage 2: Run the application
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 
 LABEL org.opencontainers.image.title="StudyFlow AI Auth Service" \
       org.opencontainers.image.description="Auth Service for StudyFlow AI" \
@@ -25,7 +26,7 @@ LABEL org.opencontainers.image.title="StudyFlow AI Auth Service" \
 WORKDIR /app
 
 # Create a non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 USER appuser
 
 # Copy the built jar from the builder stage
