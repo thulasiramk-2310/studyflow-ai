@@ -21,7 +21,6 @@
   "src/components/study/FlashcardViewer.tsx",
   "src/components/study/StudyPlanModal.tsx",
   "src/pages/app/AIAssistant.tsx",
-  "src/pages/app/Dashboard.tsx",
   "src/pages/app/GroupWorkspace.tsx",
   "src/pages/app/Groups.tsx",
   "src/pages/app/Notifications.tsx",
