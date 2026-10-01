@@ -31,8 +31,6 @@
   "src/pages/app/SessionDetails.tsx",
   "src/pages/app/Sessions.tsx",
   "src/pages/app/Settings.tsx",
-  "src/pages/auth/Login.tsx",
-  "src/pages/auth/SignUp.tsx",
   "src/pages/errors/ErrorPages.tsx",
   "src/pages/public/Landing.tsx"
 ]
