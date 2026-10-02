@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { X, Loader2 } from "lucide-react";
-import { groupService } from "../../services/group.service";
 import { toast } from "sonner";
+import { groupService } from "../../services/group.service";
+import { Button, Input, Modal } from "../ui";
 
 interface Props {
   isOpen: boolean;
@@ -13,14 +13,13 @@ export function JoinGroupModal({ isOpen, onClose, onSuccess }: Props) {
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (!isOpen) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await groupService.joinGroup(inviteCode.trim().toUpperCase());
       toast.success("Successfully joined the group!");
+      setInviteCode("");
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -31,47 +30,29 @@ export function JoinGroupModal({ isOpen, onClose, onSuccess }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-[sfFadeIn_0.2s_ease-out]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Join Study Group</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Invite Code</label>
-            <input
-              type="text"
-              required
-              value={inviteCode}
-              onChange={e => setInviteCode(e.target.value.toUpperCase())}
-              placeholder="e.g. A7K9QP"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm uppercase"
-            />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Ask the group organizer for the 6-character invite code.
-            </p>
-          </div>
-          <div className="mt-8 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !inviteCode.trim()}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary-hover disabled:opacity-50 rounded-xl flex items-center justify-center min-w-[100px] transition-colors shadow-sm shadow-primary/20"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join Group"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      size="sm"
+      title="Join a study group"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="submit" form="join-group-form" loading={loading} disabled={!inviteCode.trim()}>Join group</Button>
+        </>
+      }
+    >
+      <form id="join-group-form" onSubmit={handleSubmit}>
+        <Input
+          label="Invite code"
+          required
+          value={inviteCode}
+          onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+          placeholder="e.g. A7K9QP"
+          className="font-mono uppercase tracking-widest"
+          hint="Ask the group organizer for the code shown on their group page."
+        />
+      </form>
+    </Modal>
   );
 }

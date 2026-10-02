@@ -90,16 +90,16 @@ export function Resources() {
   if (loading) return <ResourcesSkeleton />;
 
   return (
-    <div className="px-6 md:px-8 py-7 pb-12 max-w-[960px] mx-auto animate-[sfFade_0.25s_ease]">
+    <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
       <PageHeader
-        title="Resources"
+        title="Library"
         subtitle={`${resources.length} files across ${groups.length} groups`}
         actions={
           <button
             onClick={() => setIsUploadOpen(true)}
-            className="flex items-center gap-1.5 bg-primary text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold hover:bg-primary-hover transition-colors shadow-sm"
+            className="flex items-center gap-1.5 bg-primary text-primary-foreground rounded-lg px-3.5 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm"
           >
-            <Upload className="w-4 h-4" /> Upload
+            <Upload className="w-4 h-4" /> Upload notes
           </button>
         }
       />
@@ -109,12 +109,12 @@ export function Resources() {
         <div className="flex-1 flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search files…"
-            className="flex-1 bg-transparent outline-none text-[13px] text-foreground placeholder:text-muted-foreground" />
+            className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground" />
         </div>
         <div className="flex bg-surface border border-border rounded-lg overflow-hidden">
           {TYPE_FILTERS.map(t => (
             <button key={t} onClick={() => setTypeFilter(t)}
-              className={`px-3 py-2 text-[12.5px] font-semibold transition-colors ${typeFilter === t ? "bg-primary text-white" : "text-muted-foreground hover:bg-background"}`}>
+              className={`px-3 py-2 text-xs font-semibold transition-colors ${typeFilter === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
               {t}
             </button>
           ))}
@@ -122,31 +122,31 @@ export function Resources() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={FolderOpen} title="No resources found"
+        <EmptyState icon={FolderOpen} title="No notes found"
           description={query || typeFilter !== "All" ? "Try a different search or filter." : "Upload your first file to get started."}
-          action={<button onClick={() => setIsUploadOpen(true)} className="bg-primary text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-primary-hover transition-colors flex items-center gap-1.5"><Upload className="w-4 h-4" /> Upload File</button>}
+          action={<button onClick={() => setIsUploadOpen(true)} className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors flex items-center gap-1.5"><Upload className="w-4 h-4" /> Upload File</button>}
         />
       ) : (
-        <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
           {filtered.map((r) => {
             const typeLabel = resourceService.getFileIconType(r.mime_type, r.filename);
             const isPdf = typeLabel === 'PDF';
             const isDoc = typeLabel === 'DOCX';
             const isPpt = typeLabel === 'PPTX';
             
-            const typeBg = isPdf ? 'bg-red-100' : isPpt ? 'bg-orange-100' : isDoc ? 'bg-blue-100' : 'bg-indigo-100';
-            const typeColor = isPdf ? 'text-red-600' : isPpt ? 'text-orange-600' : isDoc ? 'text-blue-600' : 'text-indigo-600';
+            const typeBg = isPdf ? 'bg-danger-soft' : isPpt ? 'bg-warning-soft' : isDoc ? 'bg-primary-soft' : 'bg-primary-soft';
+            const typeColor = isPdf ? 'text-danger' : isPpt ? 'text-warning' : isDoc ? 'text-primary-text' : 'text-primary-text';
             
             return (
-              <div key={r.id} className="flex items-center gap-4 px-5 py-3.5 border-b border-border-soft last:border-0 hover:bg-background transition-colors group">
-                <div className={`w-9 h-9 rounded-xl ${typeBg} ${typeColor} flex items-center justify-center text-[10px] font-extrabold shrink-0`}>
+              <div key={r.id} className="flex items-center gap-4 px-5 py-3.5 border-b border-border-soft last:border-0 hover:bg-muted transition-colors group">
+                <div className={`w-9 h-9 rounded-xl ${typeBg} ${typeColor} flex items-center justify-center text-xs font-bold shrink-0`}>
                   {typeLabel === 'PPTX' ? 'PPT' : typeLabel === 'DOCX' ? 'DOC' : typeLabel}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13.5px] font-semibold truncate">{r.original_filename || r.filename || "Unknown file"}</div>
-                  <div className="text-[12px] text-muted-foreground mt-0.5">{r.groupName} · {resourceService.formatFileSize(r.size)}</div>
+                  <div className="text-sm font-semibold truncate">{r.original_filename || r.filename || "Unknown file"}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{r.groupName} · {resourceService.formatFileSize(r.size)}</div>
                 </div>
-                <div className="text-[12px] text-muted-foreground shrink-0 hidden sm:block text-right">
+                <div className="text-xs text-muted-foreground shrink-0 hidden sm:block text-right">
                   <div className="font-medium">{r.uploader_name || `User ${r.uploaded_by}`}</div>
                   <div>{new Date(r.created_at).toLocaleDateString()}</div>
                 </div>
@@ -167,7 +167,7 @@ export function Resources() {
                   {r.canDelete && (
                     <button
                       onClick={() => handleDelete(r.id)}
-                      className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                      className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-danger-soft hover:text-danger hover:border-danger transition-colors"
                       aria-label="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

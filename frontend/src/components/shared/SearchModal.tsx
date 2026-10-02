@@ -127,7 +127,7 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
       <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 animate-[sfFade_0.15s_ease]" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 pointer-events-none">
         <div 
-          className="w-full max-w-[540px] bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden pointer-events-auto animate-[sfScale_0.15s_ease]"
+          className="w-full max-w-[540px] bg-surface rounded-xl shadow-2xl border border-border overflow-hidden pointer-events-auto animate-[sfScale_0.15s_ease]"
           onClick={e => e.stopPropagation()}
         >
           {/* Header/Input */}
@@ -143,11 +143,11 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
               onKeyDown={onKey}
             />
             {query && (
-              <button onClick={() => setQuery("")} className="p-1.5 rounded-md text-muted-foreground hover:bg-border-soft transition-colors mr-1">
+              <button onClick={() => setQuery("")} className="p-1.5 rounded-md text-muted-foreground hover:bg-muted transition-colors mr-1">
                 <X className="w-4 h-4" />
               </button>
             )}
-            <kbd className="hidden sm:inline-block text-[11px] font-medium font-sans border border-border rounded px-1.5 bg-background text-muted-foreground">ESC</kbd>
+            <kbd className="hidden sm:inline-block text-xs font-medium font-sans border border-border rounded px-1.5 bg-background text-muted-foreground">ESC</kbd>
           </div>
 
           {/* Results */}
@@ -168,15 +168,15 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
                         key={item.id}
                         onClick={() => go(item.href)}
                         onMouseEnter={() => setActive(i)}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-left ${active === i ? "bg-primary-soft/40" : "hover:bg-background"}`}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-left ${active === i ? "bg-primary-soft/40" : "hover:bg-muted"}`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${active === i ? "bg-primary text-white shadow-sm" : "bg-background border border-border-soft text-muted-foreground"}`}>
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${active === i ? "bg-primary text-primary-foreground shadow-sm" : "bg-background border border-border-soft text-muted-foreground"}`}>
                             <Icon className="w-4.5 h-4.5" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[14px] font-semibold text-foreground line-clamp-1">{item.label}</span>
-                            <span className="text-[12px] text-muted-foreground capitalize line-clamp-1">{item.sub}</span>
+                            <span className="text-base font-semibold text-foreground line-clamp-1">{item.label}</span>
+                            <span className="text-xs text-muted-foreground capitalize line-clamp-1">{item.sub}</span>
                           </div>
                         </div>
                         {active === i && <ArrowRight className="w-4 h-4 text-primary shrink-0 opacity-80" />}
@@ -191,14 +191,14 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
                   <Search className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-semibold text-foreground">No results found</p>
-                <p className="text-[13px] text-muted-foreground mt-1">We couldn't find anything matching "{query}"</p>
+                <p className="text-sm text-muted-foreground mt-1">We couldn't find anything matching "{query}"</p>
               </div>
             )}
           </div>
           
-          <div className="bg-background border-t border-border px-4 py-2.5 flex items-center gap-4 text-[11px] font-medium text-muted-foreground shrink-0">
-            <span className="flex items-center gap-1.5"><kbd className="border border-border rounded px-1.5 shadow-[0_1px_0_rgba(15,23,42,0.06)] bg-surface text-[10px]">↑</kbd> <kbd className="border border-border rounded px-1.5 shadow-[0_1px_0_rgba(15,23,42,0.06)] bg-surface text-[10px]">↓</kbd> to navigate</span>
-            <span className="flex items-center gap-1.5"><kbd className="border border-border rounded px-1.5 shadow-[0_1px_0_rgba(15,23,42,0.06)] bg-surface text-[10px]">↵</kbd> to open</span>
+          <div className="bg-background border-t border-border px-4 py-2.5 flex items-center gap-4 text-xs font-medium text-muted-foreground shrink-0">
+            <span className="flex items-center gap-1.5"><kbd className="border border-border rounded px-1.5 shadow-[0_1px_0_rgba(15,23,42,0.06)] bg-surface text-xs">↑</kbd> <kbd className="border border-border rounded px-1.5 shadow-[0_1px_0_rgba(15,23,42,0.06)] bg-surface text-xs">↓</kbd> to navigate</span>
+            <span className="flex items-center gap-1.5"><kbd className="border border-border rounded px-1.5 shadow-[0_1px_0_rgba(15,23,42,0.06)] bg-surface text-xs">↵</kbd> to open</span>
           </div>
         </div>
       </div>

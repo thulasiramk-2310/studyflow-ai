@@ -1,14 +1,14 @@
 type Status = "live" | "upcoming" | "completed" | "organizer" | "member" | "active" | "inactive" | string;
 
 const CONFIG: Record<string, { bg: string; text: string; dot?: string }> = {
-  live:      { bg: "bg-red-100",      text: "text-red-600",      dot: "bg-red-500" },
+  live:      { bg: "bg-danger-soft",      text: "text-danger",      dot: "bg-danger" },
   upcoming:  { bg: "bg-primary-soft", text: "text-primary",      dot: "bg-primary" },
   completed: { bg: "bg-border-soft",  text: "text-muted-foreground" },
   organizer: { bg: "bg-secondary-soft", text: "text-secondary" },
   member:    { bg: "bg-border-soft",  text: "text-muted-foreground" },
-  active:    { bg: "bg-emerald-50",   text: "text-emerald-600",  dot: "bg-emerald-500" },
+  active:    { bg: "bg-success-soft",   text: "text-success",  dot: "bg-success" },
   inactive:  { bg: "bg-border-soft",  text: "text-muted-foreground" },
-  tomorrow:  { bg: "bg-amber-100",    text: "text-amber-700" },
+  tomorrow:  { bg: "bg-warning-soft",    text: "text-warning" },
 };
 
 interface StatusBadgeProps {
@@ -23,7 +23,7 @@ export function StatusBadge({ status, label, showDot = false }: StatusBadgeProps
   const display = label ?? status;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
+    <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
       {showDot && cfg.dot && (
         <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} animate-pulse`} />
       )}

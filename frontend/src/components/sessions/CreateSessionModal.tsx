@@ -97,11 +97,11 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-2xl shadow-xl animate-[sfFadeIn_0.2s_ease-out] my-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-soft sticky top-0 bg-white rounded-t-2xl z-10">
-          <h2 className="text-lg font-bold">Schedule Study Session</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400 transition-colors">
+    <div role="dialog" aria-modal="true" aria-label="Schedule a session" className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-foreground/30 p-4 backdrop-blur-[2px]">
+      <div className="my-auto w-full max-w-lg rounded-xl border border-border bg-surface shadow-float">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-soft sticky top-0 bg-surface rounded-t-xl z-10">
+          <h2 className="font-serif text-lg text-foreground">Schedule a session</h2>
+          <button onClick={onClose} aria-label="Close" className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -114,7 +114,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
               required
               value={groupId}
               onChange={e => setGroupId(e.target.value ? Number(e.target.value) : "")}
-              className="w-full px-4 py-2.5 rounded-xl border border-border-soft focus:outline-none focus:border-primary text-sm bg-white"
+              className="w-full px-4 py-2.5 rounded-xl border border-border-soft focus:outline-none focus:border-primary text-sm bg-surface"
             >
               <option value="">Select a group...</option>
               {groups.map(g => (
@@ -145,7 +145,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
                 required
                 value={date}
                 onChange={e => setDate(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-border-soft focus:outline-none focus:border-primary text-[13px]"
+                className="w-full px-3 py-2.5 rounded-xl border border-border-soft focus:outline-none focus:border-primary text-sm"
               />
             </div>
             <div>
@@ -155,7 +155,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
                 required
                 value={time}
                 onChange={e => setTime(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-border-soft focus:outline-none focus:border-primary text-[13px]"
+                className="w-full px-3 py-2.5 rounded-xl border border-border-soft focus:outline-none focus:border-primary text-sm"
               />
             </div>
             <div>
@@ -163,7 +163,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
               <select
                 value={duration}
                 onChange={e => setDuration(Number(e.target.value))}
-                className="w-full px-3 py-2.5 rounded-xl border border-border-soft focus:outline-none focus:border-primary text-[13px] bg-white"
+                className="w-full px-3 py-2.5 rounded-xl border border-border-soft focus:outline-none focus:border-primary text-sm bg-surface"
               >
                 <option value={30}>30 min</option>
                 <option value={45}>45 min</option>
@@ -202,9 +202,9 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
                         type="checkbox"
                         checked={selectedResources.includes(r.id)}
                         onChange={() => toggleResource(r.id)}
-                        className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
+                        className="w-4 h-4 rounded text-primary focus:ring-primary border-border"
                       />
-                      <span className="text-[13px] font-medium truncate flex-1" title={r.original_filename}>{r.original_filename}</span>
+                      <span className="text-sm font-medium truncate flex-1" title={r.original_filename}>{r.original_filename}</span>
                     </label>
                   ))}
                 </div>
@@ -212,7 +212,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
             </div>
           )}
 
-          <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-white">
+          <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-surface">
             <button
               type="button"
               onClick={onClose}
@@ -223,7 +223,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
             <button
               type="submit"
               disabled={loading || !title.trim() || !date || !time || !groupId}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary-hover disabled:opacity-50 rounded-xl flex items-center justify-center min-w-[100px] transition-colors"
+              className="px-5 py-2.5 text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary-hover disabled:opacity-50 rounded-xl flex items-center justify-center min-w-[100px] transition-colors"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Schedule"}
             </button>
