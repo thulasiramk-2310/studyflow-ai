@@ -6,12 +6,13 @@ StudyFlow AI is an AI-powered collaborative learning platform. The platform allo
 StudyFlow AI is a robust microservices platform that provides a complete end-to-end learning lifecycle—from goal setting and path creation, to resource indexing, AI assistance, and session planning.
 
 ## 2. Features
-- Group collaboration and management.
-- Dynamic Learning Path tracking.
-- Resource uploading and management.
-- AI Document Indexing (FAISS) for Retrieval-Augmented Generation (RAG).
-- AI-driven study sessions, quizzes, and flashcards.
-- Real-time updates and notifications.
+- **Study groups** with invite codes. Only the organizer sees and shares the code; members join with it.
+- **Learning path** per group, with progress tracking.
+- **Library**: upload PDF notes (up to 25 MB each). Each file is chunked, embedded and indexed for its group.
+- **Ask AI**: answers come only from the group's notes, with the file and page each answer came from.
+- **AI study planner**: proposes the next session with an agenda; an organizer approves it before it is created.
+- **After a session**: AI summary, a graded quiz with explanations, and flashcards.
+- **Notifications**, global search (Ctrl K), light and dark themes, a 25-second product tour and a Guide page.
 
 ## 3. Tech Stack
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS
@@ -26,7 +27,7 @@ StudyFlow AI is a robust microservices platform that provides a complete end-to-
 
 StudyFlow AI is powered by four specialized, decoupled AI agents that operate seamlessly behind the scenes. Users interact naturally with the application while the system intelligent routes tasks to the appropriate agent:
 
-1. **📝 Resource Manager Agent**: Autonomously processes uploaded documents (PDF/DOCX), performs chunking, embedding, and FAISS vector indexing, and tracks processing status.
+1. **📝 Resource Manager Agent**: Autonomously processes uploaded PDF documents, performs chunking, embedding, and FAISS vector indexing, and tracks processing status.
 2. **📚 RAG Assistant Agent**: Handles the conversational interface, managing chat history, refining queries, and synthesizing answers with citations from the indexed study materials.
 3. **📅 Scheduler Agent**: Analyzes the group's learning path, past sessions, and available resources to generate structured, balanced study agendas and time allocations.
 4. **👥 Group Coordinator Agent**: Silently manages the group's lifecycle by tracking attendance, monitoring learning path progress, generating session summaries, creating quizzes/flashcards, and sending targeted notifications.
@@ -141,7 +142,39 @@ flowchart LR
     AI --> FAISS
 ```
 
-## 6. Folder Structure
+## 6. Reliability and Safety
+
+- **Guardrails on every LLM call**: prompt-injection blocking on chat, and PII masking (emails, Aadhaar numbers, Indian mobile numbers) applied in the single `generate_answer` choke point, so summaries, quizzes, flashcards and plans are covered too. Prompts and model output are not logged.
+- **Grounding**: every substantive sentence of an Ask AI answer must be supported by a retrieved chunk, otherwise the answer is replaced. Answers too short to check are shown without citations.
+- **Generation jobs carry a lease** (`started_at`). Jobs orphaned by a crash or restart are marked FAILED after 10 minutes (at startup and on read, with a conditional update), so the UI offers "Try again" instead of spinning forever.
+- **FAISS indexes**: writes and reads take a per-group lock (a Postgres advisory lock across processes and replicas); files are written atomically. With S3 enabled, each write publishes an immutable versioned snapshot behind a `current.json` pointer, so replicas never mix files from two versions.
+- **MCP study plans** are stored in `ai_db`, so they survive restarts and are shared between replicas.
+- **Groq**: one retry after a rate limit (honouring `Retry-After`, capped at 10 s) and a completion budget large enough for JSON outputs.
+- **Auth**: HttpOnly JWT cookie that expires with the token (24 h), 10 s clock-skew leeway, 409 on duplicate sign-up, and validation errors that never echo submitted data.
+
+## 7. Performance
+
+Measured with k6 against the production Docker Compose stack on a single laptop (16 cores, shared with the load generator). Each virtual user loads the dashboard (`/auth/me`, groups, unread count) and then reads for 3 to 7 seconds:
+
+| Concurrent users | Median | p95 | Errors |
+| --- | --- | --- | --- |
+| 400 | 9 ms | 18 ms | 0% |
+| 800 | 11 ms | 43 ms | 0% |
+| 1,200 | 58 ms | 1.1 s | 0% |
+| 1,600 | 1.6 s | 2.6 s | 0% |
+
+Two bottlenecks were found and fixed during testing: the nginx gateway capped at about 500 requests in flight (`worker_connections 1024`), and study-service ran one Python worker that saturated a CPU core. It now runs 4 workers (`UVICORN_WORKERS`).
+
+AI features are limited by the Groq account, not by these servers: chat, summaries, quizzes and plans share the model's per-minute and per-day request and token quotas. Treat these numbers as a local baseline; load-test the deployed stack before quoting capacity.
+
+## 8. Testing
+
+- `ai-service`: 200+ pytest tests (guardrails, grounding, agents, MCP, FAISS locking and S3 snapshots, PII on every LLM call, event-loop blocking).
+- `study-service`: pytest tests (transactions, job leases, invite-code visibility, UTC timestamps, JWT leeway).
+- Offline RAG eval (`python -m evals.rag_eval`, add `--live` for Groq): decision recall 14/15, faithfulness 15/15, not-in-notes 5/5.
+- Frontend: `npm run lint` (oxlint plus a colour-token guard) and `npm run walkthrough`, a Playwright end-to-end run in light, dark and 390 px.
+
+## 9. Folder Structure
 - `frontend/` - React frontend application.
 - `auth-service/` - Spring Boot authentication service.
 - `study-service/` - FastAPI study service.
@@ -150,7 +183,7 @@ flowchart LR
 - `terraform/` - Infrastructure as Code (modules + environments).
 - `scripts/` - Deployment helper scripts.
 
-## 7. Local Development (Docker)
+## 10. Local Development (Docker)
 
 The whole stack runs locally with Docker Compose.
 
@@ -170,7 +203,7 @@ Services (local):
 - Study Service: http://localhost:8081
 - AI Service: http://localhost:8002
 
-## 8. Environment Variables
+## 11. Environment Variables
 
 Set at the repo root `.env` (git-ignored). Required keys:
 
@@ -184,7 +217,7 @@ Set at the repo root `.env` (git-ignored). Required keys:
 
 In AWS these are injected from **Secrets Manager**, never hardcoded.
 
-## 9. AWS Deployment (Terraform)
+## 12. AWS Deployment (Terraform)
 
 Infrastructure lives under `terraform/` (modules + `environments/dev`). Images are
 built and pushed to ECR, then ECS services run them behind the ALB; the frontend
@@ -200,9 +233,10 @@ terraform apply
 bash scripts/deploy-frontend.sh
 ```
 
-## 10. Future Roadmap
+## 13. Roadmap
+- **Professional mode**: choose student or professional at sign-up; the UI uses workplace language (Teams, Meetings, Roadmap) and the AI writes for that audience. Designed, not yet built.
+- **Meeting minutes**: upload a meeting transcript or recording (transcribed with Groq Whisper); the AI writes minutes with decisions, action items and open questions, labelled with their source. Designed, not yet built.
+- **More file types**: DOCX, PPTX and Markdown extraction, and OCR for scanned PDFs (today only text-based PDFs are indexed).
+- **Study session coach**: store quiz scores so the planner can target weak topics and attach relevant notes.
+- **Durable job queue** so crashed generation jobs re-run automatically instead of waiting for a manual retry.
 - Custom domain + HTTPS on CloudFront (Route 53 / ACM modules are scaffolded).
-- AI recommendations for next topics.
-- Drag & drop roadmap reorganization.
-- Progress analytics and insights.
-- CI/CD-driven deploys.
