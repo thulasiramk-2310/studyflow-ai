@@ -1,70 +1,61 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, BrainCircuit, FileUp, Layers, Play, Quote, Search, ShieldCheck } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowRight, BookOpenCheck, CalendarClock, Check, FileUp, GraduationCap, MessagesSquare, Play, Plus, UserPlus, Users } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { Logo } from "../../components/Icons";
-import { Badge, Button } from "../../components/ui";
-import { ArchitectureSVG } from "../../components/landing/ArchitectureSVG";
-import { MiniChat, MiniGuardrail, MiniInvite, MiniPlanner, MiniQuiz, MiniSummary } from "../../components/landing/MiniUI";
+import { Button } from "../../components/ui";
+import { MiniChat, MiniFlashcards, MiniInvite, MiniPlanner, MiniQuiz, MiniSummary } from "../../components/landing/MiniUI";
 import { IntroExperience } from "../../components/intro/IntroExperience";
 
-const GITHUB_URL = "https://github.com/thulasiramk-2310/studyflow-ai";
+const FORMATS = ["PDF", "Word", "PowerPoint", "Markdown", "Plain text"];
+
+const PROBLEMS = [
+  { before: "Notes scattered across chats and drives", after: "One shared library per group, searchable by question" },
+  { before: "Study sessions that drift off topic", after: "Every session starts with a planned agenda" },
+  { before: "Cramming the night before the exam", after: "Quizzes and flashcards after every session" },
+];
 
 const FEATURES = [
-  { title: "Ask AI with citations", body: "Answers come only from your group's notes, with the file and page they came from.", Mini: MiniChat },
-  { title: "AI study planner", body: "Reads the learning path and notes, then proposes the next session with an agenda.", Mini: MiniPlanner },
-  { title: "Quizzes and flashcards", body: "Generated for every session and graded with explanations.", Mini: MiniQuiz },
-  { title: "Session summaries", body: "Key concepts and important points, written for revision.", Mini: MiniSummary },
-  { title: "Groups and invites", body: "Invite classmates with a code and track the group's progress together.", Mini: MiniInvite },
-  { title: "Guardrails built in", body: "Prompt-injection attempts are blocked and personal data is masked before the model sees it.", Mini: MiniGuardrail },
+  { title: "Ask your notes", body: "Get answers from your group's own material, with the file and page each one came from.", Mini: MiniChat },
+  { title: "Plan the next session", body: "StudyFlow reads your learning path and notes, then suggests what to cover next.", Mini: MiniPlanner },
+  { title: "Quizzes that explain", body: "A quiz for every session, graded instantly, with the reason behind each answer.", Mini: MiniQuiz },
+  { title: "Flashcards for revision", body: "Key terms from the session turned into cards you can flip through on any device.", Mini: MiniFlashcards },
+  { title: "Session summaries", body: "The key ideas from each session, written up so nobody has to take minutes.", Mini: MiniSummary },
+  { title: "Groups and invites", body: "Share a six-character code, and classmates join with everything already in place.", Mini: MiniInvite },
 ];
 
 const STEPS = [
-  { icon: FileUp, title: "Upload", body: "PDF, DOCX, PPTX, Markdown" },
-  { icon: Layers, title: "Chunk + embed", body: "MiniLM sentence embeddings" },
-  { icon: Search, title: "FAISS index", body: "One index per group" },
-  { icon: BrainCircuit, title: "Agent router", body: "LangGraph + guardrails" },
-  { icon: Quote, title: "Grounded answer", body: "With page citations" },
+  { icon: UserPlus, title: "Start a group", body: "Name it after your course and invite classmates with a code." },
+  { icon: FileUp, title: "Add your notes", body: "Drop in lecture slides, readings and handouts. They are ready in seconds." },
+  { icon: MessagesSquare, title: "Study together", body: "Ask questions, run planned sessions, then quiz yourselves on what you covered." },
 ];
 
-const STACK = ["React + TypeScript", "Spring Boot auth", "FastAPI services", "LangGraph", "FAISS", "PostgreSQL", "nginx", "Docker", "GitHub Actions", "Terraform (AWS)", "Caddy HTTPS"];
+const USE_CASES = [
+  { icon: GraduationCap, title: "Exam prep", body: "Turn a semester of slides into quizzes and flashcards in the weeks before finals." },
+  { icon: Users, title: "Course study groups", body: "Keep the whole group on the same notes, schedule and agenda." },
+  { icon: BookOpenCheck, title: "Self-study", body: "Create a group of one and use StudyFlow as a tutor for your own reading." },
+];
 
-const PROOF = [
-  { value: "93%", label: "answer recall on the eval set" },
-  { value: "100%", label: "prompt-injection attacks blocked" },
-  { value: "~10 ms", label: "p50 API latency" },
+const FAQ = [
+  { q: "Is StudyFlow free?", a: "Yes. Create an account, start groups and invite classmates without paying anything." },
+  { q: "Does the AI make things up?", a: "Answers are drawn only from the notes your group uploaded, and each one shows the source file and page. If the notes don't cover a question, StudyFlow says so instead of guessing." },
+  { q: "Which files can I upload?", a: "PDF, Word (.docx), PowerPoint (.pptx), Markdown and plain text." },
+  { q: "Who can see my group's notes?", a: "Only members of that group. Someone needs your invite code to join." },
+  { q: "Does it work on my phone?", a: "Yes. StudyFlow runs in the browser on phones, tablets and laptops, with light and dark themes." },
 ];
 
 export function Landing() {
-  const { isAuthenticated, isLoading, login } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [demoLoading, setDemoLoading] = useState(false);
-  const demoEmail = import.meta.env.VITE_DEMO_EMAIL as string | undefined;
-  const demoPassword = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
-
-  const tryDemo = async () => {
-    if (isAuthenticated) return navigate("/dashboard");
-    if (!demoEmail || !demoPassword) return navigate("/login");
-    setDemoLoading(true);
-    try {
-      await login(demoEmail, demoPassword);
-      navigate("/dashboard");
-    } catch {
-      toast.error("The demo account isn't available right now. Try signing in instead.");
-      navigate("/login");
-    } finally {
-      setDemoLoading(false);
-    }
-  };
   const playIntro = () => window.dispatchEvent(new Event("sf:play-intro"));
+  const start = () => navigate(isAuthenticated ? "/dashboard" : "/register");
+  const startLabel = isAuthenticated ? "Go to dashboard" : "Get started free";
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen overflow-x-clip bg-background text-foreground">
       <IntroExperience />
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
-        <nav className="mx-auto flex h-16 max-w-[1120px] items-center gap-6 px-6">
+        <nav className="mx-auto flex h-16 max-w-[1120px] items-center gap-6 px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2">
             <Logo className="h-5 w-5 text-primary-text" />
             <span className="font-serif text-lg text-primary-text">StudyFlow</span>
@@ -72,16 +63,15 @@ export function Landing() {
           <div className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">Features</a>
             <a href="#how" className="hover:text-foreground">How it works</a>
-            <a href="#architecture" className="hover:text-foreground">Architecture</a>
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-foreground">GitHub</a>
+            <a href="#faq" className="hover:text-foreground">FAQ</a>
           </div>
           <div className="ml-auto flex items-center gap-3">
             {isLoading ? null : isAuthenticated ? (
-              <Button size="sm" onClick={() => navigate("/dashboard")}>Go to dashboard <ArrowRight className="h-4 w-4" /></Button>
+              <Button size="sm" onClick={start}>Go to dashboard <ArrowRight className="h-4 w-4" /></Button>
             ) : (
               <>
                 <Link to="/login" className="text-sm font-semibold text-muted-foreground hover:text-foreground">Log in</Link>
-                <Button size="sm" loading={demoLoading} onClick={tryDemo}>Try the live demo</Button>
+                <Button size="sm" onClick={start}>Sign up</Button>
               </>
             )}
           </div>
@@ -89,29 +79,24 @@ export function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="mx-auto grid max-w-[1120px] items-center gap-12 px-6 pb-20 pt-16 lg:grid-cols-[1.05fr_1fr]">
+      <section className="mx-auto grid max-w-[1120px] items-center gap-12 px-4 pb-20 pt-16 sm:px-6 lg:grid-cols-[1.05fr_1fr]">
         <div>
-          <Badge tone="brand">Open source · RAG · LangGraph agents</Badge>
-          <h1 className="mt-5 font-serif leading-[1.02] text-foreground" style={{ fontSize: "clamp(40px, 6.4vw, 66px)" }}>
+          <span className="text-xs font-bold uppercase tracking-[0.14em] text-primary-text">For students and study groups</span>
+          <h1 className="mt-4 font-serif leading-[1.02] text-foreground" style={{ fontSize: "clamp(40px, 6.4vw, 66px)" }}>
             Study groups that <em className="text-primary-text">actually</em> study.
           </h1>
           <p className="mt-5 max-w-lg text-md text-muted-foreground">
-            Upload your notes. StudyFlow answers with citations from your own material, writes the quiz and flashcards, and plans your next session.
+            Upload your notes once. StudyFlow answers questions from them, plans your next session, and writes the quiz and flashcards for revision.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Button loading={demoLoading} onClick={tryDemo}>Try the live demo — no sign-up</Button>
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer"><Button variant="secondary">View on GitHub</Button></a>
-            <Button variant="ghost" icon={Play} onClick={playIntro}>Watch how it works</Button>
+            <Button onClick={start}>{startLabel} <ArrowRight className="h-4 w-4" /></Button>
+            <Button variant="secondary" icon={Play} onClick={playIntro}>Watch the 25-second tour</Button>
           </div>
-          <dl className="mt-10 grid max-w-lg grid-cols-3 gap-6">
-            {PROOF.map((p) => (
-              <div key={p.label}>
-                <dt className="sr-only">{p.label}</dt>
-                <dd className="font-serif text-xl text-foreground">{p.value}</dd>
-                <dd className="mt-1 text-xs text-muted-foreground">{p.label}</dd>
-              </div>
+          <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            {["Free for students", "No credit card", "Works on any device"].map((t) => (
+              <li key={t} className="flex items-center gap-1.5"><Check className="h-4 w-4 text-primary-text" />{t}</li>
             ))}
-          </dl>
+          </ul>
         </div>
 
         <div className="relative">
@@ -129,9 +114,34 @@ export function Landing() {
         </div>
       </section>
 
+      {/* Formats strip */}
+      <section className="border-t border-border">
+        <div className="mx-auto flex max-w-[1120px] flex-wrap items-center justify-center gap-x-8 gap-y-3 px-4 py-6 text-sm text-muted-foreground sm:px-6">
+          <span>Works with the notes you already have:</span>
+          {FORMATS.map((f) => <span key={f} className="font-semibold text-foreground">{f}</span>)}
+        </div>
+      </section>
+
+      {/* Problem → outcome */}
+      <section className="border-t border-border bg-sidebar/40">
+        <div className="mx-auto max-w-[1120px] px-4 py-20 sm:px-6">
+          <h2 className="max-w-2xl font-serif text-2xl text-foreground">Group study usually falls apart in the same three places</h2>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {PROBLEMS.map(({ before, after }) => (
+              <div key={before} className="rounded-xl border border-border bg-surface p-5">
+                <div className="text-sm text-muted-foreground line-through decoration-border">{before}</div>
+                <div className="mt-3 flex gap-2 text-md font-semibold text-foreground">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-primary-text" />{after}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
-      <section id="features" className="border-t border-border bg-sidebar/40">
-        <div className="mx-auto max-w-[1120px] px-6 py-20">
+      <section id="features" className="scroll-mt-16 border-t border-border">
+        <div className="mx-auto max-w-[1120px] px-4 py-20 sm:px-6">
           <h2 className="font-serif text-2xl text-foreground">Everything a study group needs, nothing it doesn't</h2>
           <p className="mt-2 max-w-xl text-md text-muted-foreground">Every feature works on your group's own notes.</p>
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -147,58 +157,98 @@ export function Landing() {
       </section>
 
       {/* How it works */}
-      <section id="how" className="border-t border-border">
-        <div className="mx-auto max-w-[1120px] px-6 py-20">
-          <h2 className="font-serif text-2xl text-foreground">How an answer is made</h2>
-          <p className="mt-2 max-w-xl text-md text-muted-foreground">Retrieval-augmented generation, with guardrails before and after the model.</p>
-          <ol className="mt-10 grid gap-3 md:grid-cols-5">
+      <section id="how" className="scroll-mt-16 border-t border-border bg-sidebar/40">
+        <div className="mx-auto max-w-[1120px] px-4 py-20 sm:px-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="font-serif text-2xl text-foreground">Up and running in three steps</h2>
+              <p className="mt-2 max-w-xl text-md text-muted-foreground">From an empty group to your first answer in minutes.</p>
+            </div>
+            <Button variant="ghost" icon={Play} onClick={playIntro}>Watch the tour</Button>
+          </div>
+          <ol className="mt-10 grid gap-5 md:grid-cols-3">
             {STEPS.map(({ icon: Icon, title, body }, i) => (
-              <li key={title} className="relative rounded-xl border border-border bg-surface p-4">
-                <span className="text-xs font-semibold text-muted-foreground">Step {i + 1}</span>
-                <Icon className="mt-3 h-5 w-5 text-primary-text" />
-                <div className="mt-2 text-base font-semibold text-foreground">{title}</div>
-                <div className="text-sm text-muted-foreground">{body}</div>
+              <li key={title} className="rounded-xl border border-border bg-surface p-5">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-primary-soft text-primary-text"><Icon className="h-4 w-4" /></span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Step {i + 1}</span>
+                </div>
+                <div className="mt-4 text-md font-semibold text-foreground">{title}</div>
+                <p className="mt-1 text-sm text-muted-foreground">{body}</p>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      {/* Architecture */}
-      <section id="architecture" className="border-t border-border bg-sidebar/40">
-        <div className="mx-auto max-w-[1120px] px-6 py-20">
-          <div className="grid gap-12 lg:grid-cols-[1fr_1.3fr]">
-            <div>
-              <h2 className="font-serif text-2xl text-foreground">Built like production software</h2>
-              <p className="mt-3 text-md text-muted-foreground">
-                Three services behind an nginx gateway, deployed with CI/CD, health checks, smoke tests and automatic rollback.
-                Every AI answer passes guardrails, and offline evals track answer quality.
-              </p>
-              <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground"><ShieldCheck className="h-4 w-4 text-primary-text" /> Prompt-injection and PII guardrails</div>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {STACK.map((s) => <span key={s} className="rounded-full border border-border bg-surface px-3 py-1 text-sm text-foreground">{s}</span>)}
+      {/* Use cases */}
+      <section className="border-t border-border">
+        <div className="mx-auto max-w-[1120px] px-4 py-20 sm:px-6">
+          <h2 className="font-serif text-2xl text-foreground">Made for how students really study</h2>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {USE_CASES.map(({ icon: Icon, title, body }) => (
+              <div key={title}>
+                <Icon className="h-5 w-5 text-primary-text" />
+                <h3 className="mt-3 text-md font-semibold text-foreground">{title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{body}</p>
               </div>
-            </div>
-            <ArchitectureSVG />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="scroll-mt-16 border-t border-border bg-sidebar/40">
+        <div className="mx-auto grid max-w-[1120px] gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[1fr_1.6fr]">
+          <div>
+            <h2 className="font-serif text-2xl text-foreground">Questions, answered</h2>
+            <p className="mt-2 text-md text-muted-foreground">Anything else? Start a group and see for yourself. It's free.</p>
+          </div>
+          <div className="divide-y divide-border rounded-xl border border-border bg-surface">
+            {FAQ.map(({ q, a }) => (
+              <details key={q} className="group px-5 py-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-md font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+                  {q}
+                  <Plus className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-45" />
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground">{a}</p>
+              </details>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA */}
       <section className="bg-primary text-primary-foreground">
-        <div className="mx-auto flex max-w-[1120px] flex-col items-center gap-5 px-6 py-16 text-center">
-          <h2 className="font-serif text-2xl">See it with real notes in under a minute</h2>
-          <Button variant="secondary" loading={demoLoading} onClick={tryDemo}>Try the live demo</Button>
+        <div className="mx-auto flex max-w-[1120px] flex-col items-center gap-5 px-4 py-16 text-center sm:px-6">
+          <CalendarClock className="h-6 w-6" />
+          <h2 className="font-serif text-2xl">Your next study session, already planned</h2>
+          <Button variant="secondary" onClick={start}>{startLabel}</Button>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-5 px-6 py-8 text-sm text-muted-foreground">
-          <span className="flex items-center gap-2"><Logo className="h-4 w-4 text-primary-text" /><span className="font-serif text-md text-primary-text">StudyFlow</span></span>
-          <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-foreground">GitHub</a>
-          <button onClick={playIntro} className="hover:text-foreground">How it works</button>
-          <span className="ml-auto">Built by thulasiramk-2310</span>
+        <div className="mx-auto grid max-w-[1120px] gap-8 px-4 py-12 text-sm sm:grid-cols-[1.4fr_1fr_1fr] sm:px-6">
+          <div>
+            <span className="flex items-center gap-2"><Logo className="h-4 w-4 text-primary-text" /><span className="font-serif text-md text-primary-text">StudyFlow</span></span>
+            <p className="mt-2 max-w-xs text-muted-foreground">The study space for groups that want to learn, not just meet.</p>
+          </div>
+          <div className="flex flex-col gap-2 text-muted-foreground">
+            <span className="font-semibold text-foreground">Product</span>
+            <a href="#features" className="hover:text-foreground">Features</a>
+            <a href="#how" className="hover:text-foreground">How it works</a>
+            <button onClick={playIntro} className="text-left hover:text-foreground">Product tour</button>
+            <a href="#faq" className="hover:text-foreground">FAQ</a>
+          </div>
+          <div className="flex flex-col gap-2 text-muted-foreground">
+            <span className="font-semibold text-foreground">Account</span>
+            <Link to="/register" className="hover:text-foreground">Sign up</Link>
+            <Link to="/login" className="hover:text-foreground">Log in</Link>
+          </div>
+        </div>
+        <div className="border-t border-border">
+          <div className="mx-auto max-w-[1120px] px-4 py-5 text-xs text-muted-foreground sm:px-6">© {new Date().getFullYear()} StudyFlow</div>
         </div>
       </footer>
     </div>
