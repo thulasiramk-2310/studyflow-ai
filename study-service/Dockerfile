@@ -26,4 +26,8 @@ EXPOSE 8000
 # STOPSIGNAL for graceful shutdown
 STOPSIGNAL SIGTERM
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips '*'"]
+# One worker per core: a single Python process saturated one CPU at ~340 req/s in
+# the k6 load test. Each worker has its own DB pool (5 + 10 overflow), so keep
+# workers x 15 under Postgres max_connections (100) together with the other services.
+ENV UVICORN_WORKERS=4
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS} --proxy-headers --forwarded-allow-ips '*'"]
