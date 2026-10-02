@@ -164,3 +164,27 @@ def generate_session_schedule(req: ScheduleRequest):
     except Exception as e:
         logger.error(f"Error in generate_session_schedule: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+import base64
+import binascii
+
+from app.services.transcript import parse_transcript
+
+
+class TranscriptParseRequest(BaseModel):
+    filename: str
+    content_base64: str
+
+
+@router.post("/transcript/parse")
+def parse_meeting_transcript(req: TranscriptParseRequest):
+    try:
+        data = base64.b64decode(req.content_base64, validate=True)
+    except (binascii.Error, ValueError):
+        raise HTTPException(status_code=400, detail="The file could not be decoded.")
+    try:
+        text = parse_transcript(req.filename, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"success": True, "data": {"text": text}}
