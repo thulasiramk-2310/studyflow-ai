@@ -12,10 +12,12 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
+    public static final int JWT_EXPIRATION_SECONDS = 24 * 60 * 60;
+
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    private final int jwtExpirationMs = 86400000; // 24 hours
+    private final int jwtExpirationMs = JWT_EXPIRATION_SECONDS * 1000;
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());

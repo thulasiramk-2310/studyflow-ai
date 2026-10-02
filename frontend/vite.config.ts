@@ -2,12 +2,14 @@ import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const apiTarget = process.env.VITE_API_PROXY_TARGET || "http://localhost:8000";
+
 /**
  * Vite configuration
  *
  * Dev-server proxy:
- *   Any request to /auth/* (and other API paths) made from the React app
- *   is forwarded to the Spring Boot backend at http://localhost:8080.
+ *   Any request to /auth/* and /api/* made from the React app is forwarded
+ *   to the local API gateway at http://localhost:8000 by default.
  *   This eliminates CORS issues during local development — the browser
  *   only ever talks to the Vite dev server on localhost:5173.
  *
@@ -24,19 +26,16 @@ export default defineConfig({
   server: {
     proxy: {
       "/auth": {
-        target: "http://studyflow-alb-dev-2122782669.ap-south-1.elb.amazonaws.com",
+        target: apiTarget,
         changeOrigin: true,
-        secure: false,
       },
       "/api": {
-        target: "http://studyflow-alb-dev-2122782669.ap-south-1.elb.amazonaws.com",
+        target: apiTarget,
         changeOrigin: true,
-        secure: false,
       },
       "/internal": {
-        target: "http://studyflow-alb-dev-2122782669.ap-south-1.elb.amazonaws.com",
+        target: apiTarget,
         changeOrigin: true,
-        secure: false,
       },
     },
   },

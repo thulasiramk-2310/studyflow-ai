@@ -24,10 +24,14 @@ from fastapi.exceptions import RequestValidationError
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger.error(f"Validation error: {exc.errors()}")
+    safe_errors = [
+        {"location": error.get("loc"), "type": error.get("type")}
+        for error in exc.errors()
+    ]
+    logger.warning("Request validation failed | request_id=%s | fields=%s", request.state.request_id, safe_errors)
     return JSONResponse(
         status_code=422,
-        content={"success": False, "error": {"code": "422", "message": str(exc.errors())}},
+        content={"success": False, "error": {"code": "422", "message": "Invalid request data"}},
     )
 
 @app.exception_handler(HTTPException)
