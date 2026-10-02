@@ -34,7 +34,9 @@ def process_document(resource_id: int, group_id: int, file_path: str, filename: 
     try:
         logger.info(f"Starting ingestion for resource {resource_id} (Group: {group_id})")
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        # Keep the real extension: the loader picks the parser from it.
+        suffix = os.path.splitext(filename or file_path)[1].lower() or ".pdf"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
             tmp_path = tmp_file.name
             
         try:
