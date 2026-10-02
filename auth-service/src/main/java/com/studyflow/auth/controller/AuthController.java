@@ -145,12 +145,26 @@ public class AuthController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("NOT_FOUND", "User not found"));
         }
-        Optional<AccountType> parsed = AccountType.parse(body == null ? null : body.getAccountType());
-        if (parsed.isEmpty()) {
+        if (body == null || (body.getAccountType() == null && body.getName() == null)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("INVALID_ACCOUNT_TYPE", "Account type must be STUDENT or PROFESSIONAL"));
+                    .body(ApiResponse.error("NOTHING_TO_UPDATE", "Send a name and/or an account type"));
         }
-        user.setAccountType(parsed.get());
+        if (body.getAccountType() != null) {
+            Optional<AccountType> parsed = AccountType.parse(body.getAccountType());
+            if (parsed.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.error("INVALID_ACCOUNT_TYPE", "Account type must be STUDENT or PROFESSIONAL"));
+            }
+            user.setAccountType(parsed.get());
+        }
+        if (body.getName() != null) {
+            String name = body.getName().trim();
+            if (name.length() < 2 || name.length() > 50) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.error("INVALID_NAME", "Name must be between 2 and 50 characters"));
+            }
+            user.setName(name);
+        }
         userRepository.save(user);
         return ResponseEntity.ok(ApiResponse.success(UserDto.from(user)));
     }

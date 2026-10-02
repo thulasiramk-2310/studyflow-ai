@@ -114,4 +114,33 @@ class AuthControllerAccountTypeTest {
         assertEquals(400, res.getStatusCode().value());
         assertEquals(AccountType.STUDENT, u.getAccountType());
     }
+
+    @Test
+    void patch_me_updates_the_name() {
+        User u = new User("priya@example.com", "x", "Priya");
+        u.setId(1L);
+        when(users.findByEmail("priya@example.com")).thenReturn(Optional.of(u));
+
+        UpdateAccountRequest body = new UpdateAccountRequest();
+        body.setName("Priya Sharma");
+        ResponseEntity<ApiResponse<UserDto>> res = controller.updateCurrentUser(auth(), body);
+
+        assertEquals(200, res.getStatusCode().value());
+        assertEquals("Priya Sharma", res.getBody().getData().getName());
+        assertEquals(AccountType.STUDENT, u.getAccountType());
+    }
+
+    @Test
+    void patch_me_rejects_a_one_letter_name() {
+        User u = new User("priya@example.com", "x", "Priya");
+        u.setId(1L);
+        when(users.findByEmail("priya@example.com")).thenReturn(Optional.of(u));
+
+        UpdateAccountRequest body = new UpdateAccountRequest();
+        body.setName(" P ");
+        ResponseEntity<ApiResponse<UserDto>> res = controller.updateCurrentUser(auth(), body);
+
+        assertEquals(400, res.getStatusCode().value());
+        assertEquals("Priya", u.getName());
+    }
 }
