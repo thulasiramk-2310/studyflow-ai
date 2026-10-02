@@ -27,6 +27,24 @@ from app.llm.provider import MockProvider, reset_provider  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
+def _plan_store_in_memory():
+    """MCP plans are stored in ai_db; tests get a private in-memory database."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from app.core.database import Base
+    from app.mcp import plan_store
+
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(bind=engine)
+    plan_store.use_session_factory(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+    yield
+    plan_store.use_session_factory(None)
+    engine.dispose()
+
+
+@pytest.fixture(autouse=True)
 def _clean_provider():
     """Never let a provider set by one test leak into the next."""
     reset_provider()
