@@ -179,6 +179,21 @@ def get_chat_session_messages(session_id: int, user_id: int, group_id: int, limi
     messages = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc()).offset(offset).limit(limit).all()
     return messages
 
+@router.delete("/users/{user_id}")
+def delete_user_data(user_id: int, db: Session = Depends(get_db)):
+    """Account deletion (called by study-service): hard-delete the user's chats, messages and MCP plans."""
+    from app.mcp import plan_store
+
+    session_ids = [sid for (sid,) in db.query(ChatSession.id).filter(ChatSession.user_id == user_id).all()]
+    if session_ids:
+        db.query(ChatMessage).filter(ChatMessage.session_id.in_(session_ids)).delete(synchronize_session=False)
+        db.query(ChatSession).filter(ChatSession.id.in_(session_ids)).delete(synchronize_session=False)
+    db.commit()
+    plans = plan_store.delete_user(user_id)
+    logger.info(f"Deleted AI data for user {user_id}: {len(session_ids)} chat(s), {plans} plan(s)")
+    return {"success": True, "chats": len(session_ids), "plans": plans}
+
+
 @router.delete("/sessions/{session_id}")
 def delete_chat_session(session_id: int, user_id: int, group_id: int, db: Session = Depends(get_db)):
     chat_session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.deleted_at == None).first()

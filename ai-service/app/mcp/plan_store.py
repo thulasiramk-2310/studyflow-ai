@@ -60,6 +60,14 @@ def get_plan(group_id: int, user_id: int) -> Optional[dict[str, Any]]:
         return row.plan if row else None
 
 
+def delete_user(user_id: int) -> int:
+    """Remove every plan a user created (account deletion). Returns how many were removed."""
+    with _session() as db:
+        removed = db.query(StudyPlan).filter_by(user_id=user_id).delete()
+        db.commit()
+        return removed
+
+
 def clear() -> None:
     """Delete every stored plan (tests)."""
     with _session() as db:
