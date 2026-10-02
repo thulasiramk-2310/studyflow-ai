@@ -6,12 +6,14 @@ import com.studyflow.auth.entity.PasswordResetToken;
 import com.studyflow.auth.entity.User;
 import com.studyflow.auth.repository.PasswordResetTokenRepository;
 import com.studyflow.auth.repository.UserRepository;
+import com.studyflow.auth.security.JwtTokenProvider;
 import com.studyflow.auth.service.ResetMailer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -38,16 +40,18 @@ public class AccountController {
     private final PasswordEncoder encoder;
     private final StudyServiceClient study;
     private final ResetMailer mailer;
+    private final JwtTokenProvider tokenProvider;
     private final String appBaseUrl;
 
     public AccountController(UserRepository users, PasswordResetTokenRepository tokens, PasswordEncoder encoder,
-                             StudyServiceClient study, ResetMailer mailer,
+                             StudyServiceClient study, ResetMailer mailer, JwtTokenProvider tokenProvider,
                              @Value("${app.base-url}") String appBaseUrl) {
         this.users = users;
         this.tokens = tokens;
         this.encoder = encoder;
         this.study = study;
         this.mailer = mailer;
+        this.tokenProvider = tokenProvider;
         this.appBaseUrl = appBaseUrl.replaceAll("/+$", "");
     }
 
@@ -62,8 +66,13 @@ public class AccountController {
             return error(HttpStatus.BAD_REQUEST, "WEAK_PASSWORD", "New password must be at least " + MIN_PASSWORD_LENGTH + " characters");
         }
         user.setPassword(encoder.encode(body.getNewPassword()));
+        user.setPasswordChangedAt(LocalDateTime.now()); // signs out every other device
         users.save(user);
-        return ResponseEntity.ok(ApiResponse.success("Password updated"));
+        // Keep this device signed in with a token issued after the change.
+        String jwt = tokenProvider.generateToken(new UsernamePasswordAuthenticationToken(user.getEmail(), null, null), user);
+        ResponseCookie cookie = ResponseCookie.from("jwt", jwt).httpOnly(true).secure(true).sameSite("Lax").path("/")
+                .maxAge(JwtTokenProvider.JWT_EXPIRATION_SECONDS).build();
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(ApiResponse.success("Password updated"));
     }
 
     @DeleteMapping("/me")
@@ -111,18 +120,16 @@ public class AccountController {
         if (!strongEnough(body.getNewPassword())) {
             return error(HttpStatus.BAD_REQUEST, "WEAK_PASSWORD", "New password must be at least " + MIN_PASSWORD_LENGTH + " characters");
         }
-        PasswordResetToken token = tokens.findByTokenHash(sha256(body.getToken())).orElse(null);
-        if (token == null || token.getUsedAt() != null || token.getExpiresAt().isBefore(LocalDateTime.now())) {
-            return error(HttpStatus.BAD_REQUEST, "INVALID_RESET_TOKEN", "This reset link is invalid or has expired");
-        }
-        User user = users.findById(token.getUserId()).orElse(null);
-        if (user == null) {
+        String hash = sha256(body.getToken());
+        PasswordResetToken token = tokens.findByTokenHash(hash).orElse(null);
+        User user = token == null ? null : users.findById(token.getUserId()).orElse(null);
+        // consume() is one conditional UPDATE: of two simultaneous requests, only one gets 1.
+        if (user == null || tokens.consume(hash, LocalDateTime.now()) != 1) {
             return error(HttpStatus.BAD_REQUEST, "INVALID_RESET_TOKEN", "This reset link is invalid or has expired");
         }
         user.setPassword(encoder.encode(body.getNewPassword()));
+        user.setPasswordChangedAt(LocalDateTime.now()); // signs out every existing login
         users.save(user);
-        token.setUsedAt(LocalDateTime.now());
-        tokens.save(token);
         return ResponseEntity.ok(ApiResponse.success("Password reset. You can log in now."));
     }
 

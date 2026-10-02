@@ -6,6 +6,7 @@ import com.studyflow.auth.entity.PasswordResetToken;
 import com.studyflow.auth.entity.User;
 import com.studyflow.auth.repository.PasswordResetTokenRepository;
 import com.studyflow.auth.repository.UserRepository;
+import com.studyflow.auth.security.JwtTokenProvider;
 import com.studyflow.auth.service.ResetMailer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,9 @@ class AccountControllerTest {
         tokens = mock(PasswordResetTokenRepository.class);
         study = mock(StudyServiceClient.class);
         mailer = mock(ResetMailer.class);
-        controller = new AccountController(users, tokens, encoder, study, mailer, "http://localhost");
+        JwtTokenProvider jwt = mock(JwtTokenProvider.class);
+        when(jwt.generateToken(any(), any())).thenReturn("fresh-jwt");
+        controller = new AccountController(users, tokens, encoder, study, mailer, jwt, "http://localhost");
         priya = new User("priya@example.com", encoder.encode("Old-Pass-123"), "Priya");
         priya.setId(7L);
         when(users.findByEmail("priya@example.com")).thenReturn(Optional.of(priya));
@@ -74,6 +77,8 @@ class AccountControllerTest {
         ResponseEntity<ApiResponse<String>> res = controller.changePassword(auth(), new ChangePasswordRequest("Old-Pass-123", "New-Pass-456"));
         assertEquals(200, res.getStatusCode().value());
         assertTrue(encoder.matches("New-Pass-456", priya.getPassword()));
+        assertNotNull(priya.getPasswordChangedAt(), "older logins must be revoked");
+        assertTrue(res.getHeaders().getFirst(HttpHeaders.SET_COOKIE).contains("jwt=fresh-jwt"), "this device stays signed in");
         verify(users).save(priya);
     }
 
@@ -147,17 +152,21 @@ class AccountControllerTest {
         t.setUsedAt(usedAt);
         when(tokens.findByTokenHash(AccountController.sha256(raw))).thenReturn(Optional.of(t));
         when(users.findById(7L)).thenReturn(Optional.of(priya));
+        // The database decides: one conditional UPDATE marks it used only if unused and unexpired.
+        boolean usable = usedAt == null && expiresAt.isAfter(LocalDateTime.now());
+        when(tokens.consume(eq(AccountController.sha256(raw)), any())).thenReturn(usable ? 1 : 0);
         return t;
     }
 
     @Test
     void reset_password_with_a_valid_token_changes_the_password_once() {
-        PasswordResetToken t = tokenFor("good-token", LocalDateTime.now().plusMinutes(10), null);
+        tokenFor("good-token", LocalDateTime.now().plusMinutes(10), null);
+        when(tokens.consume(eq(AccountController.sha256("good-token")), any())).thenReturn(1).thenReturn(0);
 
         ResponseEntity<ApiResponse<String>> res = controller.resetPassword(new ResetPasswordRequest("good-token", "Brand-New-789"));
         assertEquals(200, res.getStatusCode().value());
         assertTrue(encoder.matches("Brand-New-789", priya.getPassword()));
-        assertNotNull(t.getUsedAt());
+        assertNotNull(priya.getPasswordChangedAt(), "logins from before the reset are revoked");
 
         ResponseEntity<ApiResponse<String>> again = controller.resetPassword(new ResetPasswordRequest("good-token", "Another-000"));
         assertEquals(400, again.getStatusCode().value());
@@ -177,5 +186,18 @@ class AccountControllerTest {
         when(tokens.findByTokenHash(anyString())).thenReturn(Optional.empty());
         ResponseEntity<ApiResponse<String>> res = controller.resetPassword(new ResetPasswordRequest("made-up", "Brand-New-789"));
         assertEquals(400, res.getStatusCode().value());
+    }
+
+    @Test
+    void the_loser_of_a_concurrent_reset_changes_nothing() {
+        // Both requests found the token unused; the database let only one consume it.
+        tokenFor("raced-token", LocalDateTime.now().plusMinutes(10), null);
+        when(tokens.consume(eq(AccountController.sha256("raced-token")), any())).thenReturn(0);
+
+        ResponseEntity<ApiResponse<String>> res = controller.resetPassword(new ResetPasswordRequest("raced-token", "Loser-Pass-111"));
+
+        assertEquals(400, res.getStatusCode().value());
+        assertTrue(encoder.matches("Old-Pass-123", priya.getPassword()));
+        verify(users, never()).save(any());
     }
 }
