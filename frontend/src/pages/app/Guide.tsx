@@ -29,7 +29,7 @@ export function Guide() {
             <div className="grid h-full place-items-center px-6 text-center">
               <div>
                 <h2 className="font-serif text-xl text-foreground">How StudyFlow works</h2>
-                <p className="mt-1 text-base text-muted-foreground">A 25-second tour: notes, cited answers, quizzes.</p>
+                <p className="mt-1 text-base text-muted-foreground">A 25-second tour: notes, cited answers, {terms.quizzes.toLowerCase()}.</p>
                 <Button className="mt-4" icon={Play} onClick={() => setPlaying(true)}>Play</Button>
               </div>
             </div>

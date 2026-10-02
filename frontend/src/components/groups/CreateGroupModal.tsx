@@ -22,12 +22,12 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }: Props) {
     setLoading(true);
     try {
       await groupService.createGroup(name, description, goal, terms.audience);
-      toast.success("Group created successfully");
+      toast.success(`${terms.group} created successfully`);
       setName(""); setDescription(""); setGoal("");
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Failed to create group");
+      toast.error(err.message || `Failed to create ${terms.groupLower}`);
     } finally {
       setLoading(false);
     }
@@ -41,14 +41,14 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }: Props) {
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit" form="create-group-form" loading={loading} disabled={!name.trim()}>Create group</Button>
+          <Button type="submit" form="create-group-form" loading={loading} disabled={!name.trim()}>{terms.createGroup}</Button>
         </>
       }
     >
       <form id="create-group-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Input label={`${terms.group} name`} required value={name} onChange={(e) => setName(e.target.value)} placeholder={terms.groupNameExample} />
-        <Textarea label="Description (optional)" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this group about?" />
-        <Textarea label="Group goal (optional)" rows={2} value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="e.g. Become interview ready in Machine Learning" hint="The AI planner uses the goal and learning path to propose sessions." />
+        <Textarea label="Description (optional)" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={`What is this ${terms.groupLower} about?`} />
+        <Textarea label={`${terms.group} goal (optional)`} rows={2} value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="e.g. Become interview ready in Machine Learning" hint={`The AI planner uses the goal and ${terms.learningPath.toLowerCase()} to propose ${terms.sessionsLower}.`} />
       </form>
     </Modal>
   );

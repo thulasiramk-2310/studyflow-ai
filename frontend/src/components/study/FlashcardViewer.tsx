@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { useTerms } from "../../hooks/useTerms";
+import { useGroupTerms } from "../../hooks/useTerms";
+import type { Audience } from "../../types";
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
 import type { Flashcard } from "../../services/session.service";
 
 interface FlashcardViewerProps {
   flashcards: Flashcard[];
+  /** The session's group audience; wording follows the group. */
+  audience?: Audience;
 }
 
-export function FlashcardViewer({ flashcards }: FlashcardViewerProps) {
-  const terms = useTerms();
+export function FlashcardViewer({ flashcards, audience }: FlashcardViewerProps) {
+  const terms = useGroupTerms({ audience });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 

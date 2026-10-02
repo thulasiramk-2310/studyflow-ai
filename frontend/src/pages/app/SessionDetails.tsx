@@ -110,7 +110,7 @@ export function SessionDetails() {
       toast.success(`${terms.session} marked as completed!`);
       await fetchSession();
     } catch (error) {
-      toast.error("Failed to complete session.");
+      toast.error(`Failed to complete ${terms.sessionLower}.`);
     } finally {
       setCompleting(false);
     }
@@ -129,7 +129,7 @@ export function SessionDetails() {
       const att = await sessionService.getSessionAttendance(session.id);
       setAttendance(att);
     } catch (err) {
-      toast.error("Failed to join meeting");
+      toast.error("Failed to join the call");
     } finally {
       setJoining(false);
     }
@@ -157,7 +157,7 @@ export function SessionDetails() {
       toast.success(`${terms.quiz} regeneration started`);
       setQuiz((prev: any) => prev ? { ...prev, status: "GENERATING" } : null);
     } catch (error) {
-      toast.error("Failed to regenerate quiz.");
+      toast.error(`Failed to regenerate ${quizWord}.`);
     } finally {
       setRegeneratingQuiz(false);
     }
@@ -171,7 +171,7 @@ export function SessionDetails() {
       toast.success(`${terms.quiz} generation started`);
       setQuiz({ status: "GENERATING" });
     } catch (error) {
-      toast.error("Failed to generate quiz.");
+      toast.error(`Failed to generate ${quizWord}.`);
     } finally {
       setGeneratingQuiz(false);
     }
@@ -182,10 +182,10 @@ export function SessionDetails() {
     setRegeneratingFlashcards(true);
     try {
       await sessionService.regenerateFlashcards(Number(sessionId));
-      toast.success("Flashcard regeneration started");
+      toast.success(`${terms.flashcards} regeneration started`);
       setFlashcards((prev: any) => prev ? { ...prev, status: "GENERATING" } : null);
     } catch (error) {
-      toast.error("Failed to regenerate flashcards.");
+      toast.error(`Failed to regenerate ${cardsWord}.`);
     } finally {
       setRegeneratingFlashcards(false);
     }
@@ -196,10 +196,10 @@ export function SessionDetails() {
     setGeneratingFlashcards(true);
     try {
       await sessionService.generateFlashcards(Number(sessionId));
-      toast.success("Flashcard generation started");
+      toast.success(`${terms.flashcards} generation started`);
       setFlashcards({ status: "GENERATING" } as any);
     } catch (error) {
-      toast.error("Failed to generate flashcards.");
+      toast.error(`Failed to generate ${cardsWord}.`);
     } finally {
       setGeneratingFlashcards(false);
     }
@@ -234,7 +234,7 @@ export function SessionDetails() {
       case "MICROSOFT_TEAMS": return "Microsoft Teams";
       case "DISCORD": return "Discord";
       case "OTHER": return "Other Link";
-      default: return "No meeting link added";
+      default: return "No call link added";
     }
   };
 
@@ -245,7 +245,7 @@ export function SessionDetails() {
   return (
     <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
       {isEditModalOpen && (
-        <EditSessionModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} session={session} onSuccess={fetchSession} />
+        <EditSessionModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} session={session} onSuccess={fetchSession} audience={terms.audience} />
       )}
 
       <PageHeader
@@ -271,7 +271,7 @@ export function SessionDetails() {
           {!isCompleted && (
             <>
               <Card>
-                <CardHeader title="Meeting" />
+                <CardHeader title="Video call" />
                 <div className="flex flex-wrap items-center gap-4">
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-text">
                     {session.meeting_url ? <Video className="h-5 w-5" /> : <MapPin className="h-5 w-5" />}
@@ -280,7 +280,7 @@ export function SessionDetails() {
                     <div className="text-base font-semibold text-foreground">{getMeetingName(session.meeting_type)}</div>
                     <div className="truncate text-sm text-muted-foreground">{session.meeting_url || "No link added yet"}</div>
                   </div>
-                  <Button size="sm" icon={ExternalLink} loading={joining} disabled={!session.meeting_url} onClick={handleJoinMeeting}>Join meeting</Button>
+                  <Button size="sm" icon={ExternalLink} loading={joining} disabled={!session.meeting_url} onClick={handleJoinMeeting}>Join call</Button>
                 </div>
               </Card>
               <Card className="bg-primary-soft">
@@ -288,7 +288,7 @@ export function SessionDetails() {
                   <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary-text" />
                   <div>
                     <div className="text-base font-semibold text-foreground">Summary, {quizWord} and {cardsWord} come next</div>
-                    <p className="mt-0.5 text-sm text-muted-foreground">When the {terms.sessionLower} is marked completed, StudyFlow writes a summary from the attached notes, and you can generate a {quizWord} and flashcards.</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">When the {terms.sessionLower} is marked completed, StudyFlow writes a summary from the attached notes, and you can generate a {quizWord} and {cardsWord}.</p>
                   </div>
                 </div>
               </Card>
@@ -345,14 +345,14 @@ export function SessionDetails() {
                   {quiz?.status === "READY" ? (
                     <>
                       <p className="mb-4 text-sm text-muted-foreground">{quiz.questions?.length || 0} questions from this {terms.sessionLower}'s notes.</p>
-                      <Button icon={ListChecks} onClick={() => navigate(`/sessions/${session.id}/quiz`)}>Take quiz</Button>
+                      <Button icon={ListChecks} onClick={() => navigate(`/sessions/${session.id}/quiz`)}>Take {quizWord}</Button>
                     </>
                   ) : quiz?.status === "FAILED" ? (
                     <p className="text-sm text-danger">The {quizWord} failed to generate. <button onClick={handleRegenerateQuiz} className="underline">Try again</button></p>
                   ) : !quiz ? (
                     <>
                       <p className="mb-4 text-sm text-muted-foreground">Test yourself on this {terms.sessionLower}'s materials.</p>
-                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingQuiz} onClick={handleGenerateQuiz}>Generate {quizWord}</Button> : <p className="text-xs text-muted-foreground">The organizer can generate a quiz.</p>}
+                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingQuiz} onClick={handleGenerateQuiz}>Generate {quizWord}</Button> : <p className="text-xs text-muted-foreground">The {terms.organizer.toLowerCase()} can generate a {quizWord}.</p>}
                     </>
                   ) : (
                     <div className="flex flex-col gap-2"><Skeleton className="h-4 w-2/3" /><p className="text-xs text-muted-foreground">Writing questions…</p></div>
@@ -373,7 +373,7 @@ export function SessionDetails() {
                   ) : !flashcards ? (
                     <>
                       <p className="mb-4 text-sm text-muted-foreground">Memorise the key ideas from this {terms.sessionLower}.</p>
-                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingFlashcards} onClick={handleGenerateFlashcards}>Generate {cardsWord}</Button> : <p className="text-xs text-muted-foreground">The organizer can generate flashcards.</p>}
+                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingFlashcards} onClick={handleGenerateFlashcards}>Generate {cardsWord}</Button> : <p className="text-xs text-muted-foreground">The {terms.organizer.toLowerCase()} can generate {cardsWord}.</p>}
                     </>
                   ) : (
                     <div className="flex flex-col gap-2"><Skeleton className="h-4 w-2/3" /><p className="text-xs text-muted-foreground">Writing {cardsWord}…</p></div>
@@ -383,7 +383,7 @@ export function SessionDetails() {
 
               {flashcards?.status === "READY" && (
                 <Card>
-                  <FlashcardViewer flashcards={flashcards.flashcards} />
+                  <FlashcardViewer flashcards={flashcards.flashcards} audience={terms.audience} />
                 </Card>
               )}
             </>

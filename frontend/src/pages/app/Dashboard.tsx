@@ -67,7 +67,7 @@ export function Dashboard() {
             description={terms.emptyGroupsBody}
             action={
               <div className="flex flex-wrap justify-center gap-2">
-                <Button icon={Plus} onClick={() => setIsCreateOpen(true)}>Create a group</Button>
+                <Button icon={Plus} onClick={() => setIsCreateOpen(true)}>Create a {terms.groupLower}</Button>
                 <Button variant="secondary" onClick={() => setIsJoinOpen(true)}>Join with a code</Button>
               </div>
             }
@@ -118,7 +118,7 @@ export function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader title={terms.audience === "professional" ? "Roadmaps" : "Learning paths"} />
+          <CardHeader title={`${terms.learningPath}s`} />
           {pathGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground">Add {terms.topic.toLowerCase()}s to a {terms.groupLower}'s {terms.learningPath.toLowerCase()} to track progress here.</p>
           ) : (
@@ -143,7 +143,7 @@ export function Dashboard() {
       <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatTile label="AI chats" value={dashboardData?.stats.conversations ?? 0} />
         <StatTile label={terms.quizzes} value={dashboardData?.stats.quizzes ?? 0} />
-        <StatTile label="Flashcard decks" value={dashboardData?.stats.flashcards ?? 0} />
+        <StatTile label={terms.audience === "professional" ? "Key-point card sets" : "Flashcard decks" /* terms-ok */} value={dashboardData?.stats.flashcards ?? 0} />
         <StatTile label="Notes indexed" value={dashboardData?.stats.resources ?? 0} />
       </div>
 

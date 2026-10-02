@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useTerms } from "../../hooks/useTerms";
+import { useGroupTerms } from "../../hooks/useTerms";
+import type { Audience } from "../../types";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { X } from "lucide-react";
@@ -10,11 +11,13 @@ interface EditSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   session: Session;
+  /** The session's group audience; wording follows the group. */
+  audience?: Audience;
   onSuccess: () => void;
 }
 
-export function EditSessionModal({ isOpen, onClose, session, onSuccess }: EditSessionModalProps) {
-  const terms = useTerms();
+export function EditSessionModal({ isOpen, onClose, session, onSuccess, audience }: EditSessionModalProps) {
+  const terms = useGroupTerms({ audience });
   const [meetingType, setMeetingType] = useState<MeetingType>(session.meeting_type || "NONE");
   const [meetingUrl, setMeetingUrl] = useState(session.meeting_url || "");
   const [loading, setLoading] = useState(false);

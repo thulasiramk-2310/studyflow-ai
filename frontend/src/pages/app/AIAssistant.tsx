@@ -10,7 +10,7 @@ import { Button, RichText } from "../../components/ui";
 
 const SUGGESTIONS = [
   "Summarise my notes",
-  "Quiz me on the key ideas",
+  "Test me on the key ideas",
   "Explain the hardest topic",
   "What should I revise first?"
 ];
@@ -187,7 +187,7 @@ export function AIAssistant() {
               {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
           )}
-          <span className="hidden text-sm text-muted-foreground md:inline">Answers only from this group's notes</span>
+          <span className="hidden text-sm text-muted-foreground md:inline">Answers only from this {terms.groupLower}'s notes</span>
           <Button size="sm" variant="ghost" icon={Plus} onClick={newChat} className="ml-auto lg:hidden">New chat</Button>
         </div>
 

@@ -2,17 +2,18 @@ import { Link, useLocation } from "react-router-dom";
 import { useTerms } from "../../hooks/useTerms";
 import { ChevronRight } from "lucide-react";
 
+// Fallback labels; group/session/library/quiz wording comes from useTerms() below. terms-ok
 const ROUTE_LABELS: Record<string, string> = {
   dashboard:     "Today",
-  groups:        "Groups",
-  resources:     "Library",
-  sessions:      "Sessions",
+  groups:        "Groups", // terms-ok
+  resources:     "Library", // terms-ok
+  sessions:      "Sessions", // terms-ok
   ai:            "Ask AI",
   guide:         "Guide",
   notifications: "Notifications",
   profile:       "Profile",
   settings:      "Settings",
-  quiz:          "Quiz",
+  quiz:          "Quiz", // terms-ok
   // dynamic segments get title-cased below
 };
 

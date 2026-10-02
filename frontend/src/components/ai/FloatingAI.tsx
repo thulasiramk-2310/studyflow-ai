@@ -216,7 +216,7 @@ export function FloatingAI() {
                     <div className="text-center">
                       <div className="font-serif text-lg text-foreground">How can I help?</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
-                        {selectedGroup ? `Studying: ${selectedGroup.name}` : "Select a group to get started"}
+                        {selectedGroup ? `Studying: ${selectedGroup.name}` : `Select a ${terms.groupLower} to get started`}
                       </div>
                     </div>
 

@@ -62,13 +62,36 @@ async function createGroup(p, name) {
   await p.getByRole("button", { name: "New", exact: true }).click();
   await p.getByRole("menuitem", { name: /New (group|team)/ }).click();
   await p.getByRole("dialog").getByRole("textbox").first().fill(name);
-  await p.getByRole("dialog").getByRole("button", { name: /Create group/ }).click();
+  await p.getByRole("dialog").getByRole("button", { name: /Create (group|team)/ }).click();
   await p.waitForTimeout(1500);
   await p.goto(`${BASE}/groups`);
   await p.getByText(name).first().click();
   await p.waitForURL(/groups\/\d+/);
   await p.locator("h1").first().waitFor();
 }
+
+async function scheduleIn(p, groupName, title) {
+  await p.getByRole("button", { name: "New", exact: true }).click();
+  await p.getByRole("menuitem", { name: /New (session|meeting)/ }).click();
+  const dlg = p.getByRole("dialog", { name: /Schedule a (session|meeting)/ });
+  const sel = dlg.locator("select").first();
+  const option = sel.locator("option", { hasText: groupName }).first();
+  await option.waitFor({ state: "attached" });
+  await sel.selectOption({ label: (await option.textContent()).trim() });
+  await dlg.locator('input[placeholder="e.g. Operating Systems Revision"]').fill(title);
+  await dlg.locator('input[type="date"]').fill(new Date(Date.now() + 2 * 864e5).toISOString().slice(0, 10));
+  await dlg.locator('input[type="time"]').fill("18:00");
+  await dlg.getByRole("button", { name: "Schedule", exact: true }).click();
+  await p.waitForTimeout(1500);
+  await p.goto(`${BASE}/sessions`);
+  await p.getByText(title).first().click();
+  await p.waitForURL(/sessions\/\d+$/);
+  await p.locator("h1").first().waitFor();
+  return new URL(p.url()).pathname;
+}
+
+const STUDENT_WORDS = /\b(quiz(zes)?|flashcards?|study groups?|sessions?|learning path|organizer)\b/i;
+const TEAM_WORDS = /\b(meetings?|knowledge checks?|key-point cards?|roadmap|teams?)\b/i;
 
 const browser = await chromium.launch();
 let inviteCode = "";
@@ -106,6 +129,10 @@ try {
     inviteCode = label.split("·")[1].trim();
     if (!/^[A-Z0-9]{6}$/.test(inviteCode)) throw new Error(`unexpected invite code "${inviteCode}"`);
   });
+  let studentSession = "";
+  await step(student.p, "student owner schedules a session", async () => {
+    studentSession = await scheduleIn(student.p, `OS Study Group ${stamp}`, `Deadlocks revision ${stamp}`);
+  });
 
   // ── Professional owner: workplace wording everywhere ────────────────────
   const pro = await newUser(browser, { teams: true });
@@ -131,6 +158,13 @@ try {
     await dlg.getByRole("button", { name: "Upload", exact: true }).click();
     await pro.p.getByText("File uploaded successfully").waitFor();
     await collect();
+  });
+  await step(pro.p, "professional meeting page has no student words", async () => {
+    await scheduleIn(pro.p, `Platform Team ${stamp}`, `Q3 planning sync ${stamp}`);
+    const text = (await visibleText(pro.p)).replace(`Q3 planning sync ${stamp}`, "");
+    const hit = text.match(STUDENT_WORDS);
+    if (hit) throw new Error(`student word "${hit[0]}" on a professional meeting page`);
+    seen.push(text);
   });
   for (const path of ["/sessions", "/guide", "/ai"]) {
     await step(pro.p, `professional ${path}`, async () => {
@@ -164,6 +198,16 @@ try {
     await pro.p.getByRole("tab", { name: "Sessions" }).waitFor();   // group wording: student
     await pro.p.getByRole("link", { name: "Teams", exact: true }).first().waitFor(); // sidebar: the user's
     if (await pro.p.getByRole("button", { name: /^Invite · / }).count()) throw new Error("a member can see the invite code");
+  });
+  await step(pro.p, "student group's session and quiz pages keep student wording", async () => {
+    for (const path of [studentSession, `${studentSession}/quiz`]) {
+      await pro.p.goto(BASE + path);
+      await pro.p.waitForLoadState("networkidle");
+      await pro.p.waitForTimeout(1200);
+      const main = await pro.p.locator("main").innerText();
+      const hit = main.match(TEAM_WORDS);
+      if (hit) throw new Error(`team word "${hit[0]}" on ${path} of a student group`);
+    }
   });
 
   report.push("walkthrough-modes passed");
