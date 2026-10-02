@@ -1,5 +1,7 @@
 import os
 import json
+import threading
+from collections import defaultdict
 import faiss
 import numpy as np
 from pathlib import Path
@@ -8,6 +10,24 @@ import logging
 from app.services.s3_sync import sync_group_index_from_s3, sync_group_index_to_s3
 
 logger = logging.getLogger(__name__)
+
+# Indexing is a read-modify-write of three files; serialise writers per group so
+# parallel uploads cannot overwrite each other. (One process; a second replica
+# would need a shared lock or store.)
+_group_locks: defaultdict[int, threading.Lock] = defaultdict(threading.Lock)
+_locks_guard = threading.Lock()
+
+
+def _group_lock(group_id: int) -> threading.Lock:
+    with _locks_guard:
+        return _group_locks[group_id]
+
+
+def _atomic_write_json(path: Path, data) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with open(tmp, 'w') as f:
+        json.dump(data, f, indent=2)
+    os.replace(tmp, path)
 
 def get_group_dir(group_id: int) -> Path:
     group_dir = Path(settings.AI_STORAGE_DIR) / f"group-{group_id}"
@@ -23,7 +43,9 @@ def load_or_create_index(group_dir: Path, dimension: int) -> faiss.IndexFlatIP:
 
 def save_index(group_dir: Path, index: faiss.Index):
     index_path = group_dir / "index.faiss"
-    faiss.write_index(index, str(index_path))
+    tmp = group_dir / "index.faiss.tmp"
+    faiss.write_index(index, str(tmp))
+    os.replace(tmp, index_path)  # readers never see a half-written index
 
 def load_metadata(group_dir: Path) -> dict:
     metadata_path = group_dir / "metadata.json"
@@ -40,8 +62,7 @@ def load_metadata(group_dir: Path) -> dict:
 
 def save_metadata(group_dir: Path, metadata: dict):
     metadata_path = group_dir / "metadata.json"
-    with open(metadata_path, 'w') as f:
-        json.dump(metadata, f, indent=2)
+    _atomic_write_json(metadata_path, metadata)
 
 def load_documents(group_dir: Path) -> list:
     docs_path = group_dir / "documents.json"
@@ -52,14 +73,18 @@ def load_documents(group_dir: Path) -> list:
 
 def save_documents(group_dir: Path, documents: list):
     docs_path = group_dir / "documents.json"
-    with open(docs_path, 'w') as f:
-        json.dump(documents, f, indent=2)
+    _atomic_write_json(docs_path, documents)
 
 def add_to_index(group_id: int, resource_id: int, filename: str, chunks: list[dict], embeddings: np.ndarray):
     """
     Add new chunks and embeddings to the FAISS index for a specific group.
     `chunks` is a list of dicts: [{"page_num": int, "text": str}]
     """
+    with _group_lock(group_id):
+        _add_to_index_locked(group_id, resource_id, filename, chunks, embeddings)
+
+
+def _add_to_index_locked(group_id: int, resource_id: int, filename: str, chunks: list[dict], embeddings: np.ndarray):
     group_dir = get_group_dir(group_id)
     
     # Sync from S3 first (in case it was created by another container)
