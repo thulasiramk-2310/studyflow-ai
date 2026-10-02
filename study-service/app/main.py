@@ -20,6 +20,20 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title=settings.PROJECT_NAME, root_path="/study")
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
+
+@app.on_event("startup")
+def recover_jobs_on_startup():
+    from app.core.database import SessionLocal
+    from app.services.job_recovery import recover_interrupted_jobs
+
+    db = SessionLocal()
+    try:
+        recover_interrupted_jobs(db)
+    except Exception as e:  # never block startup on cleanup
+        logger.error(f"Job recovery failed: {e}")
+    finally:
+        db.close()
+
 from fastapi.exceptions import RequestValidationError
 
 @app.exception_handler(RequestValidationError)
