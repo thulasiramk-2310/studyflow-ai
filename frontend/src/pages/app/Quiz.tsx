@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Sparkle } from "../../components/Icons";
+import { toast } from "sonner";
+import { Button, Card, EmptyState, Skeleton } from "../../components/ui";
+import { ListChecks } from "lucide-react";
 import { sessionService } from "../../services/session.service";
 import type { QuizResponse, Session, QuizGradeResponse } from "../../services/session.service";
 
@@ -43,11 +46,11 @@ export function Quiz() {
   };
 
   if (loading) {
-    return <div className="max-w-[720px] mx-auto px-8 py-7">Loading quiz...</div>;
+    return <div className="mx-auto max-w-[760px] px-6 py-8" aria-busy="true"><Skeleton className="mb-4 h-10 w-80" /><Skeleton className="mb-4 h-44" /><Skeleton className="h-44" /></div>;
   }
   
   if (!quizData || !quizData.questions || quizData.questions.length === 0) {
-    return <div className="max-w-[720px] mx-auto px-8 py-7">Quiz is not ready or failed to generate.</div>;
+    return <div className="mx-auto max-w-[760px] px-6 py-8"><Card><EmptyState icon={ListChecks} title="This quiz isn't ready" description="It may still be generating, or it failed. Go back to the session to generate it again." action={<Link to={`/sessions/${sessionId}`}><Button variant="secondary">Back to session</Button></Link>} /></Card></div>;
   }
 
   // Pre-process questions to find the correct index based on `correct_answer`
@@ -74,24 +77,24 @@ export function Quiz() {
   const answered = Object.keys(answers).length;
 
   return (
-    <div className="max-w-[720px] mx-auto px-8 py-7 pb-12 animate-[sfFade_0.25s_ease]">
-      <Link to={`/sessions/${sessionId}`} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-6">
+    <div className="mx-auto max-w-[760px] px-6 py-8">
+      <Link to={`/sessions/${sessionId}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors mb-6">
         <ArrowLeft className="w-4 h-4" /> Back to session
       </Link>
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[12px] font-bold text-primary uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
             <Sparkle className="w-3.5 h-3.5" /> AI-generated quiz
           </div>
-          <div className="mt-1 text-[22px] font-extrabold tracking-tight">Quiz: {session?.title || "Session"}</div>
-          <div className="mt-1 text-muted-foreground text-[13px]">{questions.length} questions</div>
+          <h1 className="mt-1 font-serif text-xl text-foreground md:text-2xl">{session?.title || "Session quiz"}</h1>
+          <div className="mt-1 text-muted-foreground text-sm">{questions.length} questions</div>
         </div>
         {submitted && gradeResult && (
           <div className="text-left md:text-right bg-surface border border-border px-4 py-3 rounded-xl shadow-sm">
-            <div className="text-[28px] font-extrabold text-primary leading-tight">{gradeResult.score}/{gradeResult.total}</div>
-            <div className="text-[13px] text-muted-foreground font-medium">
+            <div className="font-serif text-2xl leading-tight text-primary-text">{gradeResult.score}/{gradeResult.total}</div>
+            <div className="text-sm text-muted-foreground font-medium">
               {gradeResult.score / gradeResult.total >= 0.8 ? "Excellent!" : gradeResult.score / gradeResult.total >= 0.6 ? "Good work!" : "Keep studying"}
             </div>
           </div>
@@ -101,12 +104,12 @@ export function Quiz() {
       {/* Progress bar */}
       {!submitted && (
         <div className="mt-6">
-          <div className="flex justify-between text-[12px] text-muted-foreground mb-1.5">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
             <span>{answered} of {questions.length} answered</span>
             <span>{Math.round(answered / questions.length * 100)}%</span>
           </div>
-          <div className="h-1.5 bg-border-soft rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all" style={{ width: `${answered / questions.length * 100}%` }} />
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${answered / questions.length * 100}%` }} />
           </div>
         </div>
       )}
@@ -114,9 +117,9 @@ export function Quiz() {
       {/* Questions */}
       <div className="flex flex-col gap-5 mt-8">
         {questions.map((q, qi) => (
-          <div key={qi} className="bg-surface border border-border rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-            <div className="text-[13px] font-semibold text-muted-foreground mb-2">Question {q.n}</div>
-            <div className="text-[15px] font-bold leading-snug">{q.question}</div>
+          <div key={qi} className="rounded-xl border border-border bg-surface p-5">
+            <div className="text-sm font-semibold text-muted-foreground mb-2">Question {q.n}</div>
+            <div className="font-serif text-lg leading-snug text-foreground">{q.question}</div>
 
             <div className="flex flex-col gap-2 mt-4">
               {q.question_type === "SHORT" || (!q.options || q.options.length === 0) ? (
@@ -128,10 +131,10 @@ export function Quiz() {
                     }}
                     disabled={submitted}
                     placeholder="Type your answer here..."
-                    className={`w-full bg-surface border rounded-xl px-4 py-3 text-[14px] min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${submitted ? "cursor-default opacity-80" : "border-border hover:border-primary/40"} ${submitted && gradeResult ? (gradeResult.results[q.n - 1]?.is_correct ? "border-emerald-300" : "border-red-300") : ""}`}
+                    className={`w-full bg-surface border rounded-xl px-4 py-3 text-base min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${submitted ? "cursor-default opacity-80" : "border-border hover:border-primary/40"} ${submitted && gradeResult ? (gradeResult.results[q.n - 1]?.is_correct ? "border-success" : "border-danger") : ""}`}
                   />
                   {submitted && gradeResult && !gradeResult.results[q.n - 1]?.is_correct && q.correct_answer && (
-                    <div className="mt-3 text-[13px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                    <div className="mt-3 text-sm font-medium text-success bg-success-soft border border-success rounded-lg px-3 py-2">
                       <span className="font-bold">Correct Answer:</span> {q.correct_answer}
                     </div>
                   )}
@@ -140,22 +143,22 @@ export function Quiz() {
                 q.options.map((opt, oi) => {
                   const isSel = answers[qi] === oi;
                   const isCorrect = oi === q.correct;
-                  let border = "border-border", bg = "bg-surface", textColor = "text-foreground", dotBg = "bg-border-soft", dotText = "text-muted-foreground";
+                  let border = "border-border", bg = "bg-surface", textColor = "text-foreground", dotBg = "bg-muted", dotText = "text-muted-foreground";
 
                   if (submitted) {
-                    if (isCorrect) { border = "border-emerald-300"; bg = "bg-emerald-50"; textColor = "text-emerald-800"; dotBg = "bg-emerald-500"; dotText = "text-white"; }
-                    else if (isSel) { border = "border-red-300"; bg = "bg-red-50"; textColor = "text-red-800"; dotBg = "bg-red-500"; dotText = "text-white"; }
+                    if (isCorrect) { border = "border-success"; bg = "bg-success-soft"; textColor = "text-success"; dotBg = "bg-success"; dotText = "text-primary-foreground"; }
+                    else if (isSel) { border = "border-danger"; bg = "bg-danger-soft"; textColor = "text-danger"; dotBg = "bg-danger"; dotText = "text-primary-foreground"; }
                   } else if (isSel) {
-                    border = "border-primary"; bg = "bg-primary-soft"; textColor = "text-primary"; dotBg = "bg-primary"; dotText = "text-white";
+                    border = "border-primary"; bg = "bg-primary-soft"; textColor = "text-primary"; dotBg = "bg-primary"; dotText = "text-primary-foreground";
                   }
 
                   return (
                     <button key={oi} onClick={() => pick(qi, oi)}
                       className={`flex items-center gap-3 border rounded-xl px-4 py-3 text-left transition-all w-full ${border} ${bg} ${submitted ? "cursor-default" : "cursor-pointer hover:border-primary/40"}`}>
-                      <div className={`w-6 h-6 rounded-full ${dotBg} ${dotText} flex items-center justify-center text-[11px] font-bold shrink-0`}>
+                      <div className={`w-6 h-6 rounded-full ${dotBg} ${dotText} flex items-center justify-center text-xs font-bold shrink-0`}>
                         {submitted && isCorrect ? "✓" : submitted && isSel && !isCorrect ? "✕" : LETTERS[oi]}
                       </div>
-                      <span className={`text-[13.5px] font-medium ${textColor}`}>{opt}</span>
+                      <span className={`text-sm font-medium ${textColor}`}>{opt}</span>
                     </button>
                   );
                 })
@@ -163,7 +166,7 @@ export function Quiz() {
             </div>
 
             {submitted && gradeResult && (
-              <div className={`mt-4 px-4 py-3 rounded-xl text-[13px] font-medium leading-relaxed ${gradeResult.results[q.n - 1]?.is_correct ? "bg-emerald-50 text-emerald-800 border border-emerald-100" : "bg-red-50 text-red-800 border border-red-100"}`}>
+              <div className={`mt-4 px-4 py-3 rounded-xl text-sm font-medium leading-relaxed ${gradeResult.results[q.n - 1]?.is_correct ? "bg-success-soft text-success border border-success" : "bg-danger-soft text-danger border border-danger"}`}>
                 <div className="font-bold mb-1">
                   {gradeResult.results[q.n - 1]?.is_correct ? "✓ Correct" : `✕ Incorrect`}
                 </div>
@@ -191,28 +194,28 @@ export function Quiz() {
               setGradeResult(res);
               setSubmitted(true);
             } catch (err: any) {
-              alert(err.message || "Failed to grade");
+              toast.error(err.message || "Failed to grade the quiz");
             } finally {
               setIsGrading(false);
             }
           }}
           disabled={answered < questions.length || isGrading}
-          className="mt-6 w-full bg-primary text-white rounded-xl py-3 text-[14.5px] font-bold hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-primary/20">
+          className="mt-6 w-full bg-primary text-primary-foreground rounded-xl py-3 text-base font-bold hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed ">
           {isGrading ? "Grading..." : "Submit quiz"}
         </button>
       ) : (
         <div className="mt-6 flex flex-col sm:flex-row gap-3">
           <Link 
             to={`/sessions/${sessionId}`}
-            className="flex-1 bg-primary text-white text-center rounded-xl py-3 text-[14.5px] font-bold hover:bg-primary-hover transition-colors shadow-sm shadow-primary/20"
+            className="flex-1 bg-primary text-primary-foreground text-center rounded-xl py-3 text-base font-bold hover:bg-primary-hover transition-colors "
           >
-            Return to Session
+            Return to session
           </Link>
           <button 
             onClick={() => { setAnswers({}); setSubmitted(false); setGradeResult(null); }}
-            className="flex-1 bg-surface border border-border rounded-xl py-3 text-[14.5px] font-bold hover:bg-background transition-colors"
+            className="flex-1 bg-surface border border-border rounded-xl py-3 text-base font-bold hover:bg-muted transition-colors"
           >
-            Retry Quiz
+            Retry quiz
           </button>
         </div>
       )}
