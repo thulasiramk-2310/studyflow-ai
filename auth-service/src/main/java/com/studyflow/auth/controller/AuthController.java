@@ -16,9 +16,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import static com.studyflow.auth.security.JwtTokenProvider.JWT_EXPIRATION_SECONDS;
 
 @RestController
 @RequestMapping("/auth")
@@ -59,7 +59,7 @@ public class AuthController {
                 .secure(true)
                 .sameSite("Lax")
                 .path("/")
-                .maxAge(7 * 24 * 60 * 60)
+                .maxAge(JWT_EXPIRATION_SECONDS)
                 .build();
 
         return ResponseEntity.ok()
@@ -72,20 +72,8 @@ public class AuthController {
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
             // Dummy hash to prevent timing attacks
             passwordEncoder.matches(registerRequest.getPassword(), "$2a$10$dummyhashdummyhashdummyhashdummyhashdummyhashdum");
-            // Return dummy response with parity
-            UserDto dummyDto = new UserDto("00000000-0000-0000-0000-000000000000", registerRequest.getName(), registerRequest.getEmail(), "https://i.pravatar.cc/150?u=" + registerRequest.getEmail());
-            
-            ResponseCookie dummyCookie = ResponseCookie.from("jwt", "dummy_token")
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(0)
-                .build();
-                
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, dummyCookie.toString())
-                    .body(ApiResponse.success(new AuthResponse(dummyDto)));
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("EMAIL_ALREADY_REGISTERED", "An account with this email already exists"));
         }
 
         User user = new User(
@@ -106,7 +94,7 @@ public class AuthController {
                 .secure(true)
                 .sameSite("Lax")
                 .path("/")
-                .maxAge(7 * 24 * 60 * 60)
+                .maxAge(JWT_EXPIRATION_SECONDS)
                 .build();
 
         return ResponseEntity.ok()
