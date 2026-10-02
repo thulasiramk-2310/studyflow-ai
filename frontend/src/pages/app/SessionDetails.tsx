@@ -72,51 +72,30 @@ export function SessionDetails() {
   }, [sessionId]);
 
   useEffect(() => {
-    let t: ReturnType<typeof setTimeout>;
-    let t2: ReturnType<typeof setTimeout>;
-    let t3: ReturnType<typeof setTimeout>;
-    const checkSummary = async () => {
-      if (session?.status !== "COMPLETED") return;
-      try {
-        const res = await sessionService.getSessionSummary(session.id);
-        setSummary(res);
-        if (res.status === "PENDING" || res.status === "GENERATING") {
-          t = setTimeout(checkSummary, 3000);
-        }
-      } catch (e) {
-        // Not generated yet
-      }
+    if (session?.status !== "COMPLETED") return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const inProgress = (x: any) => x?.status === "PENDING" || x?.status === "GENERATING";
+
+    // Polls until the artifact is ready. A just-started job may not have created its row yet,
+    // so a 404 keeps polling while we're waiting on it (capped at about two minutes).
+    const poll = (fetch: () => Promise<any>, set: (v: any) => void, waiting: boolean, tries = 0) => {
+      fetch()
+        .then((res) => {
+          set(res);
+          if (inProgress(res)) timers.push(setTimeout(() => poll(fetch, set, waiting, tries + 1), 3000));
+        })
+        .catch(() => {
+          if (!waiting) return; // not generated yet and nobody asked for it
+          if (tries < 40) timers.push(setTimeout(() => poll(fetch, set, waiting, tries + 1), 3000));
+          else set({ status: "FAILED" });
+        });
     };
-    const checkQuiz = async () => {
-      if (session?.status !== "COMPLETED") return;
-      try {
-        const res = await sessionService.getSessionQuiz(session.id);
-        setQuiz(res);
-        if (res.status === "PENDING" || res.status === "GENERATING") {
-          t2 = setTimeout(checkQuiz, 3000);
-        }
-      } catch (e) {
-        // Not generated yet
-      }
-    };
-    const checkFlashcards = async () => {
-      if (session?.status !== "COMPLETED") return;
-      try {
-        const res = await sessionService.getFlashcards(session.id);
-        setFlashcards(res);
-        if (res.status === "PENDING" || res.status === "GENERATING") {
-          t3 = setTimeout(checkFlashcards, 3000);
-        }
-      } catch (e) {
-        // Not generated yet
-      }
-    };
-    
-    if (session?.status === "COMPLETED" && (!summary || summary.status === "PENDING" || summary.status === "GENERATING")) checkSummary();
-    if (session?.status === "COMPLETED" && (!quiz || quiz.status === "PENDING" || quiz.status === "GENERATING")) checkQuiz();
-    if (session?.status === "COMPLETED" && (!flashcards || flashcards.status === "PENDING" || flashcards.status === "GENERATING")) checkFlashcards();
-    
-    return () => { clearTimeout(t); clearTimeout(t2); clearTimeout(t3); };
+
+    if (!summary || inProgress(summary)) poll(() => sessionService.getSessionSummary(session.id), setSummary, inProgress(summary));
+    if (!quiz || inProgress(quiz)) poll(() => sessionService.getSessionQuiz(session.id), setQuiz, inProgress(quiz));
+    if (!flashcards || inProgress(flashcards)) poll(() => sessionService.getFlashcards(session.id), setFlashcards, inProgress(flashcards));
+
+    return () => timers.forEach(clearTimeout);
   }, [session?.status, session?.id, summary?.status, quiz?.status, flashcards?.status]);
 
   const handleComplete = async () => {
