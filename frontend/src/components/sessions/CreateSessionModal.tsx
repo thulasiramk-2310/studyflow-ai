@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { X, Loader2 } from "lucide-react";
 import { groupService } from "../../services/group.service";
 import type { Group } from "../../services/group.service";
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
+  const terms = useTerms();
   const [loading, setLoading] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupResources, setGroupResources] = useState<any[]>([]);
@@ -80,11 +82,11 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
         resource_ids: selectedResources,
       });
       
-      toast.success("Session scheduled successfully");
+      toast.success(`${terms.session} scheduled successfully`);
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Failed to schedule session");
+      toast.error(err.message || `Failed to schedule ${terms.sessionLower}`);
     } finally {
       setLoading(false);
     }
@@ -97,10 +99,10 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Schedule a session" className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-foreground/30 p-4 backdrop-blur-[2px]">
+    <div role="dialog" aria-modal="true" aria-label={`Schedule a ${terms.sessionLower}`} className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-foreground/30 p-4 backdrop-blur-[2px]">
       <div className="my-auto w-full max-w-lg rounded-xl border border-border bg-surface shadow-float">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-soft sticky top-0 bg-surface rounded-t-xl z-10">
-          <h2 className="font-serif text-lg text-foreground">Schedule a session</h2>
+          <h2 className="font-serif text-lg text-foreground">Schedule a {terms.sessionLower}</h2>
           <button onClick={onClose} aria-label="Close" className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -109,7 +111,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Group */}
           <div>
-            <label className="block text-sm font-semibold mb-1.5">Study Group</label>
+            <label className="block text-sm font-semibold mb-1.5">{terms.group}</label>
             <select
               required
               value={groupId}

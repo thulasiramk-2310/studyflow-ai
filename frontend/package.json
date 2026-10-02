@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint && node scripts/check-colors.mjs",
+    "lint": "oxlint && node scripts/check-colors.mjs && node scripts/check-terms.mjs",
     "preview": "vite preview",
-    "walkthrough": "node scripts/walkthrough.mjs"
+    "walkthrough": "node scripts/walkthrough.mjs",
+    "walkthrough:modes": "node scripts/walkthrough-modes.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",

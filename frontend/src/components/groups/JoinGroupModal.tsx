@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { toast } from "sonner";
 import { groupService } from "../../services/group.service";
 import { Button, Input, Modal } from "../ui";
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function JoinGroupModal({ isOpen, onClose, onSuccess }: Props) {
+  const terms = useTerms();
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +36,7 @@ export function JoinGroupModal({ isOpen, onClose, onSuccess }: Props) {
       open={isOpen}
       onClose={onClose}
       size="sm"
-      title="Join a study group"
+      title={`Join a ${terms.groupLower}`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -50,7 +52,7 @@ export function JoinGroupModal({ isOpen, onClose, onSuccess }: Props) {
           onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
           placeholder="e.g. A7K9QP"
           className="font-mono uppercase tracking-widest"
-          hint="Ask the group organizer for the code shown on their group page."
+          hint={`Ask the ${terms.groupLower} ${terms.organizer.toLowerCase()} for the code shown on their page.`}
         />
       </form>
     </Modal>

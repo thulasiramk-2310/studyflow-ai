@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
 import type { Flashcard } from "../../services/session.service";
 
@@ -7,13 +8,14 @@ interface FlashcardViewerProps {
 }
 
 export function FlashcardViewer({ flashcards }: FlashcardViewerProps) {
+  const terms = useTerms();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
   if (!flashcards || flashcards.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed rounded-xl border-border bg-muted text-muted-foreground">
-        <p>No flashcards available in this deck.</p>
+        <p>No {terms.flashcards.toLowerCase()} available yet.</p>
       </div>
     );
   }

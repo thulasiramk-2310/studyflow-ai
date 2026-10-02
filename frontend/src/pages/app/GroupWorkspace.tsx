@@ -216,7 +216,7 @@ export function GroupWorkspace() {
     if (!groupId || !finalProposal) return;
     try {
       setIsCreatingSession(true);
-      toast.loading("Creating session...", { id: "create-session" });
+      toast.loading(`Creating ${terms.sessionLower}...`, { id: "create-session" });
       
       const newSession = await sessionService.createSession({
         group_id: Number(groupId),
@@ -233,11 +233,11 @@ export function GroupWorkspace() {
         generated_by: "AI"
       });
       
-      toast.success("Session created successfully!", { id: "create-session" });
+      toast.success(`${terms.session} created successfully!`, { id: "create-session" });
       setIsPlanModalOpen(false);
       navigate(`/sessions/${newSession.id}`);
     } catch (err: any) {
-      toast.error(err.message || "Failed to create session", { id: "create-session" });
+      toast.error(err.message || `Failed to create ${terms.sessionLower}`, { id: "create-session" });
     } finally {
       setIsCreatingSession(false);
     }
@@ -253,7 +253,7 @@ export function GroupWorkspace() {
       <PageHeader
         eyebrow={
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link to="/groups" className="hover:text-foreground">Groups</Link>
+            <Link to="/groups" className="hover:text-foreground">{terms.groups}</Link>
             <span>/</span>
             <span className="truncate text-foreground">{group.name}</span>
           </div>
@@ -261,7 +261,7 @@ export function GroupWorkspace() {
         title={group.name}
         subtitle={
           <span>
-            {group.goal || group.description || "Study group"} · {memberCount} member{memberCount === 1 ? "" : "s"} · {resources.length} note{resources.length === 1 ? "" : "s"}
+            {group.goal || group.description || terms.group} · {memberCount} member{memberCount === 1 ? "" : "s"} · {resources.length} note{resources.length === 1 ? "" : "s"}
           </span>
         }
         actions={
@@ -295,7 +295,7 @@ export function GroupWorkspace() {
         }
       />
 
-      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} labels={{ Sessions: terms.sessions, Library: terms.library }} />
 
       {activeTab === "Overview" && (
         <div className="mt-6 grid items-start gap-5 lg:grid-cols-[1.5fr_1fr]">
@@ -306,20 +306,21 @@ export function GroupWorkspace() {
             onUpdate={loadData}
             progressPercent={group.progress_percent || 0}
             completedCount={group.completed_items_count || 0}
+            audience={terms.audience}
           />
           <div className="flex flex-col gap-5">
             <Card>
-              <CardHeader title="Upcoming" action={<button onClick={() => setActiveTab("Sessions")} className="hover:text-foreground">All sessions</button>} />
+              <CardHeader title="Upcoming" action={<button onClick={() => setActiveTab("Sessions")} className="hover:text-foreground">All {terms.sessionsLower}</button>} />
               {upcomingSessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No upcoming sessions. Use “Plan next session” to let the AI propose one.</p>
+                <p className="text-sm text-muted-foreground">No upcoming {terms.sessionsLower}. Use “{terms.planNext}” to let the AI propose one.</p>
               ) : (
                 upcomingSessions.slice(0, 3).map((s) => <SessionRow key={s.id} session={s} />)
               )}
             </Card>
             <Card>
-              <CardHeader title={`Library · ${resources.length}`} action={<button onClick={() => setActiveTab("Library")} className="hover:text-foreground">View all</button>} />
+              <CardHeader title={`${terms.library} · ${resources.length}`} action={<button onClick={() => setActiveTab("Library")} className="hover:text-foreground">View all</button>} />
               {recentResources.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No notes yet. Upload PDFs, slides or Markdown.</p>
+                <p className="text-sm text-muted-foreground">No notes yet. Upload PDFs.</p>
               ) : (
                 recentResources.map((r) => <ResourceRow key={r.id} resource={r} />)
               )}
@@ -341,7 +342,7 @@ export function GroupWorkspace() {
             action={
               canManageGroup && (
                 <div className="flex items-center gap-2">
-                  <Select aria-label="Session length" value={targetDuration} onChange={(e) => setTargetDuration(Number(e.target.value))} className="h-8 w-28 text-sm">
+                  <Select aria-label={`${terms.session} length`} value={targetDuration} onChange={(e) => setTargetDuration(Number(e.target.value))} className="h-8 w-28 text-sm">
                     {[30, 45, 60, 90, 120].map((m) => (
                       <option key={m} value={m}>{m} min</option>
                     ))}
@@ -353,7 +354,7 @@ export function GroupWorkspace() {
             }
           />
           {sessions.length === 0 ? (
-            <EmptyState icon={Calendar} title="No sessions yet" description="Plan one with the AI planner or schedule it yourself." />
+            <EmptyState icon={Calendar} title={`No ${terms.sessionsLower} yet`} description="Plan one with the AI planner or schedule it yourself." />
           ) : (
             sessions.map((s) => <SessionRow key={s.id} session={s} />)
           )}
@@ -362,7 +363,7 @@ export function GroupWorkspace() {
 
       {activeTab === "Library" && (
         <Card className="mt-6">
-          <CardHeader title={`Library · ${resources.length}`} action={<Button size="sm" icon={Upload} onClick={() => setIsUploadOpen(true)}>Upload notes</Button>} />
+          <CardHeader title={`${terms.library} · ${resources.length}`} action={<Button size="sm" icon={Upload} onClick={() => setIsUploadOpen(true)}>Upload notes</Button>} />
           {resources.length === 0 ? (
             <EmptyState icon={FileText} title="No notes yet" description="Upload PDFs, DOCX, PPTX or Markdown. They're indexed so Ask AI can cite them." />
           ) : (
@@ -384,9 +385,9 @@ export function GroupWorkspace() {
                   <Avatar name={m.name || `User ${m.user_id}`} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-base font-semibold text-foreground">{memberName(m)}</div>
-                    <div className="text-sm capitalize text-muted-foreground">{m.role.toLowerCase()}</div>
+                    <div className="text-sm text-muted-foreground">{m.role === "ORGANIZER" ? terms.organizer : terms.member}</div>
                   </div>
-                  {m.role === "ORGANIZER" && <Badge tone="brand">Organizer</Badge>}
+                  {m.role === "ORGANIZER" && <Badge tone="brand">{terms.organizer}</Badge>}
                   {canManageGroup && m.role !== "ORGANIZER" && !isMe && (
                     <button onClick={() => handleRemoveMember(m.user_id)} title="Remove member" aria-label="Remove member" className="rounded-lg p-1.5 text-muted-foreground hover:bg-danger-soft hover:text-danger">
                       <Trash2 className="h-4 w-4" />
@@ -398,7 +399,7 @@ export function GroupWorkspace() {
           </div>
           <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
             {canManageGroup && <Button size="sm" variant="ghost" icon={RefreshCw} onClick={handleRegenerateInvite}>Regenerate invite code</Button>}
-            <Button size="sm" variant="danger" icon={LogOut} onClick={handleLeaveGroup}>Leave group</Button>
+            <Button size="sm" variant="danger" icon={LogOut} onClick={handleLeaveGroup}>Leave {terms.groupLower}</Button>
           </div>
         </Card>
       )}
@@ -431,6 +432,7 @@ export function GroupWorkspace() {
           onCreateSession={handleCreateSession}
           isRegenerating={isGeneratingPlan}
           isCreating={isCreatingSession}
+          audience={terms.audience}
         />
       )}
     </div>

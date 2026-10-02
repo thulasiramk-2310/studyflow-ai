@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTerms } from "../../hooks/useTerms";
 import { ChevronRight } from "lucide-react";
 
 const ROUTE_LABELS: Record<string, string> = {
@@ -15,12 +16,14 @@ const ROUTE_LABELS: Record<string, string> = {
   // dynamic segments get title-cased below
 };
 
-function label(segment: string): string {
+function label(segment: string, t: ReturnType<typeof useTerms>): string {
   if (/^\d+$/.test(segment)) return "Details";
-  return ROUTE_LABELS[segment] ?? segment.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const worded: Record<string, string> = { groups: t.groups, resources: t.library, sessions: t.sessions, quiz: t.quiz };
+  return worded[segment] ?? ROUTE_LABELS[segment] ?? segment.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
 export function Breadcrumb() {
+  const terms = useTerms();
   const { pathname } = useLocation();
   const segments = pathname.split("/").filter(Boolean); // e.g. ["groups", "bio301"]
 
@@ -28,7 +31,7 @@ export function Breadcrumb() {
 
   // Build cumulative hrefs
   const crumbs = segments.map((seg, i) => ({
-    label: label(seg),
+    label: label(seg, terms),
     href: "/" + segments.slice(0, i + 1).join("/"),
     isLast: i === segments.length - 1,
   }));

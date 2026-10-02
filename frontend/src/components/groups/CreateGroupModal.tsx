@@ -46,7 +46,7 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }: Props) {
       }
     >
       <form id="create-group-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input label="Group name" required value={name} onChange={(e) => setName(e.target.value)} placeholder={terms.audience === "professional" ? "e.g. Platform Team" : "e.g. Advanced Calculus Study Group"} />
+        <Input label={`${terms.group} name`} required value={name} onChange={(e) => setName(e.target.value)} placeholder={terms.groupNameExample} />
         <Textarea label="Description (optional)" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this group about?" />
         <Textarea label="Group goal (optional)" rows={2} value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="e.g. Become interview ready in Machine Learning" hint="The AI planner uses the goal and learning path to propose sessions." />
       </form>

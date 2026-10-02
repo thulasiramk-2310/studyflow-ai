@@ -1,6 +1,7 @@
 import { cn } from "./cn";
 
-export function Tabs({ tabs, active, onChange }: { tabs: string[]; active: string; onChange: (tab: string) => void }) {
+/** `tabs` are stable keys; `labels` optionally maps a key to the text shown (e.g. audience wording). */
+export function Tabs({ tabs, active, onChange, labels }: { tabs: string[]; active: string; onChange: (tab: string) => void; labels?: Record<string, string> }) {
   return (
     <div role="tablist" className="flex gap-5 overflow-x-auto border-b border-border">
       {tabs.map((tab) => (
@@ -14,7 +15,7 @@ export function Tabs({ tabs, active, onChange }: { tabs: string[]; active: strin
             tab === active ? "border-primary font-semibold text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
-          {tab}
+          {labels?.[tab] ?? tab}
         </button>
       ))}
     </div>

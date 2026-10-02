@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useGroupTerms } from "../../hooks/useTerms";
+import type { Audience } from "../../types";
 import { CheckCircle, Circle, Map, Plus, Trash2, GripVertical, Clock, Sparkles } from "lucide-react";
 import { groupService, type LearningPlanItem } from "../../services/group.service";
 import { toast } from "sonner";
 
 interface Props {
+  /** The group's audience; wording follows the group. */
+  audience?: Audience;
   groupId: number;
   items: LearningPlanItem[];
   canManage: boolean;
@@ -12,7 +16,8 @@ interface Props {
   completedCount: number;
 }
 
-export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPercent, completedCount }: Props) {
+export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPercent, completedCount, audience }: Props) {
+  const terms = useGroupTerms({ audience });
   const [newItemTitle, setNewItemTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,7 +31,7 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
       setNewItemTitle("");
       setIsAdding(false);
       onUpdate();
-      toast.success("Added to learning path");
+      toast.success(`Added to ${terms.learningPath.toLowerCase()}`);
     } catch (err: any) {
       toast.error(err.message || "Failed to add item");
     } finally {
@@ -63,7 +68,7 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div className="flex items-center gap-2">
           <Map className="h-4 w-4 text-primary-text" />
-          <h3 className="text-base font-bold text-foreground">Learning Path</h3>
+          <h3 className="text-base font-bold text-foreground">{terms.learningPath}</h3>
         </div>
         {items.length > 0 && (
           <div className="text-xs font-semibold text-muted-foreground">
@@ -76,7 +81,7 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
         {items.length === 0 && !isAdding ? (
           <div className="text-center py-6">
             <Map className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground mb-3">No learning path items added yet.</p>
+            <p className="text-sm text-muted-foreground mb-3">No {terms.learningPath.toLowerCase()} items added yet.</p>
             {canManage && (
               <button
                 onClick={() => setIsAdding(true)}

@@ -14,15 +14,17 @@ interface Message {
   thinking?: boolean;
 }
 
-const QUICK_ACTIONS = [
+const quickActions = (t: ReturnType<typeof useTerms>) => [
   { icon: BookOpen, label: "Summarize notes", prompt: "Summarize the key concepts from my study materials" },
-  { icon: BrainCircuit, label: "Generate quiz", action: "quiz" },
-  { icon: Lightbulb, label: "Create flashcards", action: "flashcards" },
-  { icon: Calendar, label: "Plan a session", action: "schedule" },
+  { icon: BrainCircuit, label: `Generate ${t.quiz.toLowerCase()}`, action: "quiz" },
+  { icon: Lightbulb, label: `Create ${t.flashcards.toLowerCase()}`, action: "flashcards" },
+  { icon: Calendar, label: `Plan a ${t.sessionLower}`, action: "schedule" },
 ];
 
 export function FloatingAI() {
-  const { audience } = useTerms();
+  const terms = useTerms();
+  const { audience } = terms;
+  const QUICK_ACTIONS = quickActions(terms);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -55,7 +57,7 @@ export function FloatingAI() {
     }
   }, [isOpen]);
 
-  const handleQuickAction = (action: typeof QUICK_ACTIONS[0]) => {
+  const handleQuickAction = (action: ReturnType<typeof quickActions>[number]) => {
     if (action.action === "quiz" && selectedGroup) {
       navigate(`/groups/${selectedGroup.id}`, { state: { openTab: "Sessions" } });
       setIsOpen(false);
@@ -288,7 +290,7 @@ export function FloatingAI() {
               <div className="px-4 py-3 border-t border-border bg-surface shrink-0">
                 {!selectedGroup ? (
                   <div className="text-center text-xs text-muted-foreground font-medium py-1">
-                    No study groups available
+                    No {terms.groupsLower} available
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">

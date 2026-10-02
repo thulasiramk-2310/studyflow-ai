@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useGroupTerms } from "../../hooks/useTerms";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { CheckCircle2, Clock, ExternalLink, ListChecks, MapPin, Pencil, Sparkles, Video } from "lucide-react";
@@ -16,6 +17,9 @@ export function SessionDetails() {
   const { user } = useAuth();
   const [session, setSession] = useState<Session | null>(null);
   const [group, setGroup] = useState<Group | null>(null);
+  const terms = useGroupTerms(group);
+  const quizWord = terms.quiz.toLowerCase();
+  const cardsWord = terms.flashcards.toLowerCase();
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [quiz, setQuiz] = useState<any>(null);
   const [flashcards, setFlashcards] = useState<FlashcardDeckResponse | null>(null);
@@ -38,7 +42,7 @@ export function SessionDetails() {
       const att = await sessionService.getSessionAttendance(Number(sessionId));
       setAttendance(att);
     } catch (error) {
-      toast.error("Failed to fetch session details.");
+      toast.error(`Failed to fetch ${terms.sessionLower} details.`);
     }
   };
 
@@ -60,7 +64,7 @@ export function SessionDetails() {
         }
       })
       .catch(() => {
-        if (isMounted) toast.error("Failed to fetch session details.");
+        if (isMounted) toast.error(`Failed to fetch ${terms.sessionLower} details.`);
       })
       .finally(() => {
         if (isMounted) {
@@ -103,7 +107,7 @@ export function SessionDetails() {
     setCompleting(true);
     try {
       await sessionService.completeSession(Number(sessionId));
-      toast.success("Session marked as completed!");
+      toast.success(`${terms.session} marked as completed!`);
       await fetchSession();
     } catch (error) {
       toast.error("Failed to complete session.");
@@ -150,7 +154,7 @@ export function SessionDetails() {
     setRegeneratingQuiz(true);
     try {
       await sessionService.regenerateSessionQuiz(Number(sessionId));
-      toast.success("Quiz regeneration started");
+      toast.success(`${terms.quiz} regeneration started`);
       setQuiz((prev: any) => prev ? { ...prev, status: "GENERATING" } : null);
     } catch (error) {
       toast.error("Failed to regenerate quiz.");
@@ -164,7 +168,7 @@ export function SessionDetails() {
     setGeneratingQuiz(true);
     try {
       await sessionService.regenerateSessionQuiz(Number(sessionId));
-      toast.success("Quiz generation started");
+      toast.success(`${terms.quiz} generation started`);
       setQuiz({ status: "GENERATING" });
     } catch (error) {
       toast.error("Failed to generate quiz.");
@@ -214,7 +218,7 @@ export function SessionDetails() {
   if (!session) {
     return (
       <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
-        <Card><EmptyState icon={Clock} title="Session not found" description="The session you're looking for doesn't exist or has been removed." /></Card>
+        <Card><EmptyState icon={Clock} title={`${terms.session} not found`} description={`The ${terms.sessionLower} you're looking for doesn't exist or has been removed.`} /></Card>
       </div>
     );
   }
@@ -253,7 +257,7 @@ export function SessionDetails() {
           </div>
         }
         title={session.title}
-        subtitle={group ? <Link to={`/groups/${group.id}`} className="hover:text-foreground">{group.name}</Link> : "Group session"}
+        subtitle={group ? <Link to={`/groups/${group.id}`} className="hover:text-foreground">{group.name}</Link> : `${terms.group} ${terms.sessionLower}`}
         actions={
           <>
             {canManageGroup && <Button size="sm" variant="secondary" icon={Pencil} onClick={() => setIsEditModalOpen(true)}>Edit</Button>}
@@ -283,8 +287,8 @@ export function SessionDetails() {
                 <div className="flex gap-3">
                   <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary-text" />
                   <div>
-                    <div className="text-base font-semibold text-foreground">Summary, quiz and flashcards come next</div>
-                    <p className="mt-0.5 text-sm text-muted-foreground">When the session is marked completed, StudyFlow writes a summary from the attached notes, and you can generate a quiz and flashcards.</p>
+                    <div className="text-base font-semibold text-foreground">Summary, {quizWord} and {cardsWord} come next</div>
+                    <p className="mt-0.5 text-sm text-muted-foreground">When the {terms.sessionLower} is marked completed, StudyFlow writes a summary from the attached notes, and you can generate a {quizWord} and flashcards.</p>
                   </div>
                 </div>
               </Card>
@@ -333,22 +337,22 @@ export function SessionDetails() {
               <div className="grid gap-5 md:grid-cols-2">
                 <Card>
                   <CardHeader
-                    title="Quiz"
+                    title={terms.quiz}
                     action={canManageGroup && quiz?.status === "READY" && (
                       <button onClick={handleRegenerateQuiz} disabled={regeneratingQuiz} className="hover:text-foreground disabled:opacity-50">{regeneratingQuiz ? "Regenerating…" : "Regenerate"}</button>
                     )}
                   />
                   {quiz?.status === "READY" ? (
                     <>
-                      <p className="mb-4 text-sm text-muted-foreground">{quiz.questions?.length || 0} questions from this session's notes.</p>
+                      <p className="mb-4 text-sm text-muted-foreground">{quiz.questions?.length || 0} questions from this {terms.sessionLower}'s notes.</p>
                       <Button icon={ListChecks} onClick={() => navigate(`/sessions/${session.id}/quiz`)}>Take quiz</Button>
                     </>
                   ) : quiz?.status === "FAILED" ? (
-                    <p className="text-sm text-danger">The quiz failed to generate. <button onClick={handleRegenerateQuiz} className="underline">Try again</button></p>
+                    <p className="text-sm text-danger">The {quizWord} failed to generate. <button onClick={handleRegenerateQuiz} className="underline">Try again</button></p>
                   ) : !quiz ? (
                     <>
-                      <p className="mb-4 text-sm text-muted-foreground">Test yourself on this session's materials.</p>
-                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingQuiz} onClick={handleGenerateQuiz}>Generate quiz</Button> : <p className="text-xs text-muted-foreground">The organizer can generate a quiz.</p>}
+                      <p className="mb-4 text-sm text-muted-foreground">Test yourself on this {terms.sessionLower}'s materials.</p>
+                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingQuiz} onClick={handleGenerateQuiz}>Generate {quizWord}</Button> : <p className="text-xs text-muted-foreground">The organizer can generate a quiz.</p>}
                     </>
                   ) : (
                     <div className="flex flex-col gap-2"><Skeleton className="h-4 w-2/3" /><p className="text-xs text-muted-foreground">Writing questions…</p></div>
@@ -357,7 +361,7 @@ export function SessionDetails() {
 
                 <Card>
                   <CardHeader
-                    title="Flashcards"
+                    title={terms.flashcards}
                     action={canManageGroup && flashcards?.status === "READY" && (
                       <button onClick={handleRegenerateFlashcards} disabled={regeneratingFlashcards} className="hover:text-foreground disabled:opacity-50">{regeneratingFlashcards ? "Regenerating…" : "Regenerate"}</button>
                     )}
@@ -365,14 +369,14 @@ export function SessionDetails() {
                   {flashcards?.status === "READY" ? (
                     <p className="text-sm text-muted-foreground">{flashcards.flashcards.length} cards. Flip through them below.</p>
                   ) : flashcards?.status === "FAILED" ? (
-                    <p className="text-sm text-danger">Flashcards failed to generate. <button onClick={handleRegenerateFlashcards} className="underline">Try again</button></p>
+                    <p className="text-sm text-danger">{terms.flashcards} failed to generate. <button onClick={handleRegenerateFlashcards} className="underline">Try again</button></p>
                   ) : !flashcards ? (
                     <>
-                      <p className="mb-4 text-sm text-muted-foreground">Memorise the key ideas from this session.</p>
-                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingFlashcards} onClick={handleGenerateFlashcards}>Generate flashcards</Button> : <p className="text-xs text-muted-foreground">The organizer can generate flashcards.</p>}
+                      <p className="mb-4 text-sm text-muted-foreground">Memorise the key ideas from this {terms.sessionLower}.</p>
+                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingFlashcards} onClick={handleGenerateFlashcards}>Generate {cardsWord}</Button> : <p className="text-xs text-muted-foreground">The organizer can generate flashcards.</p>}
                     </>
                   ) : (
-                    <div className="flex flex-col gap-2"><Skeleton className="h-4 w-2/3" /><p className="text-xs text-muted-foreground">Writing flashcards…</p></div>
+                    <div className="flex flex-col gap-2"><Skeleton className="h-4 w-2/3" /><p className="text-xs text-muted-foreground">Writing {cardsWord}…</p></div>
                   )}
                 </Card>
               </div>
