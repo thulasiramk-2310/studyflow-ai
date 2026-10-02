@@ -5,6 +5,29 @@ from app.models.session import SessionStatus, SummaryStatus, MeetingType, Attend
 from typing import Literal
 from app.schemas.common import UTCDateTime
 
+# Models invent activity types ("lecture", "exercise"); map them onto the six the UI knows
+# instead of rejecting the whole plan.
+ACTIVITY_TYPES = ("revision", "learning", "practice", "discussion", "quiz", "break")
+_ACTIVITY_SYNONYMS = {
+    "lecture": "learning", "lesson": "learning", "introduction": "learning", "intro": "learning",
+    "presentation": "learning", "reading": "learning", "concept": "learning", "theory": "learning",
+    "review": "revision", "recap": "revision", "summary": "revision", "wrap-up": "revision", "wrap up": "revision",
+    "exercise": "practice", "exercises": "practice", "problem solving": "practice", "hands-on": "practice",
+    "lab": "practice", "case study": "practice", "activity": "practice", "drill": "practice",
+    "q&a": "discussion", "qa": "discussion", "group discussion": "discussion", "debate": "discussion",
+    "brainstorm": "discussion",
+    "assessment": "quiz", "test": "quiz", "knowledge check": "quiz", "quiz review": "quiz",
+    "rest": "break", "pause": "break",
+}
+
+
+def normalize_activity_type(value) -> str:
+    text = str(value or "").strip().lower()
+    if text in ACTIVITY_TYPES:
+        return text
+    return _ACTIVITY_SYNONYMS.get(text, "learning")
+
+
 class AgendaItem(BaseModel):
     title: str
     duration_minutes: int = 0
@@ -17,6 +40,11 @@ class AgendaItem(BaseModel):
         "quiz",
         "break"
     ] = "learning"
+
+    @field_validator("activity_type", mode="before")
+    @classmethod
+    def map_activity_type(cls, v):
+        return normalize_activity_type(v)
 
 class SessionSummaryResponse(BaseModel):
     id: int

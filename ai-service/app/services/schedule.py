@@ -6,6 +6,29 @@ from app.prompts.audience import with_audience
 
 logger = logging.getLogger(__name__)
 
+# Models invent activity types ("lecture", "exercise"); map them onto the six the UI knows
+# instead of rejecting the whole plan.
+ACTIVITY_TYPES = ("revision", "learning", "practice", "discussion", "quiz", "break")
+_ACTIVITY_SYNONYMS = {
+    "lecture": "learning", "lesson": "learning", "introduction": "learning", "intro": "learning",
+    "presentation": "learning", "reading": "learning", "concept": "learning", "theory": "learning",
+    "review": "revision", "recap": "revision", "summary": "revision", "wrap-up": "revision", "wrap up": "revision",
+    "exercise": "practice", "exercises": "practice", "problem solving": "practice", "hands-on": "practice",
+    "lab": "practice", "case study": "practice", "activity": "practice", "drill": "practice",
+    "q&a": "discussion", "qa": "discussion", "group discussion": "discussion", "debate": "discussion",
+    "brainstorm": "discussion",
+    "assessment": "quiz", "test": "quiz", "knowledge check": "quiz", "quiz review": "quiz",
+    "rest": "break", "pause": "break",
+}
+
+
+def normalize_activity_type(value) -> str:
+    text = str(value or "").strip().lower()
+    if text in ACTIVITY_TYPES:
+        return text
+    return _ACTIVITY_SYNONYMS.get(text, "learning")
+
+
 def generate_schedule(context_str: str, target_duration: int = 60, audience: str | None = None) -> dict:
     """
     Generate a study session schedule proposal based on group context.
@@ -27,6 +50,10 @@ def generate_schedule(context_str: str, target_duration: int = 60, audience: str
         else:
             raise ValueError("No JSON object found in response")
             
+        for item in schedule_data.get("agenda") or []:
+            if isinstance(item, dict):
+                item["activity_type"] = normalize_activity_type(item.get("activity_type"))
+
         logger.info(f"Schedule generated | prompt_chars={len(prompt)} agenda_items={len(schedule_data.get('agenda', []))}")
         
         return schedule_data
