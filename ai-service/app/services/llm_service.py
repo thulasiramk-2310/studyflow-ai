@@ -1,6 +1,7 @@
 import logging
 
 from app.llm.provider import get_provider
+from app.guardrails.pii import mask_pii
 
 logger = logging.getLogger(__name__)
 
@@ -13,4 +14,6 @@ def generate_answer(prompt: str) -> str:
     caller through the provider factory means tests and offline evals swap in
     `MockProvider` without patching this module.
     """
-    return get_provider().complete(prompt)
+    # Single choke point for every LLM call (chat, summaries, quizzes, flashcards,
+    # schedules, titles): uploaded notes can carry contact details and ID numbers.
+    return get_provider().complete(mask_pii(prompt).text)
