@@ -96,6 +96,8 @@ services:
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - STUDY_SERVICE_URL=http://study-service:8000
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_API_KEY1=${GROQ_API_KEY1:-}
+      - GROQ_API_KEY2=${GROQ_API_KEY2:-}
       - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-20b}
       - LLM_PROVIDER=${LLM_PROVIDER:-groq}
     volumes:

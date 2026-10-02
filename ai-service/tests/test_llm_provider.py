@@ -157,3 +157,67 @@ def test_groq_leaves_room_for_long_json_answers(monkeypatch):
 
     assert sent["max_completion_tokens"] >= 8192
     assert sent["reasoning_effort"] == "low"
+
+
+def _recording_post(replies):
+    """Fake requests.post that returns scripted replies and records which key each call used."""
+    used: list[str] = []
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        used.append(headers["Authorization"].removeprefix("Bearer "))
+        return replies.pop(0)
+
+    return fake_post, used
+
+
+def test_a_rate_limited_key_fails_over_to_the_next_key_without_waiting(monkeypatch, _no_real_sleep):
+    fake_post, used = _recording_post([_FakeResponse(429), _FakeResponse(200, content="from key b")])
+    monkeypatch.setattr("app.llm.provider.requests.post", fake_post)
+
+    provider = GroqProvider(api_keys=["key-a", "key-b", "key-c"])
+
+    assert provider.complete("hello") == "from key b"
+    assert used == ["key-a", "key-b"]
+    assert _no_real_sleep == []
+
+
+def test_the_provider_keeps_using_the_key_that_last_worked(monkeypatch, _no_real_sleep):
+    fake_post, used = _recording_post(
+        [_FakeResponse(429), _FakeResponse(200, content="one"), _FakeResponse(200, content="two")]
+    )
+    monkeypatch.setattr("app.llm.provider.requests.post", fake_post)
+    provider = GroqProvider(api_keys=["key-a", "key-b"])
+
+    provider.complete("first")
+    provider.complete("second")
+
+    assert used == ["key-a", "key-b", "key-b"]
+
+
+def test_an_invalid_key_fails_over_too(monkeypatch, _no_real_sleep):
+    fake_post, used = _recording_post([_FakeResponse(401), _FakeResponse(200, content="ok")])
+    monkeypatch.setattr("app.llm.provider.requests.post", fake_post)
+
+    assert GroqProvider(api_keys=["revoked", "good"]).complete("hello") == "ok"
+    assert used == ["revoked", "good"]
+
+
+def test_when_every_key_is_rate_limited_it_waits_once_then_retries(monkeypatch, _no_real_sleep):
+    fake_post, used = _recording_post(
+        [_FakeResponse(429, headers={"retry-after": "2"}), _FakeResponse(429), _FakeResponse(200, content="after wait")]
+    )
+    monkeypatch.setattr("app.llm.provider.requests.post", fake_post)
+
+    assert GroqProvider(api_keys=["key-a", "key-b"]).complete("hello") == "after wait"
+    assert used == ["key-a", "key-b", "key-a"]
+    assert _no_real_sleep == [2.0]
+
+
+def test_keys_come_from_the_three_settings_skipping_blanks_and_duplicates(monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "key-a")
+    monkeypatch.setattr(settings, "GROQ_API_KEY1", "")
+    monkeypatch.setattr(settings, "GROQ_API_KEY2", "key-a")
+
+    assert GroqProvider().api_keys == ["key-a"]

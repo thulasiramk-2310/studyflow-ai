@@ -41,24 +41,46 @@ class LLMProvider(Protocol):
 
 
 class GroqProvider:
-    """Calls the Groq chat-completions API. Behaviour matches the original
-    `llm_service.generate_answer` exactly, including the HTTP error mapping."""
+    """Calls the Groq chat-completions API.
+
+    Several API keys can be configured (GROQ_API_KEY, GROQ_API_KEY1, GROQ_API_KEY2).
+    A key that is rate-limited (429) or rejected (401/403) hands over to the next
+    one immediately, and the provider keeps using the key that last worked. Only
+    when every key is rate-limited does it wait once (Retry-After, capped) and
+    retry. Note: Groq applies rate limits per organization, so keys from the
+    same organization share one quota.
+    """
 
     name = "groq"
 
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, timeout: float = 30.0):
-        self.api_key = api_key if api_key is not None else settings.GROQ_API_KEY
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        timeout: float = 30.0,
+        api_keys: Optional[list[str]] = None,
+    ):
+        if api_keys is None:
+            api_keys = [api_key] if api_key is not None else [
+                settings.GROQ_API_KEY, settings.GROQ_API_KEY1, settings.GROQ_API_KEY2,
+            ]
+        self.api_keys = list(dict.fromkeys(k for k in api_keys if k))
         self.model = model or settings.GROQ_MODEL
         self.timeout = timeout
+        self._active = 0  # index of the key that last worked
+
+    @property
+    def api_key(self) -> str:
+        return self.api_keys[self._active] if self.api_keys else ""
+
+    def _post(self, key: str, payload: dict):
+        headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+        return requests.post(GROQ_URL, headers=headers, json=payload, timeout=self.timeout)
 
     def complete(self, prompt: str) -> str:
-        if not self.api_key:
+        if not self.api_keys:
             raise HTTPException(status_code=503, detail="LLM provider is not configured (missing GROQ_API_KEY)")
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
@@ -70,12 +92,29 @@ class GroqProvider:
 
         try:
             logger.info(f"Sending prompt to Groq ({self.model})")
-            response = requests.post(GROQ_URL, headers=headers, json=payload, timeout=self.timeout)
-            if response.status_code == 429:
-                wait = _retry_after_seconds(response)
-                logger.warning(f"Groq rate limit hit; retrying once in {wait:.1f}s")
-                time.sleep(wait)
-                response = requests.post(GROQ_URL, headers=headers, json=payload, timeout=self.timeout)
+            count = len(self.api_keys)
+            response = None
+            first_rate_limited = None
+            for step in range(count):
+                index = (self._active + step) % count
+                response = self._post(self.api_keys[index], payload)
+                if response.status_code in (401, 403, 429):
+                    if response.status_code == 429 and first_rate_limited is None:
+                        first_rate_limited = (index, response)
+                    logger.warning(f"Groq key #{index} returned {response.status_code}; trying the next key")
+                    continue
+                self._active = index
+                break
+            else:
+                if first_rate_limited is not None:
+                    # Every key is rate-limited: wait once, then retry the first one that was.
+                    index, limited = first_rate_limited
+                    wait = _retry_after_seconds(limited)
+                    logger.warning(f"All Groq keys rate-limited; retrying once in {wait:.1f}s")
+                    time.sleep(wait)
+                    response = self._post(self.api_keys[index], payload)
+                    if response.status_code < 400:
+                        self._active = index
             response.raise_for_status()
             data = response.json()
             return data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
@@ -84,7 +123,7 @@ class GroqProvider:
             raise HTTPException(status_code=503, detail=AI_UNAVAILABLE_DETAIL)
         except requests.exceptions.RequestException as e:
             # Covers HTTP errors (429 quota, 5xx) and connection failures.
-            logger.error(f"Failed to communicate with Groq: {e}")
+            logger.error(f"Failed to communicate with Groq: {type(e).__name__}")
             raise HTTPException(status_code=503, detail=AI_UNAVAILABLE_DETAIL)
 
 
