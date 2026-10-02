@@ -27,6 +27,23 @@ from app.services.storage import storage
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Extension -> MIME types browsers actually send for it. Text files often arrive as
+# text/plain or with no type at all (Windows), so those are accepted for .md/.txt only.
+_TEXT_TYPES = {"text/plain", "text/markdown", "text/x-markdown", "application/octet-stream", ""}
+ALLOWED_UPLOADS = {
+    ".pdf": {"application/pdf"},
+    ".docx": {"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    ".pptx": {"application/vnd.openxmlformats-officedocument.presentationml.presentation"},
+    ".md": _TEXT_TYPES,
+    ".txt": _TEXT_TYPES,
+}
+
+
+def is_allowed_upload(filename: str, content_type: str | None) -> bool:
+    ext = os.path.splitext(filename or "")[1].lower()
+    return ext in ALLOWED_UPLOADS and (content_type or "") in ALLOWED_UPLOADS[ext]
+
+
 @router.post("/upload", response_model=SuccessResponse[ResourceResponse], status_code=status.HTTP_201_CREATED)
 def upload_resource(
     background_tasks: BackgroundTasks,
@@ -42,17 +59,10 @@ def upload_resource(
     if not member:
         raise HTTPException(status_code=403, detail="Only members can upload resources")
     
-    # 2. Check supported file types precisely
-    valid_extensions = {
-        "application/pdf": ".pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
-        "text/markdown": ".md"
-    }
-    
+    # 2. Only types the indexer can read (ai-service document_loader)
     ext = os.path.splitext(file.filename)[1].lower()
-    if file.content_type not in valid_extensions or valid_extensions[file.content_type] != ext:
-        raise HTTPException(status_code=400, detail="Unsupported file type or extension mismatch")
+    if not is_allowed_upload(file.filename, file.content_type):
+        raise HTTPException(status_code=400, detail="Upload a PDF, Word (.docx), PowerPoint (.pptx), Markdown or text file")
 
     # Save to memory/disk and check size
     file.file.seek(0, 2)
