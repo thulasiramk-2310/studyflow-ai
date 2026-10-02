@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from app.models.session import SessionStatus, SummaryStatus, MeetingType, AttendanceStatus, StudySessionType
 from typing import Literal
+from app.schemas.common import UTCDateTime
 
 class AgendaItem(BaseModel):
     title: str
@@ -26,7 +27,7 @@ class SessionSummaryResponse(BaseModel):
     action_items: Optional[List[str]] = None
     status: SummaryStatus
     model: Optional[str] = None
-    generated_at: Optional[datetime] = None
+    generated_at: Optional[UTCDateTime] = None
     generation_time_ms: Optional[int] = None
 
     class Config:
@@ -112,8 +113,8 @@ class SessionResponse(SessionBase):
     end_time: Optional[datetime] = None
     generated_by: str
     created_by: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: UTCDateTime
+    updated_at: UTCDateTime
     resources: List[SessionResourceResponse] = []
 
     class Config:

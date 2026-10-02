@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 from app.models.flashcard import FlashcardDeckStatus, FlashcardProgressStatus
+from app.schemas.common import UTCDateTime
 
 class FlashcardBase(BaseModel):
     front: str
@@ -15,7 +16,7 @@ class FlashcardCreate(FlashcardBase):
 class FlashcardResponse(FlashcardBase):
     id: int
     deck_id: int
-    created_at: datetime
+    created_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -30,7 +31,7 @@ class FlashcardDeckResponse(FlashcardDeckBase):
     id: int
     status: FlashcardDeckStatus
     model: Optional[str] = None
-    generated_at: Optional[datetime] = None
+    generated_at: Optional[UTCDateTime] = None
     generation_time_ms: Optional[int] = None
     flashcards: List[FlashcardResponse] = []
 

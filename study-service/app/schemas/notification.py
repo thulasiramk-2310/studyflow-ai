@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, List
 from app.models.notification import NotificationType
+from app.schemas.common import UTCDateTime
 
 class NotificationResponse(BaseModel):
     id: int
@@ -13,7 +14,7 @@ class NotificationResponse(BaseModel):
     entity_type: Optional[str] = None
     entity_id: Optional[int] = None
     is_read: bool
-    created_at: datetime
+    created_at: UTCDateTime
 
     class Config:
         from_attributes = True
