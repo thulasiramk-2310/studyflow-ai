@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint && node scripts/check-colors.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "walkthrough": "node scripts/walkthrough.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
