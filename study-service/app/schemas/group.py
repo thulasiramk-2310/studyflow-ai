@@ -42,7 +42,7 @@ class StudyGroupUpdate(StudyGroupBase):
 
 class StudyGroupResponse(StudyGroupBase):
     id: int
-    invite_code: str
+    invite_code: Optional[str] = None  # organizers only; None for everyone else
     created_by: int
     created_at: datetime
     updated_at: Optional[datetime] = None
