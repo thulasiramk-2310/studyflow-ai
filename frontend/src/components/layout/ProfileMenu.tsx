@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { User, Settings, Moon, Sun, Laptop, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -36,7 +37,8 @@ export function ProfileMenu({ onClose }: ProfileMenuProps) {
     toast.success("You've been signed out.");
   };
 
-  return (
+  // Portal to <body>: the topbar uses backdrop-blur, which would trap fixed children in its box and stacking layer.
+  return createPortal(
     <>
       <div className="fixed inset-0 z-[70]" onClick={onClose} />
 
@@ -108,6 +110,7 @@ export function ProfileMenu({ onClose }: ProfileMenuProps) {
           </button>
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }

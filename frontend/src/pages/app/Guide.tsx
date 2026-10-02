@@ -19,7 +19,7 @@ export function Guide() {
     <div className="mx-auto max-w-[900px] px-6 py-8 md:px-8">
       <PageHeader title="Guide" subtitle="How StudyFlow works and where to find each feature." />
       <Card className="overflow-hidden" padded={false}>
-        <div className="relative aspect-[16/10] overflow-clip bg-muted">
+        <div className="relative isolate aspect-[16/10] overflow-clip bg-muted">
           {playing ? (
             <IntroStage embedded onDone={() => setPlaying(false)} />
           ) : (
