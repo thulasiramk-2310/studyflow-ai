@@ -7,6 +7,7 @@ import { Logo } from "../../components/Icons";
 import { Badge, Button } from "../../components/ui";
 import { ArchitectureSVG } from "../../components/landing/ArchitectureSVG";
 import { MiniChat, MiniGuardrail, MiniInvite, MiniPlanner, MiniQuiz, MiniSummary } from "../../components/landing/MiniUI";
+import { IntroExperience } from "../../components/intro/IntroExperience";
 
 const GITHUB_URL = "https://github.com/thulasiramk-2310/studyflow-ai";
 
@@ -60,6 +61,7 @@ export function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <IntroExperience />
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
         <nav className="mx-auto flex h-16 max-w-[1120px] items-center gap-6 px-6">
