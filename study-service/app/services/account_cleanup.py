@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Callable, Optional
+
 from sqlalchemy.orm import Session
 
 from app.models.flashcard import FlashcardProgress
@@ -17,7 +19,7 @@ class OwnsSharedGroups(Exception):
         super().__init__(", ".join(names))
 
 
-def remove_user_data(db: Session, user_id: int) -> int:
+def remove_user_data(db: Session, user_id: int, before_delete: Optional[Callable[[int], None]] = None) -> int:
     """Delete the user's solo groups and personal rows. Returns how many groups were deleted.
 
     Raises OwnsSharedGroups (and changes nothing) while they organise a group with other
@@ -33,6 +35,10 @@ def remove_user_data(db: Session, user_id: int) -> int:
     shared = [g for g in owned if db.query(GroupMember).filter(GroupMember.group_id == g.id).count() > 1]
     if shared:
         raise OwnsSharedGroups([g.name for g in shared])
+
+    # Other services' data goes first: if that fails, nothing here has been deleted yet.
+    if before_delete:
+        before_delete(user_id)
 
     for group in owned:
         db.delete(group)  # cascades to members, sessions, resources, learning path

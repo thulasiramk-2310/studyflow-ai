@@ -16,6 +16,14 @@ LEAVER, FRIEND = 7, 8
 KEY = settings.INTERNAL_API_KEY
 
 
+@pytest.fixture(autouse=True)
+def ai_calls(monkeypatch):
+    """Record calls to ai-service instead of making them."""
+    calls = []
+    monkeypatch.setattr(internal_endpoint, "delete_ai_history", lambda user_id: calls.append(user_id))
+    return calls
+
+
 def _group(db, owner, name, members=()):
     g = group_repo.create_group(db=db, group_in=StudyGroupCreate(name=name), user_id=owner)
     for m in members:
@@ -58,3 +66,39 @@ def test_cleanup_requires_the_internal_key(db):
 
 def test_a_user_with_no_data_is_fine(db):
     assert internal_endpoint.remove_user(999, db=db, internal_key=KEY) == {"deleted_groups": 0}
+
+
+def test_ai_history_is_deleted_before_study_data(db, monkeypatch):
+    solo = _group(db, LEAVER, "My notes")
+    seen = {}
+
+    def ai_cleanup(user_id):
+        # Study data must still exist when ai-service is asked: if this call fails, nothing is gone.
+        seen["group_still_there"] = db.query(StudyGroup).filter(StudyGroup.id == solo.id).count() == 1
+        seen["user"] = user_id
+
+    monkeypatch.setattr(internal_endpoint, "delete_ai_history", ai_cleanup)
+    internal_endpoint.remove_user(LEAVER, db=db, internal_key=KEY)
+
+    assert seen == {"group_still_there": True, "user": LEAVER}
+
+
+def test_if_ai_service_fails_nothing_is_deleted(db, monkeypatch):
+    _group(db, LEAVER, "My notes")
+
+    def down(user_id):
+        raise ConnectionError("ai-service down")
+
+    monkeypatch.setattr(internal_endpoint, "delete_ai_history", down)
+    with pytest.raises(HTTPException) as unavailable:
+        internal_endpoint.remove_user(LEAVER, db=db, internal_key=KEY)
+
+    assert unavailable.value.status_code == 503
+    assert db.query(GroupMember).filter(GroupMember.user_id == LEAVER).count() == 1
+
+
+def test_a_blocked_deletion_never_touches_ai_history(db, ai_calls):
+    _group(db, LEAVER, "OS Study Group", members=[FRIEND])
+    with pytest.raises(HTTPException):
+        internal_endpoint.remove_user(LEAVER, db=db, internal_key=KEY)
+    assert ai_calls == []
