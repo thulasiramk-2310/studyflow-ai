@@ -320,7 +320,7 @@ export function GroupWorkspace() {
             <Card>
               <CardHeader title={`${terms.library} · ${resources.length}`} action={<button onClick={() => setActiveTab("Library")} className="hover:text-foreground">View all</button>} />
               {recentResources.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No notes yet. Upload PDFs.</p>
+                <p className="text-sm text-muted-foreground">No notes yet. Upload PDFs, Word, PowerPoint or Markdown.</p>
               ) : (
                 recentResources.map((r) => <ResourceRow key={r.id} resource={r} />)
               )}
@@ -338,7 +338,7 @@ export function GroupWorkspace() {
       {activeTab === "Sessions" && (
         <Card className="mt-6">
           <CardHeader
-            title={`Sessions · ${sessions.length}`}
+            title={`${terms.sessions} · ${sessions.length}`}
             action={
               canManageGroup && (
                 <div className="flex items-center gap-2">
@@ -365,7 +365,7 @@ export function GroupWorkspace() {
         <Card className="mt-6">
           <CardHeader title={`${terms.library} · ${resources.length}`} action={<Button size="sm" icon={Upload} onClick={() => setIsUploadOpen(true)}>Upload notes</Button>} />
           {resources.length === 0 ? (
-            <EmptyState icon={FileText} title="No notes yet" description="Upload PDFs, DOCX, PPTX or Markdown. They're indexed so Ask AI can cite them." />
+            <EmptyState icon={FileText} title="No notes yet" description="Upload PDFs, Word, PowerPoint or Markdown. They're indexed so Ask AI can cite them." />
           ) : (
             resources.map((r) => (
               <ResourceRow key={r.id} resource={r} onDelete={canDelete(r) ? () => handleDeleteResource(r.id) : undefined} />
@@ -409,7 +409,7 @@ export function GroupWorkspace() {
           <EmptyState
             icon={Sparkles}
             title={`Ask about ${group.name}`}
-            description={`Answers come only from this group's ${resources.length} note${resources.length === 1 ? "" : "s"}, with the page they came from.`}
+            description={`Answers come only from this ${terms.groupLower}'s ${resources.length} note${resources.length === 1 ? "" : "s"}, with the page they came from.`}
             action={<Button icon={Sparkles} onClick={() => navigate("/ai")}>Open Ask AI</Button>}
           />
         </Card>

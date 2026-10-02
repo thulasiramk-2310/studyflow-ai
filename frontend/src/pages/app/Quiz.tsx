@@ -30,21 +30,18 @@ export function Quiz() {
     let isMounted = true;
     if (!sessionId) return;
     
-    // The session (and its group's wording) loads even when the quiz isn't ready yet.
-    sessionService.getSession(Number(sessionId)).then((sess) => {
+    // The session and its group's wording load even when the quiz isn't ready; the page
+    // stays in its loading state until both settle, so wording never flips after render.
+    const audienceLoad = sessionService.getSession(Number(sessionId)).then((sess) => {
       if (!isMounted) return;
       setSession(sess);
       return groupService.getGroup(sess.group_id).then((g) => { if (isMounted && g.audience) setGroupAudience(g.audience); });
-    }).catch(() => { /* the quiz request below reports errors */ });
-
-    sessionService.getSessionQuiz(Number(sessionId)).then((q) => {
-      if (!isMounted) return;
-      setQuizData(q);
-      setLoading(false);
-    }).catch(err => {
-      console.error(err);
-      if (isMounted) setLoading(false);
     });
+    const quizLoad = sessionService.getSessionQuiz(Number(sessionId)).then((q) => {
+      if (isMounted) setQuizData(q);
+    });
+    quizLoad.catch((err) => console.error(err));
+    Promise.allSettled([audienceLoad, quizLoad]).then(() => { if (isMounted) setLoading(false); });
 
     return () => { isMounted = false; };
   }, [sessionId]);

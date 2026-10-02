@@ -27,7 +27,7 @@ const FEATURES_STUDENTS = [
 
 const STEPS_STUDENTS = [
   { icon: UserPlus, title: "Start a group", body: "Name it after your course and invite classmates with a code." },
-  { icon: FileUp, title: "Add your notes", body: "Drop in lecture slides, readings and handouts as PDFs. They are ready in seconds." },
+  { icon: FileUp, title: "Add your notes", body: "Drop in lecture slides, readings and handouts. They are ready in seconds." },
   { icon: MessagesSquare, title: "Study together", body: "Ask questions, run planned sessions, then quiz yourselves on what you covered." },
 ];
 
@@ -40,7 +40,7 @@ const USE_CASES_STUDENTS = [
 const FAQ_STUDENTS = [
   { q: "Is StudyFlow free?", a: "Yes. Create an account, start groups and invite classmates without paying anything." },
   { q: "Does the AI make things up?", a: "Answers are drawn only from the notes your group uploaded, and each one shows the source file and page. If the notes don't cover a question, StudyFlow says so instead of guessing." },
-  { q: "Which files can I upload?", a: "PDFs, up to 25 MB each. Export slides and Word documents as PDF first; text inside scanned images isn't read yet." },
+  { q: "Which files can I upload?", a: "PDF, Word (.docx), PowerPoint (.pptx), Markdown and plain text, up to 25 MB each. Text inside scanned images isn't read yet." },
   { q: "Who can see my group's notes?", a: "Only members of that group. Someone needs your invite code to join." },
   { q: "Does it work on my phone?", a: "Yes. StudyFlow runs in the browser on phones, tablets and laptops, with light and dark themes." },
 ];
@@ -64,7 +64,7 @@ const FEATURES_TEAMS = [
 
 const STEPS_TEAMS = [
   { icon: UserPlus, title: "Start a team", body: "Name it after your project or department and invite colleagues with a code." },
-  { icon: FileUp, title: "Add your documents", body: "Drop in specs, policies and onboarding guides as PDFs. They are ready in seconds." },
+  { icon: FileUp, title: "Add your documents", body: "Drop in specs, policies and onboarding guides. They are ready in seconds." },
   { icon: MessagesSquare, title: "Work from the same page", body: "Ask questions, run planned meetings, then check what everyone took away." },
 ];
 
@@ -77,7 +77,7 @@ const USE_CASES_TEAMS = [
 const FAQ_TEAMS = [
   { q: "Is StudyFlow free?", a: "Yes. Create an account, start teams and invite colleagues without paying anything." },
   { q: "Does the AI make things up?", a: "Answers are drawn only from the documents your team uploaded, and each one shows the source file and page. If the documents don't cover a question, StudyFlow says so instead of guessing." },
-  { q: "Which files can I upload?", a: "PDFs, up to 25 MB each. Export slides and Word documents as PDF first; text inside scanned images isn't read yet." },
+  { q: "Which files can I upload?", a: "PDF, Word (.docx), PowerPoint (.pptx), Markdown and plain text, up to 25 MB each. Text inside scanned images isn't read yet." },
   { q: "Who can see my team's documents?", a: "Only members of that team. Someone needs your invite code to join." },
   { q: "Does it work on my phone?", a: "Yes. StudyFlow runs in the browser on phones, tablets and laptops, with light and dark themes." },
 ];
@@ -203,7 +203,7 @@ export function Landing() {
       {/* Formats strip */}
       <section className="border-t border-border">
         <div className="mx-auto flex max-w-[1120px] flex-wrap items-center justify-center gap-x-8 gap-y-3 px-4 py-6 text-sm text-muted-foreground sm:px-6">
-          <span>Works with the PDFs you already have:</span>
+          <span>Works with the files you already have:</span>
           {c.formats.map((f) => <span key={f} className="font-semibold text-foreground">{f}</span>)}
         </div>
       </section>

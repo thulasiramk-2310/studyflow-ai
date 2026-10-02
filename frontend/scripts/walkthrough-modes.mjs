@@ -11,6 +11,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const BASE = (process.env.BASE_URL || "http://localhost").replace(/\/$/, "");
 const OUT = resolve(HERE, "../walkthrough-output/modes");
 const NOTES = resolve(HERE, "../../ai-service/evals/data/os_notes.pdf");
+const DOCX = resolve(HERE, "fixtures/sample-notes.docx");
 const stamp = Date.now().toString().slice(-6);
 const report = [];
 let shot = 0;
@@ -38,7 +39,7 @@ const visibleText = (p) => p.evaluate(() => {
   return clone.innerText;
 });
 
-async function newUser(browser, { teams }) {
+async function newUser(browser, { teams, prefix }) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await ctx.addInitScript(() => { try { localStorage.setItem("sf_intro_seen", "1"); } catch { /* ignore */ } });
   const p = await ctx.newPage();
@@ -48,14 +49,15 @@ async function newUser(browser, { teams }) {
   const pro = await p.getByRole("radio", { name: /professional/i }).getAttribute("aria-checked");
   if ((pro === "true") !== teams) throw new Error(`sign-up preselection wrong (teams=${teams}, professional checked=${pro})`);
   await p.getByLabel("Full name").fill(teams ? "Priya Owner" : "Arjun Student");
-  await p.getByLabel("Email").fill(`${teams ? "pro" : "stu"}${stamp}@example.com`);
+  const email = `${prefix ?? (teams ? "pro" : "stu")}${stamp}@example.com`;
+  await p.getByLabel("Email").fill(email);
   await p.getByLabel("Password", { exact: true }).fill(pw);
   await p.getByLabel("Confirm password").fill(pw);
   await p.getByRole("button", { name: "Create account" }).click();
   await p.waitForURL(/dashboard/);
   await p.getByRole("link", { name: "Today", exact: true }).first().waitFor(); // app shell rendered
   await p.waitForTimeout(500);
-  return { ctx, p };
+  return { ctx, p, email, password: pw };
 }
 
 async function createGroup(p, name) {
@@ -86,7 +88,9 @@ async function scheduleIn(p, groupName, title) {
   await p.goto(`${BASE}/sessions`);
   await p.getByText(title).first().click();
   await p.waitForURL(/sessions\/\d+$/);
-  await p.locator("h1").first().waitFor();
+  await p.waitForLoadState("networkidle");
+  await p.locator("main h1").first().waitFor();
+  await p.waitForTimeout(800); // let the previous page finish its exit animation
   return new URL(p.url()).pathname;
 }
 
@@ -208,6 +212,128 @@ try {
       const hit = main.match(TEAM_WORDS);
       if (hit) throw new Error(`team word "${hit[0]}" on ${path} of a student group`);
     }
+  });
+
+
+  // ── Account features: everything in Settings must really change something ──
+  const acct = await newUser(browser, { teams: false, prefix: "acct" });
+  const me = () => acct.p.evaluate(() => fetch("/auth/me", { credentials: "include" }).then((r) => r.json()).then((j) => j.data));
+  const openSettingsTab = async (name) => {
+    await acct.p.goto(`${BASE}/settings`);
+    await acct.p.locator("h1").first().waitFor();
+    await acct.p.locator("main").getByRole("button", { name, exact: true }).first().click(); // not the top bar bell
+  };
+  await step(acct.p, "rename survives a reload", async () => {
+    await openSettingsTab("Account");
+    await acct.p.getByLabel("Full name").fill("Sam Renamed");
+    await acct.p.getByRole("button", { name: "Save changes" }).click();
+    await acct.p.getByText("Name updated").waitFor();
+    await acct.p.reload();
+    await acct.p.getByText("Sam Renamed").first().waitFor();
+    if ((await me()).name !== "Sam Renamed") throw new Error("name not saved on the server");
+  });
+  await step(acct.p, "account type switch survives a reload", async () => {
+    await openSettingsTab("Account");
+    await acct.p.getByRole("button", { name: "Professional", exact: true }).click();
+    await acct.p.getByRole("link", { name: "Teams", exact: true }).first().waitFor();
+    await acct.p.reload();
+    await acct.p.getByRole("link", { name: "Teams", exact: true }).first().waitFor();
+    await openSettingsTab("Account");
+    await acct.p.getByRole("button", { name: "Student", exact: true }).click();
+    await acct.p.getByRole("link", { name: "Groups", exact: true }).first().waitFor();
+  });
+  await step(acct.p, "notification setting persists", async () => {
+    await openSettingsTab("Notifications");
+    const toggle = acct.p.getByRole("switch", { name: "Notes and documents" });
+    await toggle.waitFor();
+    if ((await toggle.getAttribute("aria-checked")) !== "true") throw new Error("defaults should be on");
+    await toggle.click();
+    await acct.p.waitForTimeout(800);
+    await openSettingsTab("Notifications");
+    const after = await acct.p.getByRole("switch", { name: "Notes and documents" }).getAttribute("aria-checked");
+    if (after !== "false") throw new Error("notification setting did not persist");
+  });
+  const newPassword = `Changed-${Math.random().toString(36).slice(2, 10)}`;
+  await step(acct.p, "password change rejects a wrong current password, then works", async () => {
+    await openSettingsTab("Security");
+    await acct.p.getByLabel("Current password").fill("definitely-wrong");
+    await acct.p.getByLabel("New password").fill(newPassword);
+    await acct.p.getByRole("button", { name: "Update password" }).click();
+    await acct.p.getByText("Current password is incorrect").waitFor();
+    await acct.p.getByLabel("Current password").fill(acct.password);
+    await acct.p.getByRole("button", { name: "Update password" }).click();
+    await acct.p.getByText("Password updated").waitFor();
+  });
+  await step(acct.p, "sign in with the new password", async () => {
+    await acct.p.getByRole("button", { name: "Log out" }).click();
+    await acct.p.waitForURL((u) => !u.pathname.startsWith("/dashboard"));
+    await acct.p.goto(`${BASE}/login`);
+    await acct.p.getByLabel("Email").fill(acct.email);
+    await acct.p.getByLabel("Password").fill(newPassword);
+    await acct.p.locator('button[type="submit"]').click();
+    await acct.p.waitForURL(/dashboard/);
+  });
+  await step(acct.p, "Word upload is indexed", async () => {
+    await createGroup(acct.p, `Docx Group ${stamp}`);
+    const groupId = new URL(acct.p.url()).pathname.split("/").pop();
+    await acct.p.goto(`${BASE}/resources`);
+    await acct.p.locator("h1").first().waitFor();
+    await acct.p.getByRole("button", { name: "Upload notes" }).click();
+    const dlg = acct.p.getByRole("dialog", { name: "Upload notes" });
+    await dlg.locator('input[type="file"]').setInputFiles(DOCX);
+    const sel = dlg.locator("select");
+    if (await sel.count()) {
+      const option = sel.locator("option", { hasText: `Docx Group ${stamp}` }).first();
+      await option.waitFor({ state: "attached" });
+      await sel.selectOption({ label: (await option.textContent()).trim() });
+    }
+    await dlg.getByRole("button", { name: "Upload", exact: true }).click();
+    await acct.p.getByText("File uploaded successfully").waitFor();
+    let status = "";
+    for (let i = 0; i < 40 && status !== "INDEXED" && status !== "FAILED"; i++) {
+      await acct.p.waitForTimeout(1500);
+      status = await acct.p.evaluate((gid) => fetch(`/api/v1/resources/?group_id=${gid}`, { credentials: "include" })
+        .then((r) => r.json()).then((j) => (j.data || [])[0]?.status || ""), groupId);
+    }
+    if (status !== "INDEXED") throw new Error(`docx ended as "${status}"`);
+  });
+  await step(acct.p, "forgot password confirms without revealing accounts", async () => {
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.getByRole("link", { name: "Forgot password?" }).click();
+    await p.waitForURL(/forgot-password/);
+    await p.getByRole("heading", { name: "Reset your password" }).waitFor();
+    await p.getByLabel("Email").fill(`nobody-${stamp}@example.com`);
+    await p.getByRole("button", { name: "Send reset link" }).click();
+    try {
+      await p.getByRole("status").filter({ hasText: "reset link is on its way" }).waitFor({ timeout: 10_000 });
+    } catch (e) {
+      await p.screenshot({ path: join(OUT, "FAIL-forgot-password-page.png") });
+      throw e;
+    } finally {
+      await ctx.close();
+    }
+  });
+  await step(student.p, "deleting an account that owns a shared group is blocked", async () => {
+    await student.p.goto(`${BASE}/settings`);
+    await student.p.locator("main").getByRole("button", { name: "Account", exact: true }).first().click();
+    await student.p.getByRole("button", { name: "Delete account" }).click();
+    await student.p.getByLabel("Your password").fill(student.password);
+    await student.p.getByRole("button", { name: "Delete permanently" }).click();
+    await student.p.getByRole("alert").filter({ hasText: `OS Study Group ${stamp}` }).waitFor();
+    await student.p.getByRole("button", { name: "Cancel" }).click();
+  });
+  await step(acct.p, "deleting an account removes it", async () => {
+    await openSettingsTab("Account");
+    await acct.p.getByRole("button", { name: "Delete account" }).click();
+    await acct.p.getByLabel("Your password").fill(newPassword);
+    await acct.p.getByRole("button", { name: "Delete permanently" }).click();
+    await acct.p.waitForURL((u) => u.pathname === "/");
+    const status = await acct.p.evaluate(({ email, password }) => fetch("/auth/login", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }),
+    }).then((r) => r.status), { email: acct.email, password: newPassword });
+    if (status !== 401) throw new Error(`deleted account can still sign in (HTTP ${status})`);
   });
 
   report.push("walkthrough-modes passed");

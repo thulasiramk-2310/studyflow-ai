@@ -11,6 +11,8 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { Landing } from "../pages/public/Landing";
 import { Login } from "../pages/auth/Login";
 import { SignUp } from "../pages/auth/SignUp";
+import { ForgotPassword } from "../pages/auth/ForgotPassword";
+import { ResetPassword } from "../pages/auth/ResetPassword";
 
 // App Pages
 import { Dashboard }      from "../pages/app/Dashboard";
@@ -37,6 +39,8 @@ export function AppRoutes() {
       <Route element={<AuthLayout />}>
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Route>
 
       {/* ── Error pages (standalone, no app shell) ── */}

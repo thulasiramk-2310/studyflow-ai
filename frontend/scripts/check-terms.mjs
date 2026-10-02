@@ -13,12 +13,13 @@ const TEXT = /(?:>([^<>{}]+)<)|(?:"([^"]*)")|(?:'([^']*)')|(?:`([^`]*)`)/g;
 // Strings that are code, not copy: paths, ids, enum values, imports, service calls.
 const CODE_LIKE = [
   /^\//,                                   // "/groups", "/sessions/1"
-  /^[a-z_]+$/,                             // "session", "quiz" (keys, enum-ish identifiers)
   /^[A-Z_]+$/,                             // "SESSION_CREATED"
   /^[\w.-]+-[\w.-]+$/,                     // "create-session", ids
-  /\$\{[^}]*\}/,                           // template literals built from terms
   /^\.\.?\//,                              // relative import paths
 ];
+// A single lowercase word in quotes is code (a key or enum value) only in code contexts like
+// `action === "quiz"` or `{ key: "sessions" }`. As visible JSX text it is always checked.
+const CODE_CONTEXT = /^\s*(?:export\s+)?type\s+\w+\s*=|===|!==|\bcase\s|\b(?:action|type|key|status|tab|kind|name|id)\s*:|includes\(|\[\s*["']/;
 const SKIP_LINE = [/terms-ok/, /^\s*import /, /^\s*\/\//, /^\s*\*/, /console\.(log|error|warn)/, /Service\./, /\/api\//, /<option /, /openTab|setActiveTab|activeTab ===|=== "Sessions"|=== "Library"/];
 
 const files = [];
@@ -34,8 +35,11 @@ for (const f of files) {
     let jsxText = line;
     while (/\{[^{}]*\}/.test(jsxText)) jsxText = jsxText.replace(/\{[^{}]*\}/g, " "); // nested ${} inside {}
     for (const m of [...line.matchAll(TEXT), ...jsxText.matchAll(/>([^<>]+)</g)]) {
-      const text = (m[1] ?? m[2] ?? m[3] ?? m[4] ?? "").trim();
+      // In template literals only the literal words count: `${t.sessions} hosted` is fine.
+      const text = (m[1] ?? m[2] ?? m[3] ?? (m[4] ?? "").replace(/\$\{[^}]*\}/g, " ")).trim();
       if (!text || !NOUN.test(text) || CODE_LIKE.some((r) => r.test(text))) continue;
+      const quoted = m[1] === undefined;
+      if (quoted && /^[a-z_]+$/.test(text) && CODE_CONTEXT.test(raw)) continue;
       hits.push(`${relative(ROOT, f)}:${i + 1}: ${text.slice(0, 90)}`);
     }
   });

@@ -103,7 +103,7 @@ export function Sessions() {
     <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
       <PageHeader
         title={terms.sessions}
-        subtitle={`${sessions.filter(s => s.status !== "COMPLETED" && s.status !== "CANCELLED").length} upcoming sessions`}
+        subtitle={`${sessions.filter(s => s.status !== "COMPLETED" && s.status !== "CANCELLED").length} upcoming ${terms.sessionsLower}`}
         actions={
           <button
             onClick={() => setIsCreateOpen(true)}
@@ -128,7 +128,7 @@ export function Sessions() {
         <EmptyState 
           icon={Calendar} 
           title={`No ${terms.sessionsLower} found`} 
-          description={`No ${filter.toLowerCase()} sessions. Schedule one to get started!`}
+          description={`No ${filter.toLowerCase()} ${terms.sessionsLower}. Schedule one to get started!`}
           action={
             <button 
               onClick={() => setIsCreateOpen(true)} 
@@ -151,7 +151,7 @@ export function Sessions() {
                   const time = sDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                   const isLive = s.status === "LIVE";
                   const colors = getColor(s.id);
-                  const groupName = groupNames[s.group_id] || `Group #${s.group_id}`;
+                  const groupName = groupNames[s.group_id] || `${terms.group} #${s.group_id}`;
                   const agendaItems: string[] = s.agenda
                     ? Array.isArray(s.agenda)
                       ? s.agenda.map((a: any) => a.title || a)
