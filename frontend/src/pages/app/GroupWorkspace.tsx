@@ -10,6 +10,8 @@ import type { Resource } from "../../services/resource.service";
 import { sessionService } from "../../services/session.service";
 import type { Session } from "../../services/session.service";
 import { useAuth } from "../../hooks/useAuth";
+import { useGroupTerms } from "../../hooks/useTerms";
+import type { Audience } from "../../types";
 import { StudyPlanModal } from "../../components/study/StudyPlanModal";
 import { StudyRoadmap } from "../../components/groups/StudyRoadmap";
 import { DragDropUploader } from "../../components/resources/DragDropUploader";
@@ -73,6 +75,7 @@ export function GroupWorkspace() {
   const navigate = useNavigate();
   
   const [group, setGroup] = useState<Group | null>(null);
+  const terms = useGroupTerms(group);
   const [resources, setResources] = useState<Resource[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
@@ -269,13 +272,23 @@ export function GroupWorkspace() {
               ))}
             </div>
             {canManageGroup && (
+              <Select aria-label="Group style" value={group.audience ?? "student"} onChange={async (e) => {
+                const audience = e.target.value as Audience;
+                try { const updated = await groupService.updateGroup(group.id, { name: group.name, audience }); setGroup({ ...group, audience: updated.audience }); toast.success("Group style updated"); }
+                catch { toast.error("Couldn't update the group style"); }
+              }}>
+                <option value="student">Study group style</option>
+                <option value="professional">Team style</option>
+              </Select>
+            )}
+            {canManageGroup && (
               <Button size="sm" variant="secondary" icon={Copy} onClick={handleCopyInviteCode}>
                 Invite · {group.invite_code}
               </Button>
             )}
             {canManageGroup && (
               <Button size="sm" icon={Sparkles} loading={isGeneratingPlan} onClick={handleGeneratePlan}>
-                Plan next session
+                {terms.planNext}
               </Button>
             )}
           </>

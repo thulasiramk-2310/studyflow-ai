@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { Send, Plus, FileText, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { AIAssistantSkeleton } from "../../components/skeletons";
@@ -17,6 +18,7 @@ const SUGGESTIONS = [
 
 
 export function AIAssistant() {
+  const { audience } = useTerms();
   const [messages, setMessages] = useState<(Omit<ChatMessage, "id"|"session_id"|"created_at"> & { thinking?: boolean })[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -92,7 +94,7 @@ export function AIAssistant() {
     setSending(true);
     
     try {
-      const res = await aiService.chat(selectedGroup.id, text, activeSessionId || undefined);
+      const res = await aiService.chat(selectedGroup.id, text, activeSessionId || undefined, audience);
       
       const aiBody = res ? (res.answer || "No response") : "No response";
       const aiCitations = res && res.citations ? res.citations : [];
