@@ -154,7 +154,8 @@ def rag_node(
     top_results = results[:top_k]
     # Chunks come from user-uploaded PDFs: mask PII before they reach the LLM.
     chunks, _ = mask_all([r["content"] for r in top_results])
-    prompt = with_audience(build_agent_prompt(query, chunks, state.get("history")), state.get("audience"))
+    # The hint goes inside the template (before "Answer:"), never after the completion cue.
+    prompt = build_agent_prompt(query, chunks, state.get("history"), audience=state.get("audience"))
 
     raw_answer = (provider.complete(prompt) if provider else "") or ""
 
