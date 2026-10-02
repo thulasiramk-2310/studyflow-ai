@@ -23,7 +23,8 @@ from app.services.job_recovery import expire_if_stale
 import os
 from datetime import datetime
 from fastapi import UploadFile, File
-from app.schemas.session import TranscriptNotes, TranscriptResponse
+from app.schemas.session import TranscriptNotes, TranscriptResponse, MinutesUpdate
+from app.models.session import SummaryStatus
 from app.services import transcript_service
 
 router = APIRouter()
@@ -391,6 +392,58 @@ def get_session_summary(session_id: int, db: Session = Depends(get_db), user: di
 
     expire_if_stale(db, session.summary)  # an orphaned job reads as FAILED so the UI can retry
     return {"success": True, "data": session.summary}
+
+def _summary_for_organizer(db: Session, session_id: int, user_id: int):
+    session = db.query(StudySession).filter(StudySession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    member = check_group_membership(db, session.group_id, user_id)
+    if member.role != GroupRole.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can review minutes")
+    if not session.summary:
+        raise HTTPException(status_code=404, detail="Summary not found")
+    if session.summary.status != SummaryStatus.READY:
+        raise HTTPException(status_code=400, detail="The summary is not ready yet")
+    return session, session.summary
+
+
+@router.patch("/{session_id}/summary", response_model=SuccessResponse[SessionSummaryResponse])
+def update_session_summary(session_id: int, body: MinutesUpdate, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    _, summary = _summary_for_organizer(db, session_id, user.get("userId"))
+    changes = body.model_dump(exclude_unset=True)
+    if "action_items" in changes and changes["action_items"] is not None:
+        changes["action_items"] = [{"task": i["task"], "owner": i.get("owner") or "", "due": i.get("due") or ""} for i in changes["action_items"]]
+    for key, value in changes.items():
+        setattr(summary, key, value)
+    db.commit()
+    db.refresh(summary)
+    return {"success": True, "data": summary}
+
+
+@router.post("/{session_id}/summary/approve", response_model=SuccessResponse[SessionSummaryResponse])
+def approve_session_summary(session_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    user_id = user.get("userId")
+    session, summary = _summary_for_organizer(db, session_id, user_id)
+    if summary.review_status != "DRAFT":
+        raise HTTPException(status_code=400, detail="Only draft minutes can be approved")
+    summary.review_status = "APPROVED"
+    summary.approved_by = user_id
+    summary.approved_at = datetime.utcnow()
+    db.commit()
+    db.refresh(summary)
+    pro = (session.group.audience or "student") == "professional"
+    notification_service.notify_group_members(
+        db=db,
+        group_id=session.group_id,
+        title="Minutes approved" if pro else "Session summary approved",
+        message=f"The {'minutes' if pro else 'summary'} for '{session.title}' are ready to read.",
+        type=NotificationType.SUMMARY_READY,
+        exclude_user_id=user_id,
+        entity_type="SESSION",
+        entity_id=session.id,
+    )
+    return {"success": True, "data": summary}
+
 
 @router.post("/{session_id}/summary/regenerate", response_model=SuccessResponse[dict])
 def regenerate_session_summary(session_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
