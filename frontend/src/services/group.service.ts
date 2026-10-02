@@ -31,7 +31,7 @@ export interface Group {
   description: string | null;
   goal?: string | null;
   learning_plan?: LearningPlanItem[];
-  invite_code: string;
+  invite_code: string | null; // only sent to the group organizer
   created_by: number;
   created_at: string;
   updated_at: string | null;

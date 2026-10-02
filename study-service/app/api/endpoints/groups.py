@@ -27,6 +27,14 @@ from app.models.notification import NotificationType
 
 router = APIRouter()
 
+def _organizer_only_invite_code(group_dict: dict, members, user_id) -> dict:
+    """Members can't see or share the invite code; only the organizer can."""
+    is_organizer = any(m.user_id == user_id and m.role == GroupRole.ORGANIZER for m in members)
+    if not is_organizer:
+        group_dict["invite_code"] = None
+    return group_dict
+
+
 @router.post("/", response_model=SuccessResponse[StudyGroupResponse], status_code=status.HTTP_201_CREATED)
 def create_group(
     group_in: StudyGroupCreate,
@@ -70,7 +78,8 @@ def get_user_groups(
         g_dict["completed_items_count"] = completed_items_count
         g_dict["progress_percent"] = progress_percent
         g_dict["next_item"] = next_item
-        
+        _organizer_only_invite_code(g_dict, group.members, user_id)
+
         result.append(g_dict)
         
     return {"success": True, "data": result}
@@ -146,7 +155,8 @@ async def get_group(
                 item_dict = dict(item)
             lp_out.append(item_dict)
     group_dict["learning_plan"] = lp_out
-    
+    _organizer_only_invite_code(group_dict, db_members, user_id)
+
     return {"success": True, "data": group_dict}
 
 
@@ -214,8 +224,11 @@ def join_group(
         entity_type="GROUP",
         entity_id=group.id
     )
-    
-    return {"success": True, "data": group}
+
+    # The joiner is a plain member: hand back the group without its invite code.
+    joined = {c.name: getattr(group, c.name) for c in group.__table__.columns}
+    joined["members"] = group.members
+    return {"success": True, "data": _organizer_only_invite_code(joined, group.members, user_id)}
 
 @router.get("/{group_id}/sessions", response_model=SuccessResponse[List[SessionResponse]])
 def get_group_sessions(
