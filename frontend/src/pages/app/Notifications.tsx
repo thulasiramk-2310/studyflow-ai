@@ -22,7 +22,7 @@ const mapNotificationType = (apiType: string) => {
   if (apiType.includes("RESOURCE")) return "upload";
   if (apiType.includes("MEMBER")) return "member";
   if (apiType.includes("READY")) return "ai";
-  return "session"; // default for SESSION_CREATED etc
+  return "session"; // icon key, default for SESSION_CREATED etc. terms-ok
 };
 
 export function Notifications() {

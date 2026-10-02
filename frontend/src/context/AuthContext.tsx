@@ -20,6 +20,10 @@ export interface AuthContextType {
   register: (name: string, email: string, password: string, accountType?: AccountType) => Promise<void>;
   /** Switch wording between student and professional (PATCH /auth/me). */
   setAccountType: (accountType: AccountType) => Promise<void>;
+  /** Change the display name (PATCH /auth/me). */
+  updateName: (name: string) => Promise<void>;
+  /** Permanently delete the account, then sign out locally. */
+  deleteAccount: (password: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -110,6 +114,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearError = useCallback(() => setError(null), []);
 
+  const updateName = useCallback(async (name: string) => {
+    const updated = await authService.updateName(name);
+    setUser(updated);
+  }, []);
+
+  const deleteAccount = useCallback(async (password: string) => {
+    await authService.deleteAccount(password);
+    authService.clearSession();
+    setUser(null);
+  }, []);
+
   const setAccountType = useCallback(async (accountType: AccountType) => {
     const updated = await authService.updateAccountType(accountType);
     setUser(updated);
@@ -125,6 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         setAccountType,
+        updateName,
+        deleteAccount,
         logout,
         clearError,
       }}

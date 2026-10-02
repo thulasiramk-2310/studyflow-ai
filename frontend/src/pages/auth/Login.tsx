@@ -55,6 +55,7 @@ export function Login() {
       <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit}>
         <Input label="Email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@university.edu" />
         <Input label="Password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+        <Link to="/forgot-password" className="-mt-2 self-end text-sm font-semibold text-primary-text hover:underline">Forgot password?</Link>
         {error && <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
         <Button type="submit" loading={isLoading} className="w-full">{isLoading ? "Signing in…" : "Sign in"}</Button>
       </form>

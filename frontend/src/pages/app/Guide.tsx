@@ -7,7 +7,7 @@ import { IntroStage } from "../../components/intro/IntroStage";
 
 const sections = (t: ReturnType<typeof useTerms>) => [
   { title: `${t.groups} and invites`, body: `Create a ${t.groupLower} for each subject and invite others with its code.`, to: "/groups", cta: `Open ${t.groupsLower}` },
-  { title: `${t.library} and indexing`, body: `Upload PDFs (export slides and documents as PDF). Each file is chunked, embedded and indexed for its ${t.groupLower}.`, to: "/resources", cta: `Open ${t.library.toLowerCase()}` },
+  { title: `${t.library} and indexing`, body: `Upload PDFs, Word, PowerPoint or Markdown files. Each one is chunked, embedded and indexed for its ${t.groupLower}.`, to: "/resources", cta: `Open ${t.library.toLowerCase()}` },
   { title: "Ask AI with citations", body: `Ask questions about a ${t.groupLower}'s notes. Answers show the file and page they came from.`, to: "/ai", cta: "Ask a question" },
   { title: `${t.sessions} and the AI planner`, body: `Plan the next ${t.sessionLower} yourself or let the planner propose one from the ${t.learningPath.toLowerCase()}.`, to: "/sessions", cta: `Open ${t.sessionsLower}` },
   { title: `${t.quizzes} and ${t.flashcards.toLowerCase()}`, body: `Mark a ${t.sessionLower} completed to get its summary, then generate a ${t.quiz.toLowerCase()} and ${t.flashcards.toLowerCase()} from its notes.`, to: "/sessions", cta: `Find a ${t.sessionLower}` },

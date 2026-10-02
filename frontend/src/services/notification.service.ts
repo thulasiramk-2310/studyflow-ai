@@ -17,7 +17,23 @@ export interface NotificationResponse {
   unread_count: number;
 }
 
+/** In-app notification switches (stored per user in study-service). */
+export interface NotificationPreferences {
+  sessions: boolean;
+  resources: boolean;
+  ai_results: boolean;
+  members: boolean;
+}
+
 export const notificationService = {
+  async getPreferences(): Promise<NotificationPreferences> {
+    return api.get<NotificationPreferences>("/api/v1/notifications/preferences");
+  },
+
+  async updatePreferences(prefs: NotificationPreferences): Promise<NotificationPreferences> {
+    return api.put<NotificationPreferences>("/api/v1/notifications/preferences", prefs);
+  },
+
   async getNotifications(skip = 0, limit = 50): Promise<NotificationResponse> {
     const data = await api.get<NotificationResponse>(`/api/v1/notifications/?skip=${skip}&limit=${limit}`);
     return data;

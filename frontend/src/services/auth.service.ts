@@ -93,6 +93,32 @@ export const authService = {
     return { user };
   },
 
+  /** PATCH /auth/me — change the display name. */
+  updateName: async (name: string): Promise<User> => {
+    const data = await apiClient.patch<User>("/auth/me", { name });
+    return normaliseUser(data);
+  },
+
+  /** POST /auth/me/password — throws with the server's message (e.g. "Current password is incorrect"). */
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await apiClient.post("/auth/me/password", { currentPassword, newPassword });
+  },
+
+  /** DELETE /auth/me — refuses (409) while the user owns groups with other members. */
+  deleteAccount: async (password: string): Promise<void> => {
+    await apiClient.delete("/auth/me", { password });
+  },
+
+  /** POST /auth/password/forgot — always succeeds, so emails can't be probed. */
+  forgotPassword: async (email: string): Promise<void> => {
+    await apiClient.post("/auth/password/forgot", { email });
+  },
+
+  /** POST /auth/password/reset — the token comes from the emailed link. */
+  resetPassword: async (token: string, newPassword: string): Promise<void> => {
+    await apiClient.post("/auth/password/reset", { token, newPassword });
+  },
+
   /**
    * PATCH /auth/me — switch between student and professional wording.
    */

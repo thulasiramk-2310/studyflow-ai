@@ -91,5 +91,5 @@ export const apiClient = {
   patch: <T>(path: string, body: unknown): Promise<T> =>
     request<T>("PATCH", path, body),
 
-  delete: <T>(path: string): Promise<T> => request<T>("DELETE", path),
+  delete: <T>(path: string, body?: unknown): Promise<T> => request<T>("DELETE", path, body),
 };
