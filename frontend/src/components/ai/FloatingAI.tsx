@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { X, Send, Sparkles, FileText, BookOpen, BrainCircuit, Calendar, Lightbulb } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -21,6 +22,7 @@ const QUICK_ACTIONS = [
 ];
 
 export function FloatingAI() {
+  const { audience } = useTerms();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -83,7 +85,7 @@ export function FloatingAI() {
     setSending(true);
 
     try {
-      const res = await aiService.chat(selectedGroup.id, text, sessionId || undefined);
+      const res = await aiService.chat(selectedGroup.id, text, sessionId || undefined, audience);
       const aiBody = res?.answer || "No response";
       const aiCitations = res?.citations || [];
 

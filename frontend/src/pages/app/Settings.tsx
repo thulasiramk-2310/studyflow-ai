@@ -25,7 +25,7 @@ const DISPLAY_THEMES = [
 ] as const;
 
 export function Settings() {
-  const { user } = useAuth();
+  const { user, setAccountType } = useAuth();
   const [tab, setTab] = useState<Tab>("Appearance");
   const { theme, setTheme } = useTheme();
   const [notifOn, setNotifOn] = useState([true, true, false, true]);
@@ -130,6 +130,21 @@ export function Settings() {
         {/* Account */}
         {tab === "Account" && (
           <>
+            <div className="bg-surface border border-border rounded-xl p-5">
+              <div className="text-base font-bold mb-1">Account type</div>
+              <div className="text-xs text-muted-foreground mb-4">Changes the wording you see across StudyFlow. Each team or study group keeps its own style.</div>
+              <div className="flex gap-3">
+                {([["STUDENT", "Student"], ["PROFESSIONAL", "Professional"]] as const).map(([value, label]) => (
+                  <button key={value} aria-pressed={user?.accountType === value} onClick={async () => {
+                    try { await setAccountType(value); toast.success(value === "PROFESSIONAL" ? "Switched to professional wording" : "Switched to student wording"); }
+                    catch { toast.error("Couldn't change account type. Try again."); }
+                  }}
+                    className={`flex-1 border-2 rounded-xl p-4 text-sm font-semibold transition-all ${user?.accountType === value ? "border-primary bg-primary-soft text-primary" : "border-border bg-surface text-muted-foreground hover:border-border-soft"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="bg-surface border border-border rounded-xl p-5">
               <div className="text-base font-bold mb-4">Account details</div>
               <div className="grid grid-cols-2 gap-3.5">
