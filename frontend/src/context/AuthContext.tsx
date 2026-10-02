@@ -5,7 +5,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import type { User } from "../types";
+import type { AccountType, User } from "../types";
 import { authService } from "../services/auth.service";
 
 // ─── Context Shape ─────────────────────────────────────────────────────────
@@ -17,7 +17,9 @@ export interface AuthContextType {
   /** Last error message from login or register */
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, accountType?: AccountType) => Promise<void>;
+  /** Switch wording between student and professional (PATCH /auth/me). */
+  setAccountType: (accountType: AccountType) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -73,11 +75,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Register ──────────────────────────────────────────────────────────────
   const register = useCallback(
-    async (name: string, email: string, password: string) => {
+    async (name: string, email: string, password: string, accountType?: AccountType) => {
       setIsLoading(true);
       setError(null);
       try {
-        const result = await authService.register(name, email, password);
+        const result = await authService.register(name, email, password, accountType);
         setUser(result.user);
       } catch (err) {
         const message =
@@ -108,6 +110,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearError = useCallback(() => setError(null), []);
 
+  const setAccountType = useCallback(async (accountType: AccountType) => {
+    const updated = await authService.updateAccountType(accountType);
+    setUser(updated);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -117,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         login,
         register,
+        setAccountType,
         logout,
         clearError,
       }}

@@ -1,4 +1,5 @@
 import { BASE_URL } from "./api.client";
+import type { Audience } from "../types";
 
 export interface GroupMember {
   user_id: number;
@@ -32,6 +33,7 @@ export interface Group {
   goal?: string | null;
   learning_plan?: LearningPlanItem[];
   invite_code: string | null; // only sent to the group organizer
+  audience?: Audience;
   created_by: number;
   created_at: string;
   updated_at: string | null;
@@ -93,12 +95,12 @@ class GroupService {
     return json.data;
   }
 
-  async createGroup(name: string, description?: string, goal?: string): Promise<Group> {
+  async createGroup(name: string, description?: string, goal?: string, audience?: Audience): Promise<Group> {
     const res = await fetch(`${BASE_URL}/api/v1/groups/`, {
       method: "POST",
       headers: this.getHeaders(),
       credentials: "include",
-      body: JSON.stringify({ name, description, goal }),
+      body: JSON.stringify({ name, description, goal, audience }),
     });
     
     const json = await res.json();
@@ -106,6 +108,16 @@ class GroupService {
       throw new Error(json.error?.message || "Failed to create group");
     }
     
+    return json.data;
+  }
+
+  /** PUT /groups/{id} (organizer only). */
+  async updateGroup(groupId: number, data: { name: string; description?: string | null; goal?: string | null; audience?: Audience }): Promise<Group> {
+    const res = await fetch(`${BASE_URL}/api/v1/groups/${groupId}`, {
+      method: "PUT", headers: this.getHeaders(), credentials: "include", body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.error?.message || "Failed to update group");
     return json.data;
   }
 
