@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Any
 from datetime import datetime
 from app.models.quiz import QuizStatus, QuestionType
+from app.schemas.common import UTCDateTime
 
 class QuizQuestionResponse(BaseModel):
     id: int
@@ -17,7 +18,7 @@ class QuizResponse(BaseModel):
     session_id: int
     status: QuizStatus
     model: Optional[str] = None
-    generated_at: Optional[datetime] = None
+    generated_at: Optional[UTCDateTime] = None
     questions: List[QuizQuestionResponse] = []
     
     class Config:

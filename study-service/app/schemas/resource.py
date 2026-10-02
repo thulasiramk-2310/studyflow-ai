@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from app.schemas.common import UTCDateTime
 
 class ResourceBase(BaseModel):
     filename: str
@@ -18,7 +19,7 @@ class ResourceResponse(ResourceBase):
     uploaded_by: int
     uploader_name: Optional[str] = None
     status: str
-    created_at: datetime
+    created_at: UTCDateTime
 
     class Config:
         from_attributes = True
