@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, Plus, Bell, Menu, Users, KeyRound, CalendarPlus, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { ProfileMenu } from "./ProfileMenu";
 import { SearchModal } from "../shared/SearchModal";
 import { useSidebar } from "../../context/SidebarContext";
@@ -15,6 +16,14 @@ import { DragDropUploader } from "../resources/DragDropUploader";
 import { Avatar, Button, ThemeToggle } from "../ui";
 
 type NewAction = "group" | "join" | "session" | "upload" | null;
+
+const FLASH_KEY = "sf_flash";
+const DONE_MESSAGE: Record<Exclude<NewAction, null>, string> = {
+  group: "Group created",
+  join: "You joined the group",
+  session: "Session scheduled",
+  upload: "Notes uploaded. They'll be ready for Ask AI in a moment.",
+};
 
 const NEW_ITEMS = [
   { key: "group" as const, label: "New group", icon: Users },
@@ -50,6 +59,14 @@ export function Topbar() {
     return () => clearInterval(interval);
   }, [user]);
 
+  // Show the confirmation saved before the reload in done().
+  useEffect(() => {
+    try {
+      const msg = sessionStorage.getItem(FLASH_KEY);
+      if (msg) { sessionStorage.removeItem(FLASH_KEY); toast.success(msg); }
+    } catch { /* storage unavailable */ }
+  }, []);
+
   // Global Ctrl/Cmd+K shortcut
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -78,7 +95,12 @@ export function Topbar() {
     // The uploader picks its default group on mount, so open it once groups are loaded.
     groupService.getGroups().then((gs) => { setGroups(gs); setAction("upload"); }).catch(() => navigate("/resources"));
   };
-  const done = () => { setAction(null); navigate(0); };
+  // Reload so every page and the sidebar pick up the change; the toast survives via sessionStorage.
+  const done = () => {
+    try { if (action) sessionStorage.setItem(FLASH_KEY, DONE_MESSAGE[action]); } catch { /* storage unavailable */ }
+    setAction(null);
+    navigate(0);
+  };
 
   return (
     <>
