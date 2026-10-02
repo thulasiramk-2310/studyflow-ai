@@ -125,12 +125,12 @@ export function FloatingAI() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            transition={{ duration: 0.18 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-[hsl(var(--primary)/0.8)] text-white shadow-lg shadow-primary/25 flex items-center justify-center hover:shadow-xl hover:shadow-primary/30 hover:scale-105 transition-all duration-200 group"
+            className="group fixed bottom-6 right-6 z-50 grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-float transition-colors duration-150 hover:bg-primary-hover"
             aria-label="Ask StudyFlow AI"
           >
-            <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+            <Sparkles className="h-5 w-5" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -144,38 +144,39 @@ export function FloatingAI() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/10 backdrop-blur-[2px] lg:hidden"
+              className="fixed inset-0 z-50 bg-foreground/10 backdrop-blur-[2px] lg:hidden"
               onClick={() => setIsOpen(false)}
             />
 
             {/* Panel */}
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] h-[520px] max-h-[calc(100vh-120px)] bg-surface border border-border rounded-2xl shadow-2xl shadow-black/10 flex flex-col overflow-hidden"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] h-[520px] max-h-[calc(100vh-120px)] flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-float"
             >
               {/* Header */}
-              <div className="px-4 py-3 border-b border-border bg-gradient-to-r from-surface to-background flex items-center justify-between shrink-0">
+              <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-white" />
+                  <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary-soft text-primary-text">
+                    <Sparkles className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-[13px] font-bold text-foreground">StudyFlow AI</div>
-                    <div className="text-[11px] text-muted-foreground">Ask anything about your materials</div>
+                    <div className="font-serif text-md text-foreground">StudyFlow AI</div>
+                    <div className="text-xs text-muted-foreground">Ask anything about your materials</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   {messages.length > 0 && (
-                    <button onClick={handleNewChat} className="text-[11px] font-medium text-muted-foreground hover:text-primary px-2 py-1 rounded-lg hover:bg-primary-soft transition-colors">
+                    <button onClick={handleNewChat} className="text-xs font-medium text-muted-foreground hover:text-primary px-2 py-1 rounded-lg hover:bg-primary-soft transition-colors">
                       New
                     </button>
                   )}
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+                    aria-label="Close assistant"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -186,7 +187,7 @@ export function FloatingAI() {
               {groups.length > 1 && (
                 <div className="px-4 py-2 border-b border-border-soft bg-background/50 shrink-0">
                   <select
-                    className="w-full appearance-none bg-surface border border-border rounded-lg px-3 py-1.5 text-[12px] font-medium outline-none focus:border-primary/50 cursor-pointer"
+                    className="w-full appearance-none bg-surface border border-border rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:border-primary/50 cursor-pointer"
                     value={selectedGroup?.id || ""}
                     onChange={(e) => {
                       const g = groups.find(g => g.id === Number(e.target.value));
@@ -205,12 +206,12 @@ export function FloatingAI() {
               <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
                 {messages.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center gap-4 py-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-primary" />
+                    <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary-soft text-primary-text">
+                      <Sparkles className="h-5 w-5" />
                     </div>
                     <div className="text-center">
-                      <div className="text-[14px] font-bold text-foreground">How can I help?</div>
-                      <div className="text-[12px] text-muted-foreground mt-0.5">
+                      <div className="font-serif text-lg text-foreground">How can I help?</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
                         {selectedGroup ? `Studying: ${selectedGroup.name}` : "Select a group to get started"}
                       </div>
                     </div>
@@ -222,7 +223,7 @@ export function FloatingAI() {
                           key={i}
                           onClick={() => handleQuickAction(a)}
                           disabled={!selectedGroup}
-                          className="flex items-center gap-2 text-left px-3 py-2.5 bg-background border border-border rounded-xl text-[12px] font-medium text-foreground hover:bg-primary-soft hover:border-primary/20 hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="flex items-center gap-2 text-left px-3 py-2.5 bg-background border border-border rounded-xl text-xs font-medium text-foreground hover:bg-primary-soft hover:border-primary/20 hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <a.icon className="w-3.5 h-3.5 shrink-0" />
                           <span>{a.label}</span>
@@ -233,39 +234,41 @@ export function FloatingAI() {
                     {/* Full AI page link */}
                     <button
                       onClick={() => { navigate("/ai"); setIsOpen(false); }}
-                      className="text-[11px] text-muted-foreground hover:text-primary font-medium transition-colors"
+                      className="text-xs text-muted-foreground hover:text-primary font-medium transition-colors"
                     >
-                      Open full AI Assistant →
+                      Open Ask AI →
                     </button>
                   </div>
                 ) : (
                   messages.map((m, i) => (
                     <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                       {m.role === "ai" && (
-                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shrink-0 mt-0.5">
-                          <Sparkles className="w-3 h-3 text-white" />
+                        <div className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-text">
+                          <Sparkles className="h-3 w-3" />
                         </div>
                       )}
                       <div className={`max-w-[85%] ${
                         m.role === "user"
-                          ? "bg-primary text-white rounded-2xl rounded-tr-md px-3 py-2"
-                          : "bg-background border border-border rounded-2xl rounded-tl-md px-3 py-2.5"
+                          ? "rounded-xl bg-primary px-3 py-2 text-primary-foreground"
+                          : m.content.startsWith("❌")
+                            ? "rounded-xl border border-danger/20 bg-danger-soft px-3 py-2.5 text-danger"
+                            : "rounded-xl border border-border bg-background px-3 py-2.5"
                       }`}>
                         {m.thinking ? (
                           <div className="flex items-center gap-2 py-0.5">
                             <Sparkles className="w-3 h-3 animate-pulse text-primary" />
-                            <span className="text-[12px] text-muted-foreground font-medium">Thinking...</span>
+                            <span className="text-xs text-muted-foreground font-medium">Thinking...</span>
                           </div>
                         ) : (
                           <>
-                            <RichText text={m.content} className="text-[12.5px] leading-relaxed" />
+                            <RichText text={m.content.replace(/^❌\s*/, "")} className="text-sm leading-relaxed" />
                             {m.citations && m.citations.length > 0 && (
                               <div className="mt-2 pt-2 border-t border-border/50 flex flex-col gap-1">
                                 {m.citations.slice(0, 2).map((c, ci) => (
-                                  <div key={ci} className="flex items-center gap-1.5 text-[10.5px] text-muted-foreground">
+                                  <div key={ci} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <FileText className="w-3 h-3 shrink-0" />
                                     <span className="truncate">{c.filename}</span>
-                                    <span className="shrink-0 text-emerald-600 font-bold">{Math.round(c.score * 100)}%</span>
+                                    <span className="shrink-0 font-semibold text-primary-text">{Math.round(c.score * 100)}%</span>
                                   </div>
                                 ))}
                               </div>
@@ -282,7 +285,7 @@ export function FloatingAI() {
               {/* Input */}
               <div className="px-4 py-3 border-t border-border bg-surface shrink-0">
                 {!selectedGroup ? (
-                  <div className="text-center text-[12px] text-muted-foreground font-medium py-1">
+                  <div className="text-center text-xs text-muted-foreground font-medium py-1">
                     No study groups available
                   </div>
                 ) : (
@@ -299,12 +302,13 @@ export function FloatingAI() {
                       }}
                       placeholder="Ask anything…"
                       disabled={sending}
-                      className="flex-1 bg-transparent outline-none text-[12.5px] text-foreground placeholder:text-muted-foreground disabled:opacity-60"
+                      className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground disabled:opacity-60"
                     />
                     <button
                       onClick={() => sendMessage(input)}
                       disabled={!input.trim() || sending}
-                      className="w-7 h-7 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                      aria-label="Send message"
+                      className="w-7 h-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     >
                       <Send className="w-3 h-3" />
                     </button>
