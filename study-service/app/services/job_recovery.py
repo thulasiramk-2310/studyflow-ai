@@ -62,7 +62,20 @@ def expire_if_stale(db: Session, job, now: Optional[datetime] = None) -> None:
     status = _JOBS[type(job)]
     if job.status not in (status.PENDING, status.GENERATING):
         return
-    if job.started_at is None or job.started_at < _cutoff(now):
-        job.status = status.FAILED
-        db.commit()
+    cutoff = _cutoff(now)
+    if job.started_at is not None and job.started_at >= cutoff:
+        return
+
+    changed = (
+        db.query(type(job))
+        .filter(type(job).id == job.id)
+        .filter(type(job).status.in_([status.PENDING, status.GENERATING]))
+        .filter(or_(type(job).started_at.is_(None), type(job).started_at < cutoff))
+        .update({type(job).status: status.FAILED}, synchronize_session=False)
+    )
+    db.commit()
+    if changed:
+        db.refresh(job)
         logger.warning("Failed %s for session %s: lease expired", type(job).__name__, job.session_id)
+    else:
+        db.refresh(job)
