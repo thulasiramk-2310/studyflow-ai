@@ -10,6 +10,10 @@ services:
     build: !reset null
     ports: !reset []
     restart: unless-stopped
+    environment:
+      # Password-reset links must point at the public site, not localhost.
+      # SITE_ADDRESS can't be reused here: it may already carry a scheme (http://localhost).
+      - APP_BASE_URL=${APP_BASE_URL:-https://studyflow-ai.duckdns.org}
 
   study-service:
     image: ghcr.io/thulasiramk-2310/studyflow-study:${IMAGE_TAG:?set IMAGE_TAG}

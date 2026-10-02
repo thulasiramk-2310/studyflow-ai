@@ -21,6 +21,16 @@ Then log in again and fill `/opt/studyflow/.env` with every key from your local 
     DUCKDNS_TOKEN=<your token>
     SITE_ADDRESS=studyflow-ai.duckdns.org
 
+For password-reset emails (optional; without them reset requests succeed but no email is sent):
+
+    SMTP_HOST=smtp.gmail.com
+    SMTP_PORT=587
+    SMTP_USER=<gmail address>
+    SMTP_PASSWORD=<Gmail App Password>
+    MAIL_FROM=StudyFlow <gmail address>
+
+Reset links point at `https://studyflow-ai.duckdns.org` by default; set `APP_BASE_URL=https://<your domain>` if the site lives elsewhere.
+
 ## 4. GitHub settings
 Repository > Settings > Secrets and variables > Actions > New repository secret:
 
