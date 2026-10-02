@@ -59,7 +59,7 @@ def generate_quiz(group_id: int, resource_ids: list[int]) -> dict:
             return parsed
             
         except json.JSONDecodeError as e:
-            logger.warning(f"Failed to parse JSON from LLM: {e}. Answer was: {answer}")
+            logger.warning(f"Failed to parse JSON from LLM: {e} (answer length {len(answer)})")
             if attempt == max_retries:
                 raise ValueError("LLM returned malformed JSON that could not be parsed.")
         except Exception as e:

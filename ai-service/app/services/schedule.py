@@ -23,7 +23,7 @@ def generate_schedule(context_str: str, target_duration: int = 60) -> dict:
         else:
             raise ValueError("No JSON object found in response")
             
-        logger.info(f"AI Schedule Log - Prompt: {prompt} \n\nGenerated JSON: {json.dumps(schedule_data, indent=2)}")
+        logger.info(f"Schedule generated | prompt_chars={len(prompt)} agenda_items={len(schedule_data.get('agenda', []))}")
         
         return schedule_data
         
