@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # GROQ_API_KEY is optional so tests and offline evals can import the app
     # without credentials; GroqProvider raises at call time when it is empty.
     GROQ_API_KEY: str = ""
+    # Optional fallback keys, tried in order when a key is rate-limited or rejected.
+    GROQ_API_KEY1: str = ""
+    GROQ_API_KEY2: str = ""
     GROQ_MODEL: str = "openai/gpt-oss-20b"
     LLM_PROVIDER: str = "groq"  # 'groq' or 'mock'
 
