@@ -59,14 +59,14 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
   const sortedItems = [...items].sort((a, b) => a.order_index - b.order_index);
 
   return (
-    <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden">
-      <div className="px-5 py-4 border-b border-border-soft flex justify-between items-center bg-gray-50/50">
+    <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div className="flex items-center gap-2">
-          <Map className="w-4 h-4 text-primary" />
-          <h3 className="text-[14px] font-bold text-foreground">Learning Path</h3>
+          <Map className="h-4 w-4 text-primary-text" />
+          <h3 className="text-base font-bold text-foreground">Learning Path</h3>
         </div>
         {items.length > 0 && (
-          <div className="text-[12px] font-semibold text-muted-foreground">
+          <div className="text-xs font-semibold text-muted-foreground">
             {completedCount} of {items.length} completed ({progressPercent}%)
           </div>
         )}
@@ -76,11 +76,11 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
         {items.length === 0 && !isAdding ? (
           <div className="text-center py-6">
             <Map className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-[13px] text-muted-foreground mb-3">No learning path items added yet.</p>
+            <p className="text-sm text-muted-foreground mb-3">No learning path items added yet.</p>
             {canManage && (
               <button
                 onClick={() => setIsAdding(true)}
-                className="text-[12px] font-semibold bg-primary text-white px-4 py-1.5 rounded-lg hover:bg-primary-hover transition-colors"
+                className="text-xs font-semibold bg-primary text-primary-foreground px-4 py-1.5 rounded-lg hover:bg-primary-hover transition-colors"
               >
                 Add first item
               </button>
@@ -91,7 +91,7 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
             {sortedItems.map((item, idx) => (
               <div 
                 key={item.id} 
-                className={`group flex items-start gap-3 p-2.5 rounded-xl transition-colors hover:bg-gray-50/80 ${item.status === 'COMPLETED' ? 'opacity-70' : ''}`}
+                className={`group flex items-start gap-3 p-2.5 rounded-xl transition-colors hover:bg-muted/80 ${item.status === 'COMPLETED' ? 'opacity-70' : ''}`}
               >
                 <button 
                   onClick={() => handleToggleStatus(item)}
@@ -99,23 +99,23 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
                   className={`mt-0.5 shrink-0 transition-colors ${canManage ? 'cursor-pointer' : 'cursor-default'}`}
                 >
                   {item.status === "COMPLETED" ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-500" />
+                    <CheckCircle className="w-5 h-5 text-success" />
                   ) : item.status === "IN_PROGRESS" ? (
-                    <Clock className="w-5 h-5 text-amber-500" />
+                    <Clock className="w-5 h-5 text-warning" />
                   ) : (
-                    <Circle className="w-5 h-5 text-gray-300 hover:text-primary transition-colors" />
+                    <Circle className="w-5 h-5 text-muted-foreground hover:text-primary transition-colors" />
                   )}
                 </button>
                 
                 <div className="flex-1 min-w-0">
-                  <div className={`text-[13.5px] font-semibold ${item.status === "COMPLETED" ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                  <div className={`text-sm font-semibold ${item.status === "COMPLETED" ? "line-through text-muted-foreground" : "text-foreground"}`}>
                     {item.title}
                   </div>
                   {item.description && (
-                    <div className="text-[12px] text-muted-foreground mt-0.5 line-clamp-1">{item.description}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.description}</div>
                   )}
                   {item.is_ai_generated && (
-                    <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded w-fit">
+                    <div className="mt-1 flex items-center gap-1 text-xs font-bold text-primary-text bg-primary-soft px-1.5 py-0.5 rounded w-fit">
                       <Sparkles className="w-3 h-3" /> AI Suggested
                     </div>
                   )}
@@ -123,10 +123,10 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
 
                 {canManage && (
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors">
+                    <button onClick={() => handleDelete(item.id)} className="p-1.5 text-muted-foreground hover:text-danger rounded-lg hover:bg-danger-soft transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    <button className="p-1.5 text-gray-400 hover:text-foreground rounded-lg hover:bg-gray-100 transition-colors cursor-grab">
+                    <button className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors cursor-grab">
                       <GripVertical className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -142,19 +142,19 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
                   value={newItemTitle}
                   onChange={e => setNewItemTitle(e.target.value)}
                   placeholder="E.g., Learn Python Basics"
-                  className="flex-1 bg-white border border-border rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
                 <button 
                   type="submit" 
                   disabled={loading || !newItemTitle.trim()}
-                  className="bg-primary text-white text-[12px] font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
+                  className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
                 >
                   Add
                 </button>
                 <button 
                   type="button" 
                   onClick={() => setIsAdding(false)}
-                  className="text-muted-foreground hover:text-foreground text-[12px] font-semibold px-2 py-1.5"
+                  className="text-muted-foreground hover:text-foreground text-xs font-semibold px-2 py-1.5"
                 >
                   Cancel
                 </button>
@@ -164,7 +164,7 @@ export function StudyRoadmap({ groupId, items, canManage, onUpdate, progressPerc
             {!isAdding && canManage && items.length > 0 && (
               <button 
                 onClick={() => setIsAdding(true)}
-                className="flex items-center gap-1.5 text-[12.5px] font-semibold text-muted-foreground hover:text-primary transition-colors p-2 mt-1 w-fit"
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors p-2 mt-1 w-fit"
               >
                 <Plus className="w-4 h-4" /> Add Topic
               </button>
