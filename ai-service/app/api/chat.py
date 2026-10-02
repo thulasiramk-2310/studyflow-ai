@@ -18,7 +18,7 @@ def verify_internal_key(x_internal_key: str = Header(...)):
 
 router = APIRouter(dependencies=[Depends(verify_internal_key)])
 
-async def generate_chat_title(session_id: int, first_query: str):
+def generate_chat_title(session_id: int, first_query: str):
     """Generate a title for a chat session using LLM, with fallback to truncated query."""
     db = SessionLocal()
     try:
@@ -63,7 +63,7 @@ async def generate_chat_title(session_id: int, first_query: str):
         db.close()
 
 @router.post("")
-async def chat_with_documents(request: ChatRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def chat_with_documents(request: ChatRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     Generate an answer using RAG based on uploaded study materials, with chat history.
     """
@@ -159,7 +159,7 @@ async def chat_with_documents(request: ChatRequest, background_tasks: Background
     return {"success": True, "data": chat_response.model_dump()}
 
 @router.get("/sessions", response_model=List[ChatSessionResponse])
-async def get_chat_sessions(group_id: int, user_id: int, db: Session = Depends(get_db)):
+def get_chat_sessions(group_id: int, user_id: int, db: Session = Depends(get_db)):
     sessions = db.query(ChatSession).filter(
         ChatSession.group_id == group_id,
         ChatSession.user_id == user_id,
@@ -168,7 +168,7 @@ async def get_chat_sessions(group_id: int, user_id: int, db: Session = Depends(g
     return sessions
 
 @router.get("/sessions/{session_id}", response_model=List[ChatMessageResponse])
-async def get_chat_session_messages(session_id: int, user_id: int, group_id: int, limit: int = 30, offset: int = 0, db: Session = Depends(get_db)):
+def get_chat_session_messages(session_id: int, user_id: int, group_id: int, limit: int = 30, offset: int = 0, db: Session = Depends(get_db)):
     chat_session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.deleted_at == None).first()
     if not chat_session:
         raise HTTPException(status_code=404, detail="Chat session not found")
@@ -179,7 +179,7 @@ async def get_chat_session_messages(session_id: int, user_id: int, group_id: int
     return messages
 
 @router.delete("/sessions/{session_id}")
-async def delete_chat_session(session_id: int, user_id: int, group_id: int, db: Session = Depends(get_db)):
+def delete_chat_session(session_id: int, user_id: int, group_id: int, db: Session = Depends(get_db)):
     chat_session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.deleted_at == None).first()
     if not chat_session:
         raise HTTPException(status_code=404, detail="Chat session not found")
@@ -192,7 +192,7 @@ async def delete_chat_session(session_id: int, user_id: int, group_id: int, db: 
     return {"success": True, "message": "Session deleted"}
 
 @router.get("/stats")
-async def get_chat_stats(user_id: int, db: Session = Depends(get_db)):
+def get_chat_stats(user_id: int, db: Session = Depends(get_db)):
     count = db.query(ChatSession).filter(
         ChatSession.user_id == user_id,
         ChatSession.deleted_at == None

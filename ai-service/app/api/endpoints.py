@@ -19,7 +19,7 @@ class IndexRequest(BaseModel):
     filename: str
 
 @router.post("/index", status_code=202)
-async def index_document(request: IndexRequest, background_tasks: BackgroundTasks):
+def index_document(request: IndexRequest, background_tasks: BackgroundTasks):
     """
     Trigger document indexing asynchronously.
     """
@@ -29,7 +29,7 @@ async def index_document(request: IndexRequest, background_tasks: BackgroundTask
     return {"status": "Accepted", "message": f"Indexing started for resource {request.resource_id}"}
 
 @router.post("/reindex/{resource_id}", status_code=202)
-async def reindex_document(resource_id: int, request: IndexRequest, background_tasks: BackgroundTasks):
+def reindex_document(resource_id: int, request: IndexRequest, background_tasks: BackgroundTasks):
     """
     Retry indexing a document.
     """
@@ -47,7 +47,7 @@ from app.embeddings.embedding_service import generate_embeddings
 from app.vectorstore.faiss_store import search_index, get_group_dir
 
 @router.post("/retrieve", response_model=RetrieveResponse)
-async def retrieve_documents(request: RetrieveRequest):
+def retrieve_documents(request: RetrieveRequest):
     """
     Search the FAISS vector index for a group and return the top K matching chunks.
     """
@@ -101,7 +101,7 @@ class SummaryRequest(BaseModel):
     resourceIds: List[int]
 
 @router.post("/summary")
-async def generate_session_summary(req: SummaryRequest):
+def generate_session_summary(req: SummaryRequest):
     try:
         summary_data = generate_summary(group_id=req.groupId, resource_ids=req.resourceIds)
         return {"success": True, "data": summary_data}
@@ -118,7 +118,7 @@ class QuizRequest(BaseModel):
     resourceIds: List[int]
 
 @router.post("/quiz")
-async def generate_session_quiz(req: QuizRequest):
+def generate_session_quiz(req: QuizRequest):
     try:
         from app.services.quiz import generate_quiz
         quiz_data = generate_quiz(group_id=req.groupId, resource_ids=req.resourceIds)
@@ -136,7 +136,7 @@ class FlashcardRequest(BaseModel):
     count: int = 15
 
 @router.post("/flashcards")
-async def generate_session_flashcards(req: FlashcardRequest):
+def generate_session_flashcards(req: FlashcardRequest):
     try:
         from app.services.flashcard import generate_flashcards
         flashcard_data = generate_flashcards(group_id=req.groupId, resource_ids=req.resourceIds, count=req.count)
@@ -152,7 +152,7 @@ class ScheduleRequest(BaseModel):
     target_duration: int = 60
 
 @router.post("/schedule")
-async def generate_session_schedule(req: ScheduleRequest):
+def generate_session_schedule(req: ScheduleRequest):
     try:
         from app.services.schedule import generate_schedule
         schedule_data = generate_schedule(req.context, req.target_duration)
