@@ -34,6 +34,7 @@ def run_agent_chat(
     user_id: Optional[int] = None,
     history: Optional[list[Any]] = None,
     graph=None,
+    audience: str = "student",
 ) -> ChatResponse:
     """Run one chat turn through the agent graph."""
     state = run_agents(
@@ -41,6 +42,7 @@ def run_agent_chat(
         message=query,
         user_id=user_id,
         history=history,
+        audience=audience,
         graph=graph or get_default_graph(),
     )
 

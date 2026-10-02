@@ -19,6 +19,7 @@ from app.agents.state import MAX_STEPS, AgentState
 from app.guardrails.grounding import UNSUPPORTED_MESSAGE, enforce_grounding
 from app.guardrails.pii import mask_all
 from app.prompts.agent_prompt import NOT_IN_NOTES, build_agent_prompt
+from app.prompts.audience import with_audience
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +154,7 @@ def rag_node(
     top_results = results[:top_k]
     # Chunks come from user-uploaded PDFs: mask PII before they reach the LLM.
     chunks, _ = mask_all([r["content"] for r in top_results])
-    prompt = build_agent_prompt(query, chunks, state.get("history"))
+    prompt = with_audience(build_agent_prompt(query, chunks, state.get("history")), state.get("audience"))
 
     raw_answer = (provider.complete(prompt) if provider else "") or ""
 
@@ -200,6 +201,8 @@ def scheduler_node(state: AgentState, scheduler=None) -> dict[str, Any]:
     update = _bump(state, "scheduler")
 
     context = state.get("context") or state.get("message", "")
+    if state.get("audience") == "professional":  # student plans keep the original context
+        context = with_audience(context, "professional")
     target_duration = state.get("target_duration", 60)
 
     try:

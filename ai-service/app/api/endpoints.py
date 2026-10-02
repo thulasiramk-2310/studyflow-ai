@@ -1,6 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends, Header
 from pydantic import BaseModel
-from typing import List
+from typing import List, Literal
 from app.services.indexing import process_document
 from app.services.summary import generate_summary
 from app.core.config import settings
@@ -99,11 +99,12 @@ class SummaryRequest(BaseModel):
     sessionId: int
     groupId: int
     resourceIds: List[int]
+    audience: Literal["student", "professional"] = "student"
 
 @router.post("/summary")
 def generate_session_summary(req: SummaryRequest):
     try:
-        summary_data = generate_summary(group_id=req.groupId, resource_ids=req.resourceIds)
+        summary_data = generate_summary(group_id=req.groupId, resource_ids=req.resourceIds, audience=req.audience)
         return {"success": True, "data": summary_data}
     except ValueError as e:
         # e.g. "No indexed study materials" or parsing failures
@@ -116,12 +117,13 @@ class QuizRequest(BaseModel):
     sessionId: int
     groupId: int
     resourceIds: List[int]
+    audience: Literal["student", "professional"] = "student"
 
 @router.post("/quiz")
 def generate_session_quiz(req: QuizRequest):
     try:
         from app.services.quiz import generate_quiz
-        quiz_data = generate_quiz(group_id=req.groupId, resource_ids=req.resourceIds)
+        quiz_data = generate_quiz(group_id=req.groupId, resource_ids=req.resourceIds, audience=req.audience)
         return {"success": True, "data": quiz_data}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -134,12 +136,13 @@ class FlashcardRequest(BaseModel):
     groupId: int
     resourceIds: List[int]
     count: int = 15
+    audience: Literal["student", "professional"] = "student"
 
 @router.post("/flashcards")
 def generate_session_flashcards(req: FlashcardRequest):
     try:
         from app.services.flashcard import generate_flashcards
-        flashcard_data = generate_flashcards(group_id=req.groupId, resource_ids=req.resourceIds, count=req.count)
+        flashcard_data = generate_flashcards(group_id=req.groupId, resource_ids=req.resourceIds, count=req.count, audience=req.audience)
         return {"success": True, "data": flashcard_data}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -150,12 +153,13 @@ def generate_session_flashcards(req: FlashcardRequest):
 class ScheduleRequest(BaseModel):
     context: str
     target_duration: int = 60
+    audience: Literal["student", "professional"] = "student"
 
 @router.post("/schedule")
 def generate_session_schedule(req: ScheduleRequest):
     try:
         from app.services.schedule import generate_schedule
-        schedule_data = generate_schedule(req.context, req.target_duration)
+        schedule_data = generate_schedule(req.context, req.target_duration, audience=req.audience)
         return {"success": True, "data": schedule_data}
     except Exception as e:
         logger.error(f"Error in generate_session_schedule: {e}")

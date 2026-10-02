@@ -2,14 +2,18 @@ import json
 import logging
 from app.prompts.schedule_prompt import SCHEDULE_PROMPT_TEMPLATE
 from app.services.llm_service import generate_answer
+from app.prompts.audience import with_audience
 
 logger = logging.getLogger(__name__)
 
-def generate_schedule(context_str: str, target_duration: int = 60) -> dict:
+def generate_schedule(context_str: str, target_duration: int = 60, audience: str | None = None) -> dict:
     """
     Generate a study session schedule proposal based on group context.
     """
     prompt = SCHEDULE_PROMPT_TEMPLATE.format(context=context_str)
+    # Callers that already put the hint in the context (agent graph, MCP) pass no audience.
+    if audience:
+        prompt = with_audience(prompt, audience)
     
     try:
         response_text = generate_answer(prompt)
