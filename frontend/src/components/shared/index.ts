@@ -1,11 +1,11 @@
 /** Barrel export for all shared components */
 export { StatsCard } from "./StatsCard";
-export { EmptyState } from "./EmptyState";
+export { EmptyState } from "../ui/EmptyState";
 export { LoadingSkeleton, LoadingCard, SkeletonRow, SkeletonList } from "./LoadingSkeleton";
 export { StatusBadge } from "./StatusBadge";
 export { AvatarGroup } from "./AvatarGroup";
 export { Breadcrumb } from "./Breadcrumb";
-export { PageHeader } from "./PageHeader";
+export { PageHeader } from "../ui/PageHeader";
 export { SectionHeader } from "./SectionHeader";
 export { ProgressCard } from "./ProgressCard";
 export { SearchModal } from "./SearchModal";

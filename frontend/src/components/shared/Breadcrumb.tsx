@@ -2,11 +2,12 @@ import { Link, useLocation } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 
 const ROUTE_LABELS: Record<string, string> = {
-  dashboard:     "Dashboard",
-  groups:        "My Groups",
-  resources:     "Resources",
+  dashboard:     "Today",
+  groups:        "Groups",
+  resources:     "Library",
   sessions:      "Sessions",
-  ai:            "AI Assistant",
+  ai:            "Ask AI",
+  guide:         "Guide",
   notifications: "Notifications",
   profile:       "Profile",
   settings:      "Settings",
@@ -15,6 +16,7 @@ const ROUTE_LABELS: Record<string, string> = {
 };
 
 function label(segment: string): string {
+  if (/^\d+$/.test(segment)) return "Details";
   return ROUTE_LABELS[segment] ?? segment.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
@@ -32,7 +34,7 @@ export function Breadcrumb() {
   }));
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-[12.5px] font-medium">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs font-medium">
       {crumbs.map((crumb, i) => (
         <span key={crumb.href} className="flex items-center gap-1">
           {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-border" />}

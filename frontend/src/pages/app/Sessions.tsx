@@ -12,11 +12,11 @@ const FILTERS = ["Upcoming", "Today", "This Week", "Completed"] as const;
 type Filter = (typeof FILTERS)[number];
 
 const PASTEL_COLORS = [
-  { bg: "bg-blue-100", text: "text-blue-700" },
-  { bg: "bg-purple-100", text: "text-purple-700" },
-  { bg: "bg-green-100", text: "text-green-700" },
-  { bg: "bg-orange-100", text: "text-orange-700" },
-  { bg: "bg-pink-100", text: "text-pink-700" },
+  { bg: "bg-primary-soft", text: "text-primary-text" },
+  { bg: "bg-primary-soft", text: "text-primary-text" },
+  { bg: "bg-success-soft", text: "text-success" },
+  { bg: "bg-warning-soft", text: "text-warning" },
+  { bg: "bg-info-soft", text: "text-info" },
 ];
 
 const getColor = (id: number) => PASTEL_COLORS[id % PASTEL_COLORS.length];
@@ -98,16 +98,16 @@ export function Sessions() {
   if (loading) return <SessionsSkeleton />;
 
   return (
-    <div className="px-6 md:px-8 py-7 pb-12 max-w-[900px] mx-auto">
+    <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
       <PageHeader
-        title="Study Sessions"
+        title="Sessions"
         subtitle={`${sessions.filter(s => s.status !== "COMPLETED" && s.status !== "CANCELLED").length} upcoming sessions`}
         actions={
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-1.5 bg-primary text-white rounded-lg px-3.5 py-2 text-[13px] font-semibold hover:bg-primary-hover transition-colors shadow-sm"
+            className="flex items-center gap-1.5 bg-primary text-primary-foreground rounded-lg px-3.5 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm"
           >
-            <Plus className="w-4 h-4" strokeWidth={3} /> Schedule
+            <Plus className="w-4 h-4" strokeWidth={3} /> Schedule session
           </button>
         }
       />
@@ -116,7 +116,7 @@ export function Sessions() {
       <div className="flex gap-0.5 border-b border-border mb-6">
         {FILTERS.map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-2.5 text-[13px] font-semibold cursor-pointer transition-colors -mb-px ${filter === f ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"}`}>
+            className={`px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors -mb-px ${filter === f ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"}`}>
             {f}
           </button>
         ))}
@@ -130,9 +130,9 @@ export function Sessions() {
           action={
             <button 
               onClick={() => setIsCreateOpen(true)} 
-              className="bg-primary text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-primary-hover transition-colors"
+              className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors"
             >
-              Schedule Session
+              Schedule session
             </button>
           }
         />
@@ -140,7 +140,7 @@ export function Sessions() {
         <div className="flex flex-col gap-6">
           {Object.entries(grouped).map(([dateStr, sessionsForDate]) => (
             <div key={dateStr}>
-              <h3 className="text-[13px] font-bold text-muted-foreground mb-3 uppercase tracking-wider">{dateStr}</h3>
+              <h3 className="text-sm font-bold text-muted-foreground mb-3 uppercase tracking-wider">{dateStr}</h3>
               <div className="flex flex-col gap-3">
                 {sessionsForDate.map(s => {
                   const sDate = new Date(s.scheduled_at);
@@ -160,30 +160,30 @@ export function Sessions() {
 
                   return (
                     <Link to={`/sessions/${s.id}`} key={s.id}
-                      className="bg-surface border border-border rounded-2xl px-5 py-4 flex items-start gap-4 hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] transition-all group">
+                      className="bg-surface border border-border rounded-xl px-5 py-4 flex items-start gap-4 hover: shadow-float transition-all group">
                       
                       {/* Date block */}
                       <div className={`w-12 h-12 rounded-xl ${colors.bg} ${colors.text} flex flex-col items-center justify-center shrink-0 shadow-sm`}>
-                        <div className="text-[9px] font-bold uppercase leading-none">{mon}</div>
-                        <div className="text-[18px] font-extrabold leading-tight mt-0.5">{day}</div>
+                        <div className="text-xs font-bold uppercase leading-none">{mon}</div>
+                        <div className="text-md font-bold leading-tight mt-0.5">{day}</div>
                       </div>
                       
                       {/* Details */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[14px] font-bold">{s.title}</span>
+                          <span className="text-base font-bold">{s.title}</span>
                           {isLive && (
-                            <span className="flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />LIVE
+                            <span className="flex items-center gap-1 text-xs font-bold text-danger bg-danger-soft px-2 py-0.5 rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />LIVE
                             </span>
                           )}
                         </div>
-                        <div className="text-[12.5px] text-muted-foreground mt-0.5">{groupName} · {time}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{groupName} · {time}</div>
                         
                         {agendaItems.length > 0 && (
                           <div className="flex gap-1.5 mt-2 flex-wrap">
                             {agendaItems.map((a, i) => (
-                              <span key={i} className="text-[11px] bg-border-soft text-muted-foreground rounded-md px-2 py-0.5 font-medium">
+                              <span key={i} className="text-xs bg-border-soft text-muted-foreground rounded-md px-2 py-0.5 font-medium">
                                 {a}
                               </span>
                             ))}
@@ -198,7 +198,7 @@ export function Sessions() {
                           label={s.status} 
                           showDot={isLive} 
                         />
-                        <div className="text-[12px] text-muted-foreground whitespace-nowrap">
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
                           0 attending
                         </div>
                         <ChevronRight className="w-4 h-4 text-border opacity-0 group-hover:opacity-100 transition-opacity" />

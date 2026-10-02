@@ -9,7 +9,7 @@ interface AvatarGroupProps {
 export function AvatarGroup({ avatars, max = 4, size = "md" }: AvatarGroupProps) {
   const shown = avatars.slice(0, max);
   const rest  = avatars.length - max;
-  const dim   = size === "sm" ? "w-7 h-7 text-[10px]" : "w-8 h-8 text-[11px]";
+  const dim   = size === "sm" ? "w-7 h-7 text-xs" : "w-8 h-8 text-xs";
 
   return (
     <div className="flex items-center -space-x-2">
@@ -17,7 +17,7 @@ export function AvatarGroup({ avatars, max = 4, size = "md" }: AvatarGroupProps)
         <div
           key={i}
           title={av.name ?? av.init}
-          className={`${dim} rounded-full ${av.bg ?? "bg-primary"} text-white flex items-center justify-center font-bold ring-2 ring-surface shrink-0`}
+          className={`${dim} rounded-full ${av.bg ?? "bg-primary"} text-primary-foreground flex items-center justify-center font-bold ring-2 ring-surface shrink-0`}
         >
           {av.init}
         </div>

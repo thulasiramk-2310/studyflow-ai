@@ -94,13 +94,13 @@ export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-surface border border-border w-full max-w-lg rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+    <div role="dialog" aria-modal="true" aria-label="Upload notes" className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4 backdrop-blur-[2px]">
+      <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-float">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h3 className="font-bold text-lg">Upload Resource</h3>
-          <button onClick={onClose} disabled={uploading} className="p-1 hover:bg-border-soft rounded-md transition-colors disabled:opacity-50 text-muted-foreground">
+          <h3 className="font-serif text-lg text-foreground">Upload notes</h3>
+          <button onClick={onClose} disabled={uploading} aria-label="Close" className="p-1 hover:bg-muted rounded-md transition-colors disabled:opacity-50 text-muted-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -125,11 +125,11 @@ export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: 
                 accept=".pdf,.docx,.pptx,.md"
                 onChange={handleChange}
               />
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors ${dragActive ? 'bg-primary text-white' : 'bg-border-soft text-muted-foreground'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors ${dragActive ? 'bg-primary text-primary-foreground' : 'bg-border-soft text-muted-foreground'}`}>
                 <Upload className="w-6 h-6" />
               </div>
-              <p className="font-semibold text-[15px] mb-1">Click to upload or drag and drop</p>
-              <p className="text-muted-foreground text-[13px]">PDF, DOCX, PPTX, or MD (max. 50MB)</p>
+              <p className="font-semibold text-base mb-1">Click to upload or drag and drop</p>
+              <p className="text-muted-foreground text-sm">PDF, DOCX, PPTX, or MD (max. 50MB)</p>
             </div>
           ) : (
             <div className="border border-border rounded-xl p-5 bg-background">
@@ -138,12 +138,12 @@ export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: 
                   <FileIcon className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[14px] truncate" title={file.name}>{file.name}</p>
-                  <p className="text-muted-foreground text-[12px] mt-0.5">{resourceService.formatFileSize(file.size)}</p>
+                  <p className="font-semibold text-base truncate" title={file.name}>{file.name}</p>
+                  <p className="text-muted-foreground text-xs mt-0.5">{resourceService.formatFileSize(file.size)}</p>
                   
                   {uploading && (
                     <div className="mt-4">
-                      <div className="flex justify-between text-[11px] font-medium mb-1.5">
+                      <div className="flex justify-between text-xs font-medium mb-1.5">
                         <span className="text-primary">Uploading...</span>
                         <span>{progress}%</span>
                       </div>
@@ -168,12 +168,12 @@ export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: 
 
           {!groupId && groups && groups.length > 0 && (
             <div className="mt-4">
-              <label className="block text-[13px] font-semibold mb-1.5">Upload to group</label>
+              <label className="block text-sm font-semibold mb-1.5">Upload to group</label>
               <select 
                 value={selectedGroupId || ''}
                 onChange={(e) => setSelectedGroupId(Number(e.target.value))}
                 disabled={uploading}
-                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 {groups.map(g => (
                   <option key={g.id} value={g.id}>{g.name}</option>
@@ -183,9 +183,9 @@ export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: 
           )}
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-start gap-2.5 text-red-600">
+            <div className="mt-4 p-3 bg-danger-soft border border-danger rounded-lg flex items-start gap-2.5 text-danger">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <p className="text-[13px] font-medium">{error}</p>
+              <p className="text-sm font-medium">{error}</p>
             </div>
           )}
         </div>
@@ -195,22 +195,22 @@ export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: 
           <button 
             onClick={onClose}
             disabled={uploading}
-            className="px-4 py-2 text-[14px] font-semibold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-base font-semibold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button 
             onClick={handleUpload}
             disabled={!file || uploading || !selectedGroupId}
-            className="px-5 py-2 text-[14px] font-semibold bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-5 py-2 text-base font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {uploading ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-surface/30 border-t-white rounded-full animate-spin" />
                 Uploading...
               </>
             ) : (
-              'Upload Resource'
+              'Upload'
             )}
           </button>
         </div>

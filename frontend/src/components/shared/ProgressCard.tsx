@@ -9,8 +9,8 @@ export function ProgressCard({ label, value, color = "bg-primary", sublabel }: P
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[12.5px] font-semibold">{label}</span>
-        <span className="text-[12.5px] font-bold tabular-nums">{value}%</span>
+        <span className="text-xs font-semibold">{label}</span>
+        <span className="text-xs font-bold tabular-nums">{value}%</span>
       </div>
       <div className="h-2 bg-border-soft rounded-full overflow-hidden">
         <div
@@ -18,7 +18,7 @@ export function ProgressCard({ label, value, color = "bg-primary", sublabel }: P
           style={{ width: `${value}%` }}
         />
       </div>
-      {sublabel && <div className="text-[11px] text-muted-foreground mt-1">{sublabel}</div>}
+      {sublabel && <div className="text-xs text-muted-foreground mt-1">{sublabel}</div>}
     </div>
   );
 }

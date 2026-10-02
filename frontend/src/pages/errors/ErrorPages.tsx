@@ -14,19 +14,19 @@ function ErrorPage({ code, title, description }: ErrorPageProps) {
         <div className="w-20 h-20 rounded-3xl bg-primary-soft flex items-center justify-center mx-auto mb-6 shadow-sm">
           <AlertTriangle className="w-10 h-10 text-primary opacity-70" />
         </div>
-        <div className="text-[80px] font-extrabold tracking-tighter text-border leading-none">{code}</div>
-        <h1 className="mt-2 text-[22px] font-extrabold text-foreground">{title}</h1>
-        <p className="mt-2 text-[13.5px] text-muted-foreground leading-relaxed">{description}</p>
+        <div className="font-serif text-2xl leading-none text-muted-foreground">{code}</div>
+        <h1 className="mt-2 font-serif text-xl text-foreground">{title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{description}</p>
         <div className="flex items-center justify-center gap-3 mt-8">
           <Link
             to="/dashboard"
-            className="bg-primary text-white rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-primary-hover transition-colors"
+            className="bg-primary text-primary-foreground rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-primary-hover transition-colors"
           >
-            Back to Dashboard
+            Back to Today
           </Link>
           <button
             onClick={() => window.history.back()}
-            className="bg-surface border border-border text-foreground rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-background transition-colors"
+            className="bg-surface border border-border text-foreground rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-muted transition-colors"
           >
             Go back
           </button>
