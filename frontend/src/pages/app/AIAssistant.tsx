@@ -18,7 +18,8 @@ const SUGGESTIONS = [
 
 
 export function AIAssistant() {
-  const { audience } = useTerms();
+  const terms = useTerms();
+  const { audience } = terms;
   const [messages, setMessages] = useState<(Omit<ChatMessage, "id"|"session_id"|"created_at"> & { thinking?: boolean })[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -39,7 +40,7 @@ export function AIAssistant() {
       }
       setLoading(false);
     }).catch(() => {
-      toast.error("Failed to load groups");
+      toast.error(`Failed to load ${terms.groupsLower}`);
       setLoading(false);
     });
   }, []);
@@ -175,7 +176,7 @@ export function AIAssistant() {
           <h1 className="font-serif text-lg text-foreground">Ask AI</h1>
           {groups.length > 0 && (
             <select
-              aria-label="Study group"
+              aria-label={terms.group}
               className="h-8 max-w-[220px] truncate rounded-lg border border-border bg-surface px-2 text-sm text-foreground focus:border-primary focus:outline-none"
               value={selectedGroup?.id || ""}
               onChange={(e) => {
@@ -197,7 +198,7 @@ export function AIAssistant() {
                 <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary-soft text-primary-text"><Sparkles className="h-5 w-5" /></span>
                 <div>
                   <h2 className="font-serif text-xl text-foreground">What do you want to understand?</h2>
-                  <p className="mt-1 text-base text-muted-foreground">Ask about {selectedGroup ? selectedGroup.name : "your study group"}. Every answer shows where it came from.</p>
+                  <p className="mt-1 text-base text-muted-foreground">Ask about {selectedGroup ? selectedGroup.name : `your ${terms.groupLower}`}. Every answer shows where it came from.</p>
                 </div>
                 {!noNotes && selectedGroup && (
                   <div className="flex max-w-[520px] flex-wrap justify-center gap-2">
@@ -264,10 +265,10 @@ export function AIAssistant() {
         <div className="border-t border-border bg-background/80 px-5 pb-4 pt-3 backdrop-blur">
           <div className="mx-auto w-full max-w-[760px]">
             {!selectedGroup ? (
-              <p className="rounded-xl border border-border bg-surface px-4 py-3 text-center text-sm text-muted-foreground">Join or create a study group to start asking questions.</p>
+              <p className="rounded-xl border border-border bg-surface px-4 py-3 text-center text-sm text-muted-foreground">Join or create a {terms.groupLower} to start asking questions.</p>
             ) : noNotes ? (
               <p className="flex items-center justify-center gap-2 rounded-xl border border-warning/20 bg-warning-soft px-4 py-3 text-center text-sm text-warning">
-                <FileText className="h-4 w-4" /> This group has no notes yet. Upload some in the Library first.
+                <FileText className="h-4 w-4" /> This {terms.groupLower} has no notes yet. Upload some in {terms.library} first.
               </p>
             ) : (
               <>
@@ -288,7 +289,7 @@ export function AIAssistant() {
                       e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
                     }}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-                    placeholder="Ask about your study materials…"
+                    placeholder={terms.askPlaceholder}
                     disabled={sending}
                     className="max-h-40 flex-1 resize-none bg-transparent py-1.5 text-base text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-60"
                   />

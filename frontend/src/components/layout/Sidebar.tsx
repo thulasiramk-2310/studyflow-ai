@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { NavLink, useNavigate, useLocation, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,12 +12,12 @@ import { useSidebar } from "../../context/SidebarContext";
 import { groupService, type Group } from "../../services/group.service";
 import { Avatar } from "../ui";
 
-const NAV_ITEMS = [
-  { label: "Today",    to: "/dashboard", icon: Home },
-  { label: "Groups",   to: "/groups",    icon: Users },
-  { label: "Sessions", to: "/sessions",  icon: Calendar },
-  { label: "Ask AI",   to: "/ai",        icon: Sparkles },
-  { label: "Library",  to: "/resources", icon: FolderOpen },
+const navItems = (t: ReturnType<typeof useTerms>) => [
+  { label: "Today",     to: "/dashboard", icon: Home },
+  { label: t.groups,    to: "/groups",    icon: Users },
+  { label: t.sessions,  to: "/sessions",  icon: Calendar },
+  { label: "Ask AI",    to: "/ai",        icon: Sparkles },
+  { label: t.library,   to: "/resources", icon: FolderOpen },
 ];
 
 const BOTTOM_ITEMS = [
@@ -55,6 +56,7 @@ function NavItem({ to, icon: Icon, label, collapsed }: { to: string; icon: React
 
 /** The inner sidebar content, shared between desktop+tablet and mobile drawer */
 function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: () => void }) {
+  const terms = useTerms();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toggleCollapse } = useSidebar();
@@ -82,11 +84,11 @@ function SidebarContent({ collapsed, onClose }: { collapsed: boolean; onClose?: 
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-1">
-        {NAV_ITEMS.map((item) => <NavItem key={item.to} {...item} collapsed={collapsed} />)}
+        {navItems(terms).map((item) => <NavItem key={item.to} {...item} collapsed={collapsed} />)}
 
         {!collapsed && groups.length > 0 && (
           <div className="mt-6">
-            <div className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your groups</div>
+            <div className="px-3 pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your {terms.groupsLower}</div>
             {groups.slice(0, 6).map((g) => (
               <NavLink
                 key={g.id}

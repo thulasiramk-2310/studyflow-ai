@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Sparkle } from "../../components/Icons";
@@ -11,6 +12,8 @@ import type { QuizResponse, Session, QuizGradeResponse } from "../../services/se
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
 export function Quiz() {
+  const terms = useTerms();
+  const quizWord = terms.quiz.toLowerCase();
   const { sessionId } = useParams();
   const [session, setSession] = useState<Session | null>(null);
   const [quizData, setQuizData] = useState<QuizResponse | null>(null);
@@ -79,16 +82,16 @@ export function Quiz() {
   return (
     <div className="mx-auto max-w-[760px] px-6 py-8">
       <Link to={`/sessions/${sessionId}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors mb-6">
-        <ArrowLeft className="w-4 h-4" /> Back to session
+        <ArrowLeft className="w-4 h-4" /> Back to {terms.sessionLower}
       </Link>
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
-            <Sparkle className="w-3.5 h-3.5" /> AI-generated quiz
+            <Sparkle className="w-3.5 h-3.5" /> AI-generated {quizWord}
           </div>
-          <h1 className="mt-1 font-serif text-xl text-foreground md:text-2xl">{session?.title || "Session quiz"}</h1>
+          <h1 className="mt-1 font-serif text-xl text-foreground md:text-2xl">{session?.title || `${terms.session} ${quizWord}`}</h1>
           <div className="mt-1 text-muted-foreground text-sm">{questions.length} questions</div>
         </div>
         {submitted && gradeResult && (
@@ -194,14 +197,14 @@ export function Quiz() {
               setGradeResult(res);
               setSubmitted(true);
             } catch (err: any) {
-              toast.error(err.message || "Failed to grade the quiz");
+              toast.error(err.message || `Failed to grade the ${quizWord}`);
             } finally {
               setIsGrading(false);
             }
           }}
           disabled={answered < questions.length || isGrading}
           className="mt-6 w-full bg-primary text-primary-foreground rounded-xl py-3 text-base font-bold hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed ">
-          {isGrading ? "Grading..." : "Submit quiz"}
+          {isGrading ? "Grading..." : `Submit ${quizWord}`}
         </button>
       ) : (
         <div className="mt-6 flex flex-col sm:flex-row gap-3">
@@ -209,13 +212,13 @@ export function Quiz() {
             to={`/sessions/${sessionId}`}
             className="flex-1 bg-primary text-primary-foreground text-center rounded-xl py-3 text-base font-bold hover:bg-primary-hover transition-colors "
           >
-            Return to session
+            Return to {terms.sessionLower}
           </Link>
           <button 
             onClick={() => { setAnswers({}); setSubmitted(false); setGradeResult(null); }}
             className="flex-1 bg-surface border border-border rounded-xl py-3 text-base font-bold hover:bg-muted transition-colors"
           >
-            Retry quiz
+            Retry {quizWord}
           </button>
         </div>
       )}

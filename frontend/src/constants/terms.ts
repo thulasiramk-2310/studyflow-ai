@@ -7,7 +7,7 @@ export interface Terms {
   learningPath: string; topic: string; quiz: string; quizzes: string;
   flashcards: string; library: string; organizer: string; member: string;
   planNext: string; newGroup: string; joinGroup: string; newSession: string;
-  emptyGroupsTitle: string; emptyGroupsBody: string; askPlaceholder: string;
+  emptyGroupsTitle: string; emptyGroupsBody: string; askPlaceholder: string; groupNameExample: string;
 }
 
 export const TERMS: Record<Audience, Terms> = {
@@ -20,6 +20,7 @@ export const TERMS: Record<Audience, Terms> = {
     emptyGroupsTitle: "You're not in a study group yet",
     emptyGroupsBody: "Groups hold your notes, sessions and AI chats. Invite classmates with a code.",
     askPlaceholder: "Ask about your study materials…",
+    groupNameExample: "e.g. Advanced Calculus Study Group",
   },
   professional: {
     group: "Team", groups: "Teams", groupLower: "team", groupsLower: "teams",
@@ -30,5 +31,6 @@ export const TERMS: Record<Audience, Terms> = {
     emptyGroupsTitle: "You're not in a team yet",
     emptyGroupsBody: "Teams hold your documents, meetings and AI chats. Invite colleagues with a code.",
     askPlaceholder: "Ask about your team's documents…",
+    groupNameExample: "e.g. Platform Team",
   },
 };

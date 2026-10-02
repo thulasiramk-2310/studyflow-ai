@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useGroupTerms } from "../../hooks/useTerms";
+import type { Audience } from "../../types";
 import { Clock, RotateCw, Check, X, Sparkles, Edit2, Save } from 'lucide-react';
 
 import type { AgendaItem, StudySessionType } from '../../services/session.service';
@@ -22,6 +24,7 @@ interface StudyPlanModalProps {
   onCreateSession: (editedProposal?: AIProposal, scheduledAt?: string) => void;
   isRegenerating: boolean;
   isCreating: boolean;
+  audience?: Audience;
 }
 
 export const StudyPlanModal: React.FC<StudyPlanModalProps> = ({
@@ -31,8 +34,10 @@ export const StudyPlanModal: React.FC<StudyPlanModalProps> = ({
   onRegenerate,
   onCreateSession,
   isRegenerating,
-  isCreating
+  isCreating,
+  audience
 }) => {
+  const terms = useGroupTerms({ audience });
   const [isEditing, setIsEditing] = useState(false);
   const [editedProposal, setEditedProposal] = useState<AIProposal>(proposal);
   
@@ -62,14 +67,14 @@ export const StudyPlanModal: React.FC<StudyPlanModalProps> = ({
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Proposed session" className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4 backdrop-blur-[2px] animate-[sfFade_0.2s_ease]">
+    <div role="dialog" aria-modal="true" aria-label={`Proposed ${terms.sessionLower}`} className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4 backdrop-blur-[2px] animate-[sfFade_0.2s_ease]">
       <div className="flex max-h-[90vh] w-full max-w-[700px] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-float">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary-text" />
-            <h2 className="font-serif text-lg text-foreground">Proposed session</h2>
+            <h2 className="font-serif text-lg text-foreground">Proposed {terms.sessionLower}</h2>
             <button 
               onClick={() => setIsEditing(!isEditing)} 
               className={`ml-4 px-3 py-1 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1.5 ${isEditing ? 'bg-primary text-primary-foreground border-primary' : 'bg-surface border-border-soft text-muted-foreground hover:text-foreground hover:bg-background'}`}
@@ -86,7 +91,7 @@ export const StudyPlanModal: React.FC<StudyPlanModalProps> = ({
         <div className="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
           
           <div className="space-y-1">
-            <div className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Session Title</div>
+            <div className="text-xs font-bold tracking-wider text-muted-foreground uppercase">{terms.session} title</div>
             {isEditing ? (
               <input 
                 type="text" 

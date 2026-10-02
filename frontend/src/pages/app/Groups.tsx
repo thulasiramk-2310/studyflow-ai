@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { Link } from "react-router-dom";
 import { Users, Plus, Search, ChevronRight } from "lucide-react";
 import { PageHeader, EmptyState } from "../../components/shared";
@@ -12,6 +13,7 @@ import { groupDotColor } from "../../components/layout/Sidebar";
 
 export function Groups() {
   const { user } = useAuth();
+  const terms = useTerms();
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<Group[]>([]);
   const [query, setQuery] = useState("");
@@ -43,8 +45,8 @@ export function Groups() {
   return (
     <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
       <PageHeader
-        title="Groups"
-        subtitle={`${groups.length} groups joined`}
+        title={terms.groups}
+        subtitle={`${groups.length} ${terms.groupsLower} joined`}
         actions={
           <div className="flex gap-2">
             <button
@@ -69,13 +71,13 @@ export function Groups() {
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Search groups…"
+          placeholder={`Search ${terms.groupsLower}…`}
           className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
         />
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Users} title="No groups found" description={query ? `No groups match "${query}". Try a different term.` : "Create your first study group to get started."} action={
+        <EmptyState icon={Users} title={`No ${terms.groupsLower} found`} description={query ? `No ${terms.groupsLower} match "${query}". Try a different term.` : `Create your first ${terms.groupLower} to get started.`} action={
           <div className="flex gap-2">
             <button onClick={() => setIsCreateOpen(true)} className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors">
               Create Group
@@ -101,7 +103,7 @@ export function Groups() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="truncate font-serif text-lg text-foreground">{g.name}</span>
-                    {isOrg && <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-text">Organizer</span>}
+                    {isOrg && <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-text">{terms.organizer}</span>}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5 truncate">{g.goal || g.description || "No description"}</div>
                   {(g.total_items_count ?? 0) > 0 && (

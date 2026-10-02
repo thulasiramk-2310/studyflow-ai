@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { Upload, Search, Download, FolderOpen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, EmptyState } from "../../components/shared";
@@ -18,6 +19,7 @@ type EnrichedResource = Resource & { groupName: string; userRole: string };
 
 export function Resources() {
   const { user } = useAuth();
+  const terms = useTerms();
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<Group[]>([]);
   const [resources, setResources] = useState<EnrichedResource[]>([]);
@@ -92,8 +94,8 @@ export function Resources() {
   return (
     <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
       <PageHeader
-        title="Library"
-        subtitle={`${resources.length} files across ${groups.length} groups`}
+        title={terms.library}
+        subtitle={`${resources.length} files across ${groups.length} ${terms.groupsLower}`}
         actions={
           <button
             onClick={() => setIsUploadOpen(true)}

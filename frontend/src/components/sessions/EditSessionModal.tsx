@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { X } from "lucide-react";
@@ -13,6 +14,7 @@ interface EditSessionModalProps {
 }
 
 export function EditSessionModal({ isOpen, onClose, session, onSuccess }: EditSessionModalProps) {
+  const terms = useTerms();
   const [meetingType, setMeetingType] = useState<MeetingType>(session.meeting_type || "NONE");
   const [meetingUrl, setMeetingUrl] = useState(session.meeting_url || "");
   const [loading, setLoading] = useState(false);
@@ -26,11 +28,11 @@ export function EditSessionModal({ isOpen, onClose, session, onSuccess }: EditSe
         meeting_url: meetingUrl,
       };
       await sessionService.updateSession(session.id, params);
-      toast.success("Session updated!");
+      toast.success(`${terms.session} updated!`);
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Failed to update session");
+      toast.error(err.message || `Failed to update ${terms.sessionLower}`);
     } finally {
       setLoading(false);
     }
@@ -65,7 +67,7 @@ export function EditSessionModal({ isOpen, onClose, session, onSuccess }: EditSe
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-xl border border-border bg-surface text-left align-middle shadow-float transition-all">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border-soft">
                   <Dialog.Title as="h3" className="text-md font-bold text-foreground">
-                    Edit Session
+                    Edit {terms.sessionLower}
                   </Dialog.Title>
                   <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
                     <X className="w-5 h-5" />

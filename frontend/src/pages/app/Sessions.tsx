@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { Link } from "react-router-dom";
 import { Calendar, Plus, ChevronRight } from "lucide-react";
 import { PageHeader, EmptyState, StatusBadge } from "../../components/shared";
@@ -22,6 +23,7 @@ const PASTEL_COLORS = [
 const getColor = (id: number) => PASTEL_COLORS[id % PASTEL_COLORS.length];
 
 export function Sessions() {
+  const terms = useTerms();
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [groupNames, setGroupNames] = useState<Record<number, string>>({});
@@ -100,14 +102,14 @@ export function Sessions() {
   return (
     <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
       <PageHeader
-        title="Sessions"
+        title={terms.sessions}
         subtitle={`${sessions.filter(s => s.status !== "COMPLETED" && s.status !== "CANCELLED").length} upcoming sessions`}
         actions={
           <button
             onClick={() => setIsCreateOpen(true)}
             className="flex items-center gap-1.5 bg-primary text-primary-foreground rounded-lg px-3.5 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm"
           >
-            <Plus className="w-4 h-4" strokeWidth={3} /> Schedule session
+            <Plus className="w-4 h-4" strokeWidth={3} /> Schedule {terms.sessionLower}
           </button>
         }
       />
@@ -125,14 +127,14 @@ export function Sessions() {
       {filtered.length === 0 ? (
         <EmptyState 
           icon={Calendar} 
-          title="No sessions found" 
+          title={`No ${terms.sessionsLower} found`} 
           description={`No ${filter.toLowerCase()} sessions. Schedule one to get started!`}
           action={
             <button 
               onClick={() => setIsCreateOpen(true)} 
               className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors"
             >
-              Schedule session
+              Schedule {terms.sessionLower}
             </button>
           }
         />

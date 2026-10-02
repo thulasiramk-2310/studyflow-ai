@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { Search, Plus, Bell, Menu, Users, KeyRound, CalendarPlus, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -18,21 +19,22 @@ import { Avatar, Button, ThemeToggle } from "../ui";
 type NewAction = "group" | "join" | "session" | "upload" | null;
 
 const FLASH_KEY = "sf_flash";
-const DONE_MESSAGE: Record<Exclude<NewAction, null>, string> = {
-  group: "Group created",
-  join: "You joined the group",
-  session: "Session scheduled",
+const doneMessage = (t: ReturnType<typeof useTerms>): Record<Exclude<NewAction, null>, string> => ({
+  group: `${t.group} created`,
+  join: `You joined the ${t.groupLower}`,
+  session: `${t.session} scheduled`,
   upload: "Notes uploaded. They'll be ready for Ask AI in a moment.",
-};
+});
 
-const NEW_ITEMS = [
-  { key: "group" as const, label: "New group", icon: Users },
-  { key: "join" as const, label: "Join group", icon: KeyRound },
-  { key: "session" as const, label: "New session", icon: CalendarPlus },
+const newItems = (t: ReturnType<typeof useTerms>) => [
+  { key: "group" as const, label: t.newGroup, icon: Users },
+  { key: "join" as const, label: t.joinGroup, icon: KeyRound },
+  { key: "session" as const, label: t.newSession, icon: CalendarPlus },
   { key: "upload" as const, label: "Upload notes", icon: Upload },
 ];
 
 export function Topbar() {
+  const terms = useTerms();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNewOpen, setIsNewOpen] = useState(false);
@@ -97,7 +99,7 @@ export function Topbar() {
   };
   // Reload so every page and the sidebar pick up the change; the toast survives via sessionStorage.
   const done = () => {
-    try { if (action) sessionStorage.setItem(FLASH_KEY, DONE_MESSAGE[action]); } catch { /* storage unavailable */ }
+    try { if (action) sessionStorage.setItem(FLASH_KEY, doneMessage(terms)[action]); } catch { /* storage unavailable */ }
     setAction(null);
     navigate(0);
   };
@@ -135,7 +137,7 @@ export function Topbar() {
             </Button>
             {isNewOpen && (
               <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-border bg-surface p-1 shadow-float">
-                {NEW_ITEMS.map(({ key, label, icon: Icon }) => (
+                {newItems(terms).map(({ key, label, icon: Icon }) => (
                   <button key={key} role="menuitem" onClick={() => startAction(key)} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-muted">
                     <Icon className="h-4 w-4 text-muted-foreground" />{label}
                   </button>

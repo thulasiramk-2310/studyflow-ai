@@ -1,19 +1,22 @@
 import { useState } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { Link } from "react-router-dom";
 import { Play } from "lucide-react";
 import { Button, Card, CardHeader, PageHeader } from "../../components/ui";
 import { IntroStage } from "../../components/intro/IntroStage";
 
-const SECTIONS = [
-  { title: "Groups and invites", body: "Create a group for each subject and invite classmates with its code.", to: "/groups", cta: "Open groups" },
-  { title: "Library and indexing", body: "Upload PDFs (export slides and documents as PDF). Each file is chunked, embedded and indexed for its group.", to: "/resources", cta: "Open library" },
-  { title: "Ask AI with citations", body: "Ask questions about a group's notes. Answers show the file and page they came from.", to: "/ai", cta: "Ask a question" },
-  { title: "Sessions and the AI planner", body: "Plan the next session yourself or let the planner propose one from the learning path.", to: "/sessions", cta: "Open sessions" },
-  { title: "Quizzes and flashcards", body: "Mark a session completed to get its summary, then generate a quiz and a flashcard deck from its notes.", to: "/sessions", cta: "Find a session" },
-  { title: "Notifications", body: "Get notified when summaries, quizzes and flashcards are ready, and about group changes.", to: "/notifications", cta: "Open notifications" },
+const sections = (t: ReturnType<typeof useTerms>) => [
+  { title: `${t.groups} and invites`, body: `Create a ${t.groupLower} for each subject and invite others with its code.`, to: "/groups", cta: `Open ${t.groupsLower}` },
+  { title: `${t.library} and indexing`, body: `Upload PDFs (export slides and documents as PDF). Each file is chunked, embedded and indexed for its ${t.groupLower}.`, to: "/resources", cta: `Open ${t.library.toLowerCase()}` },
+  { title: "Ask AI with citations", body: `Ask questions about a ${t.groupLower}'s notes. Answers show the file and page they came from.`, to: "/ai", cta: "Ask a question" },
+  { title: `${t.sessions} and the AI planner`, body: `Plan the next ${t.sessionLower} yourself or let the planner propose one from the ${t.learningPath.toLowerCase()}.`, to: "/sessions", cta: `Open ${t.sessionsLower}` },
+  { title: `${t.quizzes} and ${t.flashcards.toLowerCase()}`, body: `Mark a ${t.sessionLower} completed to get its summary, then generate a ${t.quiz.toLowerCase()} and ${t.flashcards.toLowerCase()} from its notes.`, to: "/sessions", cta: `Find a ${t.sessionLower}` },
+  { title: "Notifications", body: `Get notified when summaries, ${t.quizzes.toLowerCase()} and ${t.flashcards.toLowerCase()} are ready, and about ${t.groupLower} changes.`, to: "/notifications", cta: "Open notifications" },
 ];
 
 export function Guide() {
+  const terms = useTerms();
+  const SECTIONS = sections(terms);
   const [playing, setPlaying] = useState(false);
   return (
     <div className="mx-auto max-w-[900px] px-6 py-8 md:px-8">

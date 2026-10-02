@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { userService } from "../../services/user.service";
 import type { UserProfileStats } from "../../services/user.service";
 import { groupService } from "../../services/group.service";
@@ -10,6 +11,7 @@ import { ChevronRight } from "lucide-react";
 
 export function Profile() {
   const { user } = useAuth();
+  const terms = useTerms();
   
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -43,9 +45,9 @@ export function Profile() {
   }
 
   const statCards = [
-    { label: "Groups joined", value: stats.groupsJoined.toString() },
+    { label: `${terms.groups} joined`, value: stats.groupsJoined.toString() },
     { label: "Resources shared", value: stats.resourcesShared.toString() },
-    { label: "Sessions hosted", value: stats.sessionsHosted.toString() },
+    { label: `${terms.sessions} hosted`, value: stats.sessionsHosted.toString() },
     { label: "AI chats", value: stats.aiConversations.toString() },
     { label: "Questions asked", value: stats.aiQuestionsAsked.toString() },
   ];
@@ -89,11 +91,11 @@ export function Profile() {
       <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 mt-5 items-start">
         {/* Groups */}
         <div className="bg-surface border border-border rounded-xl">
-          <div className="px-5 py-4 border-b border-border-soft text-base font-bold">Groups joined</div>
+          <div className="px-5 py-4 border-b border-border-soft text-base font-bold">{terms.groups} joined</div>
           
           {groups.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">
-              You haven't joined any groups yet.
+              You haven't joined any {terms.groupsLower} yet.
             </div>
           ) : (
             groups.map((g) => {
@@ -111,7 +113,7 @@ export function Profile() {
                       {g.members?.length || 1} members
                     </div>
                   </div>
-                  {isOrg && <span className="text-xs font-bold text-primary-text bg-primary-soft px-2 py-0.5 rounded-full">Organizer</span>}
+                  {isOrg && <span className="text-xs font-bold text-primary-text bg-primary-soft px-2 py-0.5 rounded-full">{terms.organizer}</span>}
                   <ChevronRight className="w-4 h-4 text-border shrink-0" />
                 </Link>
               );

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { useNavigate } from "react-router-dom";
 import { Search, Users, FolderOpen, Calendar, LayoutDashboard, X, ArrowRight, Sparkles, BookOpen } from "lucide-react";
 import { searchService } from "../../services/search.service";
@@ -14,15 +15,15 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   chat:     Sparkles
 };
 
-const TYPE_LABELS: Record<string, string> = {
+const typeLabels = (t: ReturnType<typeof useTerms>): Record<string, string> => ({
   page: "Pages",
-  group: "Groups",
-  resource: "Resources",
-  session: "Sessions",
-  quiz: "Quizzes",
-  flashcard: "Flashcards",
-  chat: "Chats"
-};
+  group: t.groups,
+  resource: t.library,
+  session: t.sessions,
+  quiz: t.quizzes,
+  flashcard: t.flashcards,
+  chat: "Chats",
+});
 
 interface SearchItem {
   id: string;
@@ -32,14 +33,17 @@ interface SearchItem {
   href: string;
 }
 
-const STATIC_PAGES: SearchItem[] = [
+const staticPages = (t: ReturnType<typeof useTerms>): SearchItem[] => [
   { id: "p1", type: "page", label: "Dashboard", sub: "Overview of your activity", href: "/dashboard" },
-  { id: "p2", type: "page", label: "Groups", sub: "View your study groups", href: "/groups" },
-  { id: "p3", type: "page", label: "Sessions", sub: "View your study sessions", href: "/sessions" },
+  { id: "p2", type: "page", label: t.groups, sub: `View your ${t.groupsLower}`, href: "/groups" },
+  { id: "p3", type: "page", label: t.sessions, sub: `View your ${t.sessionsLower}`, href: "/sessions" },
   { id: "p4", type: "page", label: "Settings", sub: "Manage your account", href: "/settings" },
 ];
 
 export function SearchModal({ onClose }: { onClose: () => void }) {
+  const terms = useTerms();
+  const STATIC_PAGES = staticPages(terms);
+  const TYPE_LABELS = typeLabels(terms);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const [results, setResults] = useState<SearchItem[]>(STATIC_PAGES);
@@ -140,7 +144,7 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
               ref={inputRef}
               type="text"
               className="flex-1 bg-transparent border-0 outline-none text-base px-3 h-9 text-foreground placeholder:text-muted-foreground"
-              placeholder="Search groups, sessions, resources..."
+              placeholder={`Search ${terms.groupsLower}, ${terms.sessionsLower}, documents...`}
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={onKey}

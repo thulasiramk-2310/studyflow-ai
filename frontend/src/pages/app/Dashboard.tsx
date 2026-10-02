@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { Link, useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import { Activity, Calendar, Plus, Users } from "lucide-react";
@@ -18,6 +19,7 @@ function timeAgo(value: string) {
 
 export function Dashboard() {
   const { user } = useAuth();
+  const terms = useTerms();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
@@ -57,12 +59,12 @@ export function Dashboard() {
   if (dashboardData?.stats.groups === 0) {
     return (
       <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
-        <PageHeader title={`Welcome, ${firstName}`} subtitle="Start by creating a study group or joining one with an invite code." />
+        <PageHeader title={`Welcome, ${firstName}`} subtitle={`Start by creating a ${terms.groupLower} or joining one with an invite code.`} />
         <Card>
           <EmptyState
             icon={Users}
-            title="You're not in a study group yet"
-            description="Groups hold your notes, sessions and AI chats. Invite classmates with a code."
+            title={terms.emptyGroupsTitle}
+            description={terms.emptyGroupsBody}
             action={
               <div className="flex flex-wrap justify-center gap-2">
                 <Button icon={Plus} onClick={() => setIsCreateOpen(true)}>Create a group</Button>
@@ -87,7 +89,7 @@ export function Dashboard() {
     <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
       <PageHeader
         title={`${greeting}, ${firstName}`}
-        subtitle={`${format(new Date(), "EEEE, d MMMM")} · ${upcoming.length} upcoming session${upcoming.length === 1 ? "" : "s"}`}
+        subtitle={`${format(new Date(), "EEEE, d MMMM")} · ${upcoming.length} upcoming ${upcoming.length === 1 ? terms.sessionLower : terms.sessionsLower}`}
       />
 
       <div className="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
@@ -100,25 +102,25 @@ export function Dashboard() {
                 {next.group_name} · {format(new Date(next.scheduled_at), "EEE d MMM, HH:mm")}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button size="sm" onClick={() => navigate(`/sessions/${next.id}`)}>Open session</Button>
-                <Button size="sm" variant="secondary" onClick={() => navigate(`/sessions/${next.id}/quiz`)}>Take quiz</Button>
-                <Button size="sm" variant="secondary" onClick={() => navigate(`/sessions/${next.id}`)}>Flashcards</Button>
+                <Button size="sm" onClick={() => navigate(`/sessions/${next.id}`)}>Open {terms.sessionLower}</Button>
+                <Button size="sm" variant="secondary" onClick={() => navigate(`/sessions/${next.id}/quiz`)}>Take {terms.quiz.toLowerCase()}</Button>
+                <Button size="sm" variant="secondary" onClick={() => navigate(`/sessions/${next.id}`)}>{terms.flashcards}</Button>
               </div>
             </>
           ) : (
             <EmptyState
               icon={Calendar}
               title="Nothing scheduled"
-              description="Plan a session from a group, or let the AI planner suggest one."
-              action={<Button size="sm" onClick={() => navigate("/groups")}>Go to groups</Button>}
+              description={`Plan a ${terms.sessionLower} from a ${terms.groupLower}, or let the AI planner suggest one.`}
+              action={<Button size="sm" onClick={() => navigate("/groups")}>Go to {terms.groupsLower}</Button>}
             />
           )}
         </Card>
 
         <Card>
-          <CardHeader title="Learning paths" />
+          <CardHeader title={terms.audience === "professional" ? "Roadmaps" : "Learning paths"} />
           {pathGroups.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Add topics to a group's learning path to track progress here.</p>
+            <p className="text-sm text-muted-foreground">Add {terms.topic.toLowerCase()}s to a {terms.groupLower}'s {terms.learningPath.toLowerCase()} to track progress here.</p>
           ) : (
             <div className="flex flex-col gap-4">
               {pathGroups.map((g) => (
@@ -140,7 +142,7 @@ export function Dashboard() {
 
       <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatTile label="AI chats" value={dashboardData?.stats.conversations ?? 0} />
-        <StatTile label="Quizzes" value={dashboardData?.stats.quizzes ?? 0} />
+        <StatTile label={terms.quizzes} value={dashboardData?.stats.quizzes ?? 0} />
         <StatTile label="Flashcard decks" value={dashboardData?.stats.flashcards ?? 0} />
         <StatTile label="Notes indexed" value={dashboardData?.stats.resources ?? 0} />
       </div>
@@ -148,7 +150,7 @@ export function Dashboard() {
       <Card className="mt-5">
         <CardHeader title="Recent activity" />
         {activity.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Activity from your groups shows up here.</p>
+          <p className="text-sm text-muted-foreground">Activity from your {terms.groupsLower} shows up here.</p>
         ) : (
           <ul className="divide-y divide-border">
             {activity.slice(0, 6).map((a, i) => (
