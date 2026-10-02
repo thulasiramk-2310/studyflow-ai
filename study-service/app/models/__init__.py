@@ -5,3 +5,4 @@ from app.models.session import StudySession, SessionResource, SessionAttendance,
 from app.models.quiz import Quiz, QuizQuestion
 from app.models.flashcard import FlashcardDeck, Flashcard, FlashcardProgress
 from app.models.notification import Notification
+from app.models.notification_preference import NotificationPreference  # noqa: F401

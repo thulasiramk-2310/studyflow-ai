@@ -19,6 +19,16 @@ class NotificationResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class NotificationPreferences(BaseModel):
+    sessions: bool = True      # sessions created, updated, completed; call links
+    resources: bool = True     # notes uploaded or removed
+    ai_results: bool = True    # summaries, quizzes, flashcards and plans ready
+    members: bool = True       # people joining or leaving
+
+    class Config:
+        from_attributes = True
+
+
 class NotificationListResponse(BaseModel):
     data: List[NotificationResponse]
     total: int

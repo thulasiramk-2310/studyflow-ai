@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.models.notification import Notification
-from app.schemas.notification import NotificationResponse, NotificationListResponse
+from app.schemas.notification import NotificationResponse, NotificationListResponse, NotificationPreferences
+from app.models.notification_preference import NotificationPreference
 from app.services import notification_service
 
 router = APIRouter()
@@ -32,6 +33,24 @@ def get_notifications(
         "page": page,
         "size": size
     }
+
+@router.get("/preferences")
+def get_preferences(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    row = db.get(NotificationPreference, user.get("userId"))
+    prefs = NotificationPreferences.model_validate(row) if row else NotificationPreferences()
+    return {"success": True, "data": prefs}
+
+
+@router.put("/preferences")
+def update_preferences(prefs: NotificationPreferences, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    user_id = user.get("userId")
+    row = db.get(NotificationPreference, user_id) or NotificationPreference(user_id=user_id)
+    for field, value in prefs.model_dump().items():
+        setattr(row, field, value)
+    db.add(row)
+    db.commit()
+    return {"success": True, "data": prefs}
+
 
 @router.get("/unread-count")
 def get_unread_count(
