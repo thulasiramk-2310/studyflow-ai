@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-labelledby="t d">
+  <title id="t">How an Ask AI answer is made</title>
+  <desc id="d">A question passes an injection check and PII masking, retrieves group-scoped chunks from FAISS, passes a relevance gate, is answered by the model with an audience hint, and must pass a grounding check on every claim before it is shown with sources. Otherwise the user is told the notes don't cover it.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#7a857e"/></marker>
+  </defs>
+  <rect width="1200" height="330" rx="20" fill="#f4f1ea"/>
+  <rect x="0.5" y="0.5" width="1199" height="329" rx="19.5" fill="none" stroke="#e2ddd2"/>
+  <g font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+    <text x="40" y="50" font-family="Georgia, 'Times New Roman', serif" font-size="26" fill="#1b1f1c">How an Ask AI answer is made</text>
+    <text x="40" y="76" font-size="14" fill="#6b746e">Guardrails before and after the model. An answer is shown only when every claim is backed by the group's own notes.</text>
+
+    <g font-size="12.5" text-anchor="middle">
+      <rect x="40" y="112" width="140" height="92" rx="12" fill="#fff" stroke="#d9d3c7"/>
+      <text x="110" y="146" font-size="14.5" font-weight="700" fill="#1b1f1c">Question</text>
+      <text x="110" y="168" fill="#6b746e">from a group</text>
+      <text x="110" y="186" fill="#6b746e">member</text>
+
+      <rect x="210" y="112" width="140" height="92" rx="12" fill="#fff" stroke="#c9a96b"/>
+      <text x="280" y="146" font-size="14.5" font-weight="700" fill="#7a5a1c">Injection</text>
+      <text x="280" y="166" fill="#6b746e">blocks "ignore your</text>
+      <text x="280" y="184" fill="#6b746e">instructions…"</text>
+
+      <rect x="380" y="112" width="140" height="92" rx="12" fill="#fff" stroke="#c9a96b"/>
+      <text x="450" y="146" font-size="14.5" font-weight="700" fill="#7a5a1c">PII mask</text>
+      <text x="450" y="166" fill="#6b746e">emails, phones, IDs</text>
+      <text x="450" y="184" fill="#6b746e">never reach the model</text>
+
+      <rect x="550" y="112" width="140" height="92" rx="12" fill="#fff" stroke="#d9d3c7"/>
+      <text x="620" y="146" font-size="14.5" font-weight="700" fill="#1b1f1c">Retrieve</text>
+      <text x="620" y="166" fill="#6b746e">FAISS top-k, scoped</text>
+      <text x="620" y="184" fill="#6b746e">to this group only</text>
+
+      <rect x="720" y="112" width="140" height="92" rx="12" fill="#fff" stroke="#d9d3c7"/>
+      <text x="790" y="146" font-size="14.5" font-weight="700" fill="#1b1f1c">Model</text>
+      <text x="790" y="166" fill="#6b746e">Groq, notes as data,</text>
+      <text x="790" y="184" fill="#6b746e">audience hint</text>
+
+      <rect x="890" y="112" width="140" height="92" rx="12" fill="#fff" stroke="#c9a96b"/>
+      <text x="960" y="146" font-size="14.5" font-weight="700" fill="#7a5a1c">Grounding</text>
+      <text x="960" y="166" fill="#6b746e">every sentence must</text>
+      <text x="960" y="184" fill="#6b746e">match a chunk</text>
+
+      <rect x="1060" y="112" width="110" height="92" rx="12" fill="#1f4a36"/>
+      <text x="1115" y="146" font-size="14.5" font-weight="700" fill="#fff">Answer</text>
+      <text x="1115" y="166" fill="#d9e8de">with file +</text>
+      <text x="1115" y="184" fill="#d9e8de">page sources</text>
+    </g>
+    <g stroke="#7a857e" stroke-width="2">
+      <line x1="180" y1="158" x2="208" y2="158" marker-end="url(#a)"/>
+      <line x1="350" y1="158" x2="378" y2="158" marker-end="url(#a)"/>
+      <line x1="520" y1="158" x2="548" y2="158" marker-end="url(#a)"/>
+      <line x1="690" y1="158" x2="718" y2="158" marker-end="url(#a)"/>
+      <line x1="860" y1="158" x2="888" y2="158" marker-end="url(#a)"/>
+      <line x1="1030" y1="158" x2="1058" y2="158" marker-end="url(#a)"/>
+    </g>
+
+    <g font-size="12.5" fill="#6b746e">
+      <path d="M620 204 V246 H620" stroke="#c97a6b" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+      <path d="M960 204 V246" stroke="#c97a6b" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+      <path d="M280 204 V246" stroke="#c97a6b" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+      <rect x="210" y="248" width="820" height="50" rx="10" fill="#fbf1ee" stroke="#e8cfc8"/>
+      <text x="620" y="270" text-anchor="middle" fill="#8a3b2c" font-weight="600">Blocked, nothing relevant, or a claim the notes don't support</text>
+      <text x="620" y="288" text-anchor="middle" fill="#8a3b2c">→ "I couldn't find this in your notes" instead of a guess, with no sources attached</text>
+    </g>
+  </g>
+</svg>
