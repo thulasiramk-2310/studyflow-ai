@@ -1,5 +1,4 @@
 [
-  "src/components/ai/FloatingAI.tsx",
   "src/components/groups/CreateGroupModal.tsx",
   "src/components/groups/JoinGroupModal.tsx",
   "src/components/landing/ArchitectureSVG.tsx",
@@ -16,7 +15,6 @@
   "src/components/shared/SectionHeader.tsx",
   "src/components/shared/StatsCard.tsx",
   "src/components/shared/StatusBadge.tsx",
-  "src/pages/app/AIAssistant.tsx",
   "src/pages/app/Groups.tsx",
   "src/pages/app/Notifications.tsx",
   "src/pages/app/Profile.tsx",

@@ -1,18 +1,17 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Plus, ChevronDown, FileText } from "lucide-react";
+import { Send, Plus, FileText, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { Sparkle } from "../../components/Icons";
 import { AIAssistantSkeleton } from "../../components/skeletons";
 import { groupService, type Group } from "../../services/group.service";
 import { resourceService, type Resource } from "../../services/resource.service";
 import { aiService, type ChatSession, type ChatMessage } from "../../services/ai.service";
-import { RichText } from "../../components/ui";
+import { Button, RichText } from "../../components/ui";
 
 const SUGGESTIONS = [
-  "Summarize my notes",
-  "Explain key concepts",
-  "Generate quiz questions",
-  "What are the main formulas?"
+  "Summarise my notes",
+  "Quiz me on the key ideas",
+  "Explain the hardest topic",
+  "What should I revise first?"
 ];
 
 
@@ -141,23 +140,26 @@ export function AIAssistant() {
     setMessages([]);
   };
 
+  const noNotes = !!selectedGroup && groupResources.length === 0 && !loadingResources;
+
   return (
-    <div className="h-full flex overflow-hidden">
-      {/* History sidebar */}
-      <aside className="w-[220px] shrink-0 border-r border-border bg-surface flex-col hidden lg:flex">
-        <div className="px-4 py-3.5 border-b border-border-soft">
-          <button onClick={newChat}
-            className="w-full flex items-center gap-2 bg-primary-soft text-primary rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-primary hover:text-white transition-colors">
-            <Plus className="w-4 h-4" /> New Chat
-          </button>
+    <div className="flex h-[calc(100vh-56px)] overflow-hidden">
+      {/* Conversation history */}
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
+        <div className="border-b border-border p-3">
+          <Button size="sm" variant="secondary" icon={Plus} onClick={newChat} className="w-full">New chat</Button>
         </div>
-        <div className="flex-1 overflow-y-auto py-2 px-2 flex flex-col gap-0.5">
+        <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
+          <div className="px-2 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent chats</div>
           {history.length === 0 ? (
-            <div className="py-8 text-center text-[12px] text-muted-foreground px-3">No conversations yet</div>
+            <p className="px-2 py-6 text-sm text-muted-foreground">No conversations yet.</p>
           ) : (
             history.map((s) => (
-              <button key={s.id} onClick={() => loadSession(s.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] transition-colors truncate ${activeSessionId === s.id ? "bg-primary-soft text-primary font-semibold" : "text-muted-foreground hover:bg-background"}`}>
+              <button
+                key={s.id}
+                onClick={() => loadSession(s.id)}
+                className={`w-full truncate rounded-lg px-3 py-2 text-left text-sm transition-colors ${activeSessionId === s.id ? "bg-surface font-semibold text-foreground shadow-[0_0_0_1px_hsl(var(--border))]" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+              >
                 {s.title}
               </button>
             ))
@@ -165,161 +167,135 @@ export function AIAssistant() {
         </div>
       </aside>
 
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-border bg-surface flex flex-wrap items-center gap-3 justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <Sparkle className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <div className="text-[14px] font-bold">AI Study Assistant</div>
-              <div className="text-[12px] text-muted-foreground hidden sm:block">Ask questions about your uploaded materials</div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {groups.length > 0 && (
-              <div className="relative">
-                <select 
-                  className="appearance-none bg-background border border-border rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-medium outline-none focus:border-primary/50 cursor-pointer max-w-[150px] truncate"
-                  value={selectedGroup?.id || ''}
-                  onChange={(e) => {
-                    const g = groups.find(g => g.id === Number(e.target.value));
-                    if (g) { 
-                      setSelectedGroup(g);
-                    }
-                  }}
-                >
-                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
-              </div>
-            )}
-            
-            <button onClick={newChat} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-muted-foreground hover:text-foreground border border-border rounded-lg px-3 py-1.5 transition-colors">
-              <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">New Chat</span>
-            </button>
-          </div>
+      {/* Conversation */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
+          <h1 className="font-serif text-lg text-foreground">Ask AI</h1>
+          {groups.length > 0 && (
+            <select
+              aria-label="Study group"
+              className="h-8 max-w-[220px] truncate rounded-lg border border-border bg-surface px-2 text-sm text-foreground focus:border-primary focus:outline-none"
+              value={selectedGroup?.id || ""}
+              onChange={(e) => {
+                const g = groups.find((g) => g.id === Number(e.target.value));
+                if (g) setSelectedGroup(g);
+              }}
+            >
+              {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          )}
+          <span className="hidden text-sm text-muted-foreground md:inline">Answers only from this group's notes</span>
+          <Button size="sm" variant="ghost" icon={Plus} onClick={newChat} className="ml-auto lg:hidden">New chat</Button>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
-          {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-6 py-12">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-md">
-                <Sparkle className="w-7 h-7 text-white" />
-              </div>
-              <div className="text-center">
-                <div className="text-[17px] font-bold">👋 Welcome to StudyFlow AI</div>
-                <div className="text-[13px] text-muted-foreground mt-1">Ask questions about your uploaded materials.</div>
-              </div>
-              <div className="flex flex-wrap gap-2 justify-center max-w-[480px]">
-                {SUGGESTIONS.map((s, i) => (
-                  <button key={i} onClick={() => send(s)}
-                    className="text-[12.5px] bg-surface border border-border rounded-xl px-3.5 py-2 font-medium text-foreground hover:bg-primary-soft hover:border-primary/20 hover:text-primary transition-colors">
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            messages.map((m, i) => (
-              <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-                {m.role === "ai" && (
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shrink-0 mt-0.5">
-                    <Sparkle className="w-3.5 h-3.5 text-white" />
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto flex w-full max-w-[760px] flex-col gap-5 px-5 py-6">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center gap-5 py-16 text-center">
+                <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary-soft text-primary-text"><Sparkles className="h-5 w-5" /></span>
+                <div>
+                  <h2 className="font-serif text-xl text-foreground">What do you want to understand?</h2>
+                  <p className="mt-1 text-base text-muted-foreground">Ask about {selectedGroup ? selectedGroup.name : "your study group"}. Every answer shows where it came from.</p>
+                </div>
+                {!noNotes && selectedGroup && (
+                  <div className="flex max-w-[520px] flex-wrap justify-center gap-2">
+                    {SUGGESTIONS.map((s) => (
+                      <button key={s} onClick={() => send(s)} className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm text-foreground transition-colors hover:border-primary/30 hover:bg-primary-soft">{s}</button>
+                    ))}
                   </div>
                 )}
-                <div className={`max-w-[78%] ${m.role === "user" ? "bg-primary text-white rounded-2xl rounded-tr-md px-4 py-2.5" : "bg-surface border border-border rounded-2xl rounded-tl-md px-4 py-3"}`}>
-                  {m.thinking ? (
-                    <div className="flex flex-col gap-2 py-1">
-                      <div className="text-[12.5px] font-medium text-primary flex items-center gap-2">
-                        <Sparkle className="w-3.5 h-3.5 animate-pulse" /> AI is searching your study materials...
-                      </div>
-                      <div className="text-[12.5px] font-medium text-muted-foreground flex items-center gap-2">
-                        Generating answer...
-                        <div className="flex gap-1 ml-1">
-                           {[0, 1, 2].map(d => (
-                            <div key={d} className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: `${d * 0.15}s` }} />
-                           ))}
+              </div>
+            ) : (
+              messages.map((m, i) => {
+                const isError = m.role === "ai" && m.content.startsWith("❌");
+                return (
+                  <div key={i} className={`flex gap-3 ${m.role === "user" ? "justify-end" : ""}`}>
+                    {m.role === "ai" && (
+                      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-text"><Sparkles className="h-3.5 w-3.5" /></span>
+                    )}
+                    <div
+                      className={`min-w-0 break-words ${
+                        m.role === "user"
+                          ? "max-w-[80%] rounded-xl bg-primary px-4 py-2.5 text-base text-primary-foreground"
+                          : isError
+                            ? "max-w-[85%] rounded-xl border border-danger/20 bg-danger-soft px-4 py-3 text-base text-danger"
+                            : "max-w-[85%] rounded-xl border border-border bg-surface px-4 py-3"
+                      }`}
+                    >
+                      {m.thinking ? (
+                        <div className="flex items-center gap-2 py-0.5 text-sm text-muted-foreground">
+                          <Sparkles className="h-3.5 w-3.5 animate-pulse text-primary-text" /> Searching your notes and writing an answer…
                         </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <RichText text={m.content} className="text-[13.5px] leading-relaxed" />
-                      {m.citations && m.citations.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-border/50 flex flex-col gap-2">
-                          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Sources</div>
-                          {m.citations.map((c, ci) => (
-                            <div key={ci} className="flex items-center gap-2 bg-background border border-border-soft rounded-lg px-3 py-2">
-                              <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
-                              <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
-                                <span className="text-[12px] font-medium text-foreground truncate">{c.filename}</span>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <span className="text-[11px] text-muted-foreground bg-surface border border-border-soft px-1.5 py-0.5 rounded">Page {c.page}</span>
-                                  <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{Math.round(c.score * 100)}% match</span>
-                                </div>
+                      ) : m.role === "user" ? (
+                        <p className="whitespace-pre-wrap">{m.content}</p>
+                      ) : isError ? (
+                        <p>{m.content.replace(/^❌\s*/, "")}</p>
+                      ) : (
+                        <>
+                          <RichText text={m.content} className="text-base leading-relaxed text-foreground" />
+                          {m.citations && m.citations.length > 0 && (
+                            <div className="mt-3 border-t border-border pt-3">
+                              <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sources</div>
+                              <div className="flex flex-wrap gap-2">
+                                {m.citations.map((c, ci) => (
+                                  <span key={ci} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 py-1 text-xs text-foreground">
+                                    <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                    <span className="truncate">{c.filename}</span>
+                                    {c.page != null && <span className="shrink-0 text-muted-foreground">· p{c.page}</span>}
+                                    {c.score != null && <span className="shrink-0 font-semibold text-primary-text">{Math.round(c.score * 100)}%</span>}
+                                  </span>
+                                ))}
                               </div>
                             </div>
-                          ))}
-                        </div>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-          <div ref={bottomRef} />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={bottomRef} />
+          </div>
         </div>
 
-        {/* Suggestions chips (always shown when not sending) */}
-        {messages.length > 0 && !sending && (
-          <div className="px-5 pb-2 flex gap-2 overflow-x-auto scrollbar-hide">
-            {SUGGESTIONS.slice(0, 3).map((s, i) => (
-              <button key={i} onClick={() => send(s)}
-                className="shrink-0 text-[12px] bg-surface border border-border rounded-xl px-3 py-1.5 font-medium text-muted-foreground hover:text-primary hover:border-primary/20 hover:bg-primary-soft transition-colors">
-                {s}
-              </button>
-            ))}
+        <div className="border-t border-border bg-background/80 px-5 pb-4 pt-3 backdrop-blur">
+          <div className="mx-auto w-full max-w-[760px]">
+            {!selectedGroup ? (
+              <p className="rounded-xl border border-border bg-surface px-4 py-3 text-center text-sm text-muted-foreground">Join or create a study group to start asking questions.</p>
+            ) : noNotes ? (
+              <p className="flex items-center justify-center gap-2 rounded-xl border border-warning/20 bg-warning-soft px-4 py-3 text-center text-sm text-warning">
+                <FileText className="h-4 w-4" /> This group has no notes yet. Upload some in the Library first.
+              </p>
+            ) : (
+              <>
+                {messages.length > 0 && !sending && (
+                  <div className="mb-2 flex gap-2 overflow-x-auto">
+                    {SUGGESTIONS.slice(0, 3).map((s) => (
+                      <button key={s} onClick={() => send(s)} className="shrink-0 rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground">{s}</button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-end gap-2 rounded-xl border border-border bg-surface px-3 py-2 transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                  <textarea
+                    rows={1}
+                    value={input}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+                    }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+                    placeholder="Ask about your study materials…"
+                    disabled={sending}
+                    className="max-h-40 flex-1 resize-none bg-transparent py-1.5 text-base text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-60"
+                  />
+                  <Button size="sm" icon={Send} onClick={() => send(input)} disabled={!input.trim() || sending} aria-label="Send message" />
+                </div>
+                <p className="mt-1.5 text-center text-xs text-muted-foreground">Enter to send · Shift+Enter for a new line</p>
+              </>
+            )}
           </div>
-        )}
-
-        <div className="px-5 pb-5 pt-2">
-          {(!selectedGroup) ? (
-            <div className="text-center bg-surface border border-border rounded-xl px-4 py-3 text-[13px] font-medium text-muted-foreground shadow-sm">
-              Select a study group first.
-            </div>
-          ) : (groupResources.length === 0 && !loadingResources) ? (
-            <div className="text-center bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-[13px] font-medium text-red-600 shadow-sm flex items-center justify-center gap-2">
-              <FileText className="w-4 h-4" /> No indexed study materials available. Upload and process resources before chatting.
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-2 bg-surface border border-border rounded-xl px-4 py-2.5 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all shadow-sm">
-                <input
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-                  placeholder="Ask about your study materials…"
-                  disabled={sending}
-                  className="flex-1 bg-transparent outline-none text-[13.5px] text-foreground placeholder:text-muted-foreground disabled:opacity-60"
-                />
-            <button
-              onClick={() => send(input)}
-              disabled={!input.trim() || sending}
-              className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-              aria-label="Send message"
-            >
-              <Send className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <div className="text-center text-[11px] text-muted-foreground mt-2">Press Enter to send · Shift+Enter for new line</div>
-          </>
-        )}
         </div>
       </div>
     </div>
