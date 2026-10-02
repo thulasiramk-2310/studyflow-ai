@@ -6,6 +6,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import java.time.LocalDateTime;
 
 @Entity
@@ -28,6 +30,10 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_type", nullable = false, length = 20)
+    private AccountType accountType = AccountType.STUDENT;
+
     public User() {}
 
     public User(String email, String password, String name) {
@@ -47,4 +53,7 @@ public class User {
     public void setName(String name) { this.name = name; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    // Rows from before the column existed read as students.
+    public AccountType getAccountType() { return accountType == null ? AccountType.STUDENT : accountType; }
+    public void setAccountType(AccountType accountType) { this.accountType = accountType; }
 }

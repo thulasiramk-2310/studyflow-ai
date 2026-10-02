@@ -46,7 +46,7 @@ public class InternalController {
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(new UserDto(user.getId().toString(), user.getName(), user.getEmail(), "https://i.pravatar.cc/150?u=" + user.getEmail()));
+        return ResponseEntity.ok(UserDto.from(user));
     }
 
     @PostMapping("/users/batch")
@@ -58,7 +58,7 @@ public class InternalController {
 
         List<User> users = userRepository.findAllById(ids);
         List<UserDto> userDtos = users.stream()
-                .map(u -> new UserDto(u.getId().toString(), u.getName(), u.getEmail(), "https://i.pravatar.cc/150?u=" + u.getEmail()))
+                .map(UserDto::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(userDtos);
     }
