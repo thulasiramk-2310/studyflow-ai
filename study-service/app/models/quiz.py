@@ -25,6 +25,7 @@ class Quiz(Base):
     model = Column(String(50), nullable=True)
     generated_at = Column(DateTime, nullable=True)
     started_at = Column(DateTime, nullable=True)  # lease: when the current generation began (UTC)
+    audience = Column(String(20), nullable=True)  # audience the content was generated for
     generation_time_ms = Column(Integer, nullable=True)
 
     session = relationship("StudySession", back_populates="quiz")

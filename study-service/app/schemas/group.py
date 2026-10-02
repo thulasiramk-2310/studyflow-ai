@@ -1,7 +1,10 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List
+from typing import Literal, Optional, List
 from datetime import datetime
 from app.models.group import GroupRole, LearningPlanItemStatus
+
+Audience = Literal["student", "professional"]
+
 
 class GroupMemberBase(BaseModel):
     user_id: int
@@ -25,6 +28,7 @@ class StudyGroupBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     description: Optional[str] = None
     goal: Optional[str] = None
+    audience: Optional[Audience] = None
 
     @field_validator('name')
     @classmethod
@@ -43,6 +47,7 @@ class StudyGroupUpdate(StudyGroupBase):
 class StudyGroupResponse(StudyGroupBase):
     id: int
     invite_code: Optional[str] = None  # organizers only; None for everyone else
+    audience: Audience = "student"
     created_by: int
     created_at: datetime
     updated_at: Optional[datetime] = None
