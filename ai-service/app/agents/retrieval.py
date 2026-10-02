@@ -22,14 +22,7 @@ IndexLister = Callable[[int], list[dict[str, Any]]]
 def default_retriever(group_id: int, query: str, top_k: int = 3) -> list[dict[str, Any]]:
     """Embed the query and search the group's FAISS index."""
     from app.embeddings.embedding_service import generate_embeddings
-    from app.services.s3_sync import sync_group_index_from_s3
-    from app.vectorstore.faiss_store import get_group_dir, search_index
-
-    group_dir = get_group_dir(group_id)
-    sync_group_index_from_s3(group_id, group_dir)
-
-    if not (group_dir / "index.faiss").exists():
-        return []
+    from app.vectorstore.faiss_store import search_index
 
     query_embeddings = generate_embeddings([query])
     return search_index(group_id, query_embeddings[0], top_k=top_k)
@@ -37,13 +30,13 @@ def default_retriever(group_id: int, query: str, top_k: int = 3) -> list[dict[st
 
 def default_index_lister(group_id: int) -> list[dict[str, Any]]:
     """Summarise what is indexed for a group, one entry per resource."""
+    from app.vectorstore.faiss_store import _group_write_lock, get_group_dir, load_documents
     from app.services.s3_sync import sync_group_index_from_s3
-    from app.vectorstore.faiss_store import get_group_dir, load_documents
 
-    group_dir = get_group_dir(group_id)
-    sync_group_index_from_s3(group_id, group_dir)
-
-    documents = load_documents(group_dir)
+    with _group_write_lock(group_id):
+        group_dir = get_group_dir(group_id)
+        sync_group_index_from_s3(group_id, group_dir, strict=True)
+        documents = load_documents(group_dir)
     summary: dict[int, dict[str, Any]] = {}
     for doc in documents:
         resource_id = doc.get("resource_id")

@@ -116,7 +116,7 @@ def _add_to_index_locked(group_id: int, resource_id: int, filename: str, chunks:
     group_dir = get_group_dir(group_id)
     
     # Sync from S3 first (in case it was created by another container)
-    sync_group_index_from_s3(group_id, group_dir)
+    sync_group_index_from_s3(group_id, group_dir, strict=True)
     
     # Load or create
     dimension = embeddings.shape[1]
@@ -151,7 +151,7 @@ def _add_to_index_locked(group_id: int, resource_id: int, filename: str, chunks:
     save_metadata(group_dir, metadata)
     
     # Sync to S3 after changes
-    sync_group_index_to_s3(group_id, group_dir)
+    sync_group_index_to_s3(group_id, group_dir, strict=True)
 
 
 def search_index(group_id: int, query_embedding: np.ndarray, top_k: int = 5, threshold: float = 0.2, resource_ids: list[int] = None) -> list[dict]:
@@ -159,54 +159,50 @@ def search_index(group_id: int, query_embedding: np.ndarray, top_k: int = 5, thr
     Search the FAISS index for a given group and return the top K matching chunks.
     Optionally filter by resource_ids.
     """
-    group_dir = get_group_dir(group_id)
-    
-    # Sync from S3 before searching
-    sync_group_index_from_s3(group_id, group_dir)
-    
-    index_path = group_dir / "index.faiss"
-    
-    if not index_path.exists():
-        logger.warning(f"No index found for group {group_id}")
-        return []
-        
-    index = faiss.read_index(str(index_path))
-    documents = load_documents(group_dir)
-    
-    # Ensure query embedding is 2D
-    if len(query_embedding.shape) == 1:
-        query_embedding = query_embedding.reshape(1, -1)
-        
-    # Search FAISS (fetch more if filtering)
-    fetch_k = top_k * 5 if resource_ids else top_k
-    scores, indices = index.search(query_embedding, fetch_k)
-    
-    results = []
-    for i in range(len(indices[0])):
-        idx = int(indices[0][i])
-        if idx == -1:
-            continue
-            
-        score = float(scores[0][i])
-        if score < threshold:
-            continue
-            
-        doc = next((d for d in documents if d["vector_id"] == idx), None)
-        if doc:
-            if resource_ids and doc["resource_id"] not in resource_ids:
+    with _group_write_lock(group_id):
+        group_dir = get_group_dir(group_id)
+        sync_group_index_from_s3(group_id, group_dir, strict=True)
+        index_path = group_dir / "index.faiss"
+
+        if not index_path.exists():
+            logger.warning(f"No index found for group {group_id}")
+            return []
+
+        index = faiss.read_index(str(index_path))
+        documents = load_documents(group_dir)
+
+        if len(query_embedding.shape) == 1:
+            query_embedding = query_embedding.reshape(1, -1)
+
+        fetch_k = top_k * 5 if resource_ids else top_k
+        scores, indices = index.search(query_embedding, fetch_k)
+
+        results = []
+        for i in range(len(indices[0])):
+            idx = int(indices[0][i])
+            if idx == -1:
                 continue
-                
-            results.append({
-                "score": score,
-                "content": doc["text"],
-                "source": {
-                    "resourceId": doc["resource_id"],
-                    "filename": doc.get("filename", "unknown"),
-                    "page": doc.get("page", 1)
-                }
-            })
-            
-            if len(results) >= top_k:
-                break
-            
-    return results
+
+            score = float(scores[0][i])
+            if score < threshold:
+                continue
+
+            doc = next((d for d in documents if d["vector_id"] == idx), None)
+            if doc:
+                if resource_ids and doc["resource_id"] not in resource_ids:
+                    continue
+
+                results.append({
+                    "score": score,
+                    "content": doc["text"],
+                    "source": {
+                        "resourceId": doc["resource_id"],
+                        "filename": doc.get("filename", "unknown"),
+                        "page": doc.get("page", 1)
+                    }
+                })
+
+                if len(results) >= top_k:
+                    break
+
+        return results
