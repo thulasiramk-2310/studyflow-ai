@@ -7,6 +7,7 @@ from app.core.config import settings
 from datetime import datetime
 import time
 import os
+from app.services.audience import group_audience
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,8 @@ def generate_session_summary_task(session_id: int, group_id: int, resource_ids: 
         else:
             summary.status = SummaryStatus.GENERATING
             summary.started_at = datetime.utcnow()
+        audience = group_audience(db, group_id)
+        summary.audience = audience
         db.commit()
         db.refresh(summary)
 
@@ -47,7 +50,8 @@ def generate_session_summary_task(session_id: int, group_id: int, resource_ids: 
                     json={
                         "sessionId": session_id,
                         "groupId": group_id,
-                        "resourceIds": resource_ids
+                        "resourceIds": resource_ids,
+                        "audience": audience
                     }
                 )
                 response.raise_for_status()

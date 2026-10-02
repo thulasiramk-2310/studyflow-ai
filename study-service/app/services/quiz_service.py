@@ -7,6 +7,7 @@ from app.core.config import settings
 from datetime import datetime
 import time
 import os
+from app.services.audience import group_audience
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ def generate_quiz_task(session_id: int, group_id: int, resource_ids: list[int]):
             # Delete old questions
             for q in quiz.questions:
                 db.delete(q)
+        audience = group_audience(db, group_id)
+        quiz.audience = audience
         db.commit()
         db.refresh(quiz)
 
@@ -48,7 +51,8 @@ def generate_quiz_task(session_id: int, group_id: int, resource_ids: list[int]):
                     json={
                         "sessionId": session_id,
                         "groupId": group_id,
-                        "resourceIds": resource_ids
+                        "resourceIds": resource_ids,
+                        "audience": audience
                     }
                 )
                 response.raise_for_status()

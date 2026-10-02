@@ -68,7 +68,7 @@ async def generate_agentic_schedule(db: Session, group_id: int, target_duration_
         try:
             response = await client.post(
                 ai_url,
-                json={"context": context_str, "target_duration": target_duration_minutes},
+                json={"context": context_str, "target_duration": target_duration_minutes, "audience": group.audience or "student"},
                 headers=headers,
                 timeout=120.0
             )
