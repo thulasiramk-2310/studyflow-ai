@@ -16,12 +16,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** Minutes written from the meeting's transcript: always labelled with their source, draft until approved. */
-export function MinutesView({ sessionId, summary, terms, canManage, transcriptByName, onChange }: {
-  sessionId: number; summary: SessionSummary; terms: Terms; canManage: boolean; transcriptByName: string | null; onChange: (s: SessionSummary) => void;
+export function MinutesView({ sessionId, summary, terms, canManage, sourceByName, onChange }: {
+  sessionId: number; summary: SessionSummary; terms: Terms; canManage: boolean; sourceByName: string | null; onChange: (s: SessionSummary) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [approving, setApproving] = useState(false);
-  const noter = transcriptByName || "a member";
+  const noter = sourceByName || "a member";
   const sourceLabel =
     summary.source === "transcript" ? "From transcript (speakers named)"
     : summary.source === "recording" ? "From recording (speakers not identified)"
