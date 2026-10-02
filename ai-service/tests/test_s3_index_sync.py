@@ -40,9 +40,14 @@ class FakeS3:
         body = self.objects[Key]
         return {"Body": type("B", (), {"read": lambda self_: body})()}
 
-    def list_objects_v2(self, Bucket, Prefix):
-        keys = [k for k in self.objects if k.startswith(Prefix)]
-        return {"Contents": [{"Key": k} for k in keys]} if keys else {}
+    def list_objects_v2(self, Bucket, Prefix, ContinuationToken=None):
+        keys = sorted(k for k in self.objects if k.startswith(Prefix))
+        start = int(ContinuationToken or 0)
+        page = keys[start : start + 1000]
+        response = {"Contents": [{"Key": k} for k in page]} if page else {}
+        if start + len(page) < len(keys):
+            response.update(IsTruncated=True, NextContinuationToken=str(start + len(page)))
+        return response
 
     def delete_objects(self, Bucket, Delete):
         for obj in Delete["Objects"]:
@@ -129,3 +134,32 @@ def test_an_index_uploaded_in_the_old_flat_layout_still_loads(tmp_path, s3, monk
 
     with Replica(tmp_path / "b", monkeypatch) as b:
         assert b.local_resources() == {9}
+
+
+def test_incomplete_remote_snapshot_does_not_replace_local_files(tmp_path, s3, monkeypatch):
+    local_dir = tmp_path / "group-1"
+    local_dir.mkdir()
+    (local_dir / "index.faiss").write_bytes(b"last-known-good")
+    (local_dir / s3_sync.LOCAL_VERSION_FILE).write_text("old-version")
+    s3.objects["faiss_indexes/group-1/current.json"] = b'{"version":"broken"}'
+    s3.objects["faiss_indexes/group-1/broken/documents.json"] = b"[]"
+
+    with pytest.raises(s3_sync.ClientError):
+        s3_sync.sync_group_index_from_s3(1, local_dir, strict=True)
+
+    assert (local_dir / "index.faiss").read_bytes() == b"last-known-good"
+    assert (local_dir / s3_sync.LOCAL_VERSION_FILE).read_text() == "old-version"
+
+
+def test_snapshot_pruning_handles_more_than_one_s3_page(s3):
+    prefix = "faiss_indexes/group-1/"
+    s3.objects.update({f"{prefix}old-{i}/index.faiss": b"old" for i in range(1001)})
+    s3.objects[f"{prefix}current.json"] = b'{"version":"new"}'
+    s3.objects[f"{prefix}new/index.faiss"] = b"new"
+
+    s3_sync._prune_old_versions(s3, "test-bucket", prefix, keep={"new"})
+
+    assert set(s3.objects) == {
+        f"{prefix}current.json",
+        f"{prefix}new/index.faiss",
+    }

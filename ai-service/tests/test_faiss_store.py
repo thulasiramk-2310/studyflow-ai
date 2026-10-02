@@ -22,8 +22,8 @@ def _vectors(n: int, seed: int) -> np.ndarray:
 
 def test_parallel_uploads_to_one_group_keep_every_chunk(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "AI_STORAGE_DIR", str(tmp_path))
-    monkeypatch.setattr(faiss_store, "sync_group_index_from_s3", lambda *a: None)
-    monkeypatch.setattr(faiss_store, "sync_group_index_to_s3", lambda *a: None)
+    monkeypatch.setattr(faiss_store, "sync_group_index_from_s3", lambda *a, **k: None)
+    monkeypatch.setattr(faiss_store, "sync_group_index_to_s3", lambda *a, **k: None)
 
     # Widen the read-modify-write window so an unguarded race shows up reliably.
     real_load = faiss_store.load_or_create_index
