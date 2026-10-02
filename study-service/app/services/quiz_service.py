@@ -21,10 +21,11 @@ def generate_quiz_task(session_id: int, group_id: int, resource_ids: list[int]):
         # Create or update quiz record to GENERATING
         quiz = db.query(Quiz).filter(Quiz.session_id == session_id).first()
         if not quiz:
-            quiz = Quiz(session_id=session_id, status=QuizStatus.GENERATING)
+            quiz = Quiz(session_id=session_id, status=QuizStatus.GENERATING, started_at=datetime.utcnow())
             db.add(quiz)
         else:
             quiz.status = QuizStatus.GENERATING
+            quiz.started_at = datetime.utcnow()
             # Delete old questions
             for q in quiz.questions:
                 db.delete(q)

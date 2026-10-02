@@ -19,6 +19,7 @@ from app.services import notification_service
 from app.models.notification import NotificationType
 from app.clients import auth_client
 from app.repositories import group_repo
+from app.services.job_recovery import expire_if_stale
 
 router = APIRouter()
 
@@ -305,7 +306,8 @@ def get_session_summary(session_id: int, db: Session = Depends(get_db), user: di
     
     if not session.summary:
         raise HTTPException(status_code=404, detail="Summary not found")
-        
+
+    expire_if_stale(db, session.summary)  # an orphaned job reads as FAILED so the UI can retry
     return {"success": True, "data": session.summary}
 
 @router.post("/{session_id}/summary/regenerate", response_model=SuccessResponse[dict])
@@ -338,7 +340,8 @@ def get_session_quiz(session_id: int, db: Session = Depends(get_db), user: dict 
     
     if not session.quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
-        
+
+    expire_if_stale(db, session.quiz)  # an orphaned job reads as FAILED so the UI can retry
     return {"success": True, "data": session.quiz}
 
 @router.post("/{session_id}/quiz/grade", response_model=SuccessResponse[QuizResult])
@@ -420,7 +423,8 @@ def get_session_flashcards(session_id: int, db: Session = Depends(get_db), user:
     
     if not session.flashcard_deck:
         raise HTTPException(status_code=404, detail="Flashcards not found")
-        
+
+    expire_if_stale(db, session.flashcard_deck)  # an orphaned job reads as FAILED so the UI can retry
     return {"success": True, "data": session.flashcard_deck}
 
 @router.post("/{session_id}/flashcards/generate", response_model=SuccessResponse[dict])

@@ -21,10 +21,11 @@ def generate_session_summary_task(session_id: int, group_id: int, resource_ids: 
         # Create or update summary record to GENERATING
         summary = db.query(SessionSummary).filter(SessionSummary.session_id == session_id).first()
         if not summary:
-            summary = SessionSummary(session_id=session_id, status=SummaryStatus.GENERATING)
+            summary = SessionSummary(session_id=session_id, status=SummaryStatus.GENERATING, started_at=datetime.utcnow())
             db.add(summary)
         else:
             summary.status = SummaryStatus.GENERATING
+            summary.started_at = datetime.utcnow()
         db.commit()
         db.refresh(summary)
 

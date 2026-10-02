@@ -75,6 +75,7 @@ class SessionSummary(Base):
     status = Column(Enum(SummaryStatus), default=SummaryStatus.PENDING, nullable=False)
     model = Column(String(50), nullable=True)
     generated_at = Column(DateTime, nullable=True)
+    started_at = Column(DateTime, nullable=True)  # lease: when the current generation began (UTC)
     generation_time_ms = Column(Integer, nullable=True)
 
     session = relationship("StudySession", back_populates="summary")

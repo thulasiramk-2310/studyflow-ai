@@ -24,11 +24,11 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 @app.on_event("startup")
 def recover_jobs_on_startup():
     from app.core.database import SessionLocal
-    from app.services.job_recovery import recover_interrupted_jobs
+    from app.services.job_recovery import expire_stale_jobs
 
     db = SessionLocal()
     try:
-        recover_interrupted_jobs(db)
+        expire_stale_jobs(db)
     except Exception as e:  # never block startup on cleanup
         logger.error(f"Job recovery failed: {e}")
     finally:
