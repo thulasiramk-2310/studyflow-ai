@@ -214,6 +214,9 @@ Set at the repo root `.env` (git-ignored). Required keys:
 | `INTERNAL_API_KEY` | Shared secret for service-to-service calls |
 | `GROQ_API_KEY` | Groq API key for the AI service |
 | `GROQ_MODEL` | Groq model id (e.g. `openai/gpt-oss-20b`) |
+| `GROQ_API_KEY1`, `GROQ_API_KEY2` | Optional fallback Groq keys, used when a key is rate-limited or rejected |
+| `APP_BASE_URL` | Public origin of the frontend, used in password-reset links. **Set it to the deployed HTTPS origin** (e.g. `https://studyflow.example.com`); the default `http://localhost` only works locally |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` | Email for password resets (e.g. Gmail: `smtp.gmail.com`, `587`, your address, an App Password). With `SMTP_HOST` empty, reset requests still succeed but no email is sent |
 
 In AWS these are injected from **Secrets Manager**, never hardcoded.
 
