@@ -188,3 +188,29 @@ def parse_meeting_transcript(req: TranscriptParseRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"success": True, "data": {"text": text}}
+
+
+from pydantic import Field
+
+from app.services.minutes import generate_minutes
+
+
+class MinutesRequest(BaseModel):
+    sessionId: int
+    groupId: int
+    transcript: str = Field(..., max_length=200_000)
+    source: Literal["transcript", "recording", "notes"]
+    resourceIds: List[int] = []
+    audience: Literal["student", "professional"] = "student"
+
+
+@router.post("/minutes")
+def generate_session_minutes(req: MinutesRequest):
+    try:
+        data = generate_minutes(req.transcript, req.source, audience=req.audience, group_id=req.groupId, resource_ids=req.resourceIds)
+        return {"success": True, "data": data}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error in generate_session_minutes: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
