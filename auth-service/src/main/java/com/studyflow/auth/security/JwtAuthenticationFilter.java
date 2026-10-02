@@ -19,10 +19,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final com.studyflow.auth.repository.UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, CustomUserDetailsService customUserDetailsService) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, CustomUserDetailsService customUserDetailsService,
+                                   com.studyflow.auth.repository.UserRepository userRepository) {
         this.tokenProvider = tokenProvider;
         this.customUserDetailsService = customUserDetailsService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -33,6 +36,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 String email = tokenProvider.getUsernameFromJWT(jwt);
+                // A password change or reset revokes every login issued before it.
+                boolean revoked = userRepository.findByEmail(email)
+                        .map(u -> TokenRevocation.isRevoked(tokenProvider.getIssuedAt(jwt), u.getPasswordChangedAt()))
+                        .orElse(true);
+                if (revoked) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
 
                 UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

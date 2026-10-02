@@ -34,6 +34,10 @@ public class User {
     @Column(name = "account_type", nullable = false, length = 20)
     private AccountType accountType = AccountType.STUDENT;
 
+    /** When the password last changed; logins issued before this are rejected. */
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
     public User() {}
 
     public User(String email, String password, String name) {
@@ -56,4 +60,6 @@ public class User {
     // Rows from before the column existed read as students.
     public AccountType getAccountType() { return accountType == null ? AccountType.STUDENT : accountType; }
     public void setAccountType(AccountType accountType) { this.accountType = accountType; }
+    public LocalDateTime getPasswordChangedAt() { return passwordChangedAt; }
+    public void setPasswordChangedAt(LocalDateTime passwordChangedAt) { this.passwordChangedAt = passwordChangedAt; }
 }

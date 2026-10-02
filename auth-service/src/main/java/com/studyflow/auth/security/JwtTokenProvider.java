@@ -50,6 +50,11 @@ public class JwtTokenProvider {
         return claims.getSubject();
     }
 
+    public java.util.Date getIssuedAt(String token) {
+        return Jwts.parserBuilder().setSigningKey(getSigningKey()).build()
+                .parseClaimsJws(token).getBody().getIssuedAt();
+    }
+
     public boolean validateToken(String authToken) {
         try {
             Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(authToken);
