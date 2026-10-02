@@ -4,7 +4,9 @@ import com.studyflow.auth.dto.ApiResponse;
 import com.studyflow.auth.dto.AuthResponse;
 import com.studyflow.auth.dto.LoginRequest;
 import com.studyflow.auth.dto.RegisterRequest;
+import com.studyflow.auth.dto.UpdateAccountRequest;
 import com.studyflow.auth.dto.UserDto;
+import com.studyflow.auth.entity.AccountType;
 import com.studyflow.auth.entity.User;
 import com.studyflow.auth.repository.UserRepository;
 import com.studyflow.auth.security.JwtTokenProvider;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import java.util.Optional;
 import static com.studyflow.auth.security.JwtTokenProvider.JWT_EXPIRATION_SECONDS;
 
 @RestController
@@ -52,7 +55,7 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String jwt = tokenProvider.generateToken(authentication, user);
-        UserDto userDto = new UserDto(user.getId().toString(), user.getName(), user.getEmail(), "https://i.pravatar.cc/150?u=" + user.getEmail());
+        UserDto userDto = UserDto.from(user);
 
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", jwt)
                 .httpOnly(true)
@@ -69,6 +72,17 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest registerRequest) {
+        // Missing means student; a value that is present must be valid.
+        AccountType accountType = AccountType.STUDENT;
+        if (registerRequest.getAccountType() != null) {
+            Optional<AccountType> parsed = AccountType.parse(registerRequest.getAccountType());
+            if (parsed.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.error("INVALID_ACCOUNT_TYPE", "Account type must be STUDENT or PROFESSIONAL"));
+            }
+            accountType = parsed.get();
+        }
+
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
             // Dummy hash to prevent timing attacks
             passwordEncoder.matches(registerRequest.getPassword(), "$2a$10$dummyhashdummyhashdummyhashdummyhashdummyhashdum");
@@ -82,12 +96,13 @@ public class AuthController {
                 registerRequest.getName()
         );
 
+        user.setAccountType(accountType);
         userRepository.save(user);
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(user.getEmail(), null, null);
         String jwt = tokenProvider.generateToken(authentication, user);
         
-        UserDto userDto = new UserDto(user.getId().toString(), user.getName(), user.getEmail(), "https://i.pravatar.cc/150?u=" + user.getEmail());
+        UserDto userDto = UserDto.from(user);
 
         ResponseCookie jwtCookie = ResponseCookie.from("jwt", jwt)
                 .httpOnly(true)
@@ -117,8 +132,27 @@ public class AuthController {
                     .body(ApiResponse.error("NOT_FOUND", "User not found"));
         }
 
-        UserDto userDto = new UserDto(user.getId().toString(), user.getName(), user.getEmail(), "https://i.pravatar.cc/150?u=" + user.getEmail());
+        UserDto userDto = UserDto.from(user);
         return ResponseEntity.ok(ApiResponse.success(userDto));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<UserDto>> updateCurrentUser(Authentication authentication, @RequestBody UpdateAccountRequest body) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("UNAUTHORIZED", "Not authenticated"));
+        }
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("NOT_FOUND", "User not found"));
+        }
+        Optional<AccountType> parsed = AccountType.parse(body == null ? null : body.getAccountType());
+        if (parsed.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("INVALID_ACCOUNT_TYPE", "Account type must be STUDENT or PROFESSIONAL"));
+        }
+        user.setAccountType(parsed.get());
+        userRepository.save(user);
+        return ResponseEntity.ok(ApiResponse.success(UserDto.from(user)));
     }
 
     @PostMapping("/logout")

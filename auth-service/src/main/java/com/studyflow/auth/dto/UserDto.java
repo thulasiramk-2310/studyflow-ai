@@ -5,12 +5,19 @@ public class UserDto {
     private String name;
     private String email;
     private String avatar;
+    private String accountType;
 
-    public UserDto(String id, String name, String email, String avatar) {
+    public UserDto(String id, String name, String email, String avatar, String accountType) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.avatar = avatar;
+        this.accountType = accountType;
+    }
+
+    public static UserDto from(com.studyflow.auth.entity.User u) {
+        return new UserDto(u.getId().toString(), u.getName(), u.getEmail(),
+                "https://i.pravatar.cc/150?u=" + u.getEmail(), u.getAccountType().name());
     }
 
     public String getId() { return id; }
@@ -21,4 +28,6 @@ public class UserDto {
     public void setEmail(String email) { this.email = email; }
     public String getAvatar() { return avatar; }
     public void setAvatar(String avatar) { this.avatar = avatar; }
+    public String getAccountType() { return accountType; }
+    public void setAccountType(String accountType) { this.accountType = accountType; }
 }
