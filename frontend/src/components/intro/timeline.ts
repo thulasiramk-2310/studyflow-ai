@@ -26,7 +26,7 @@ export const ANSWER =
 
 export const BEATS: Beat[] = [
   { at: 0, camera: { target: "wide", zoom: 1 }, caption: { index: 0, step: "StudyFlow", title: "A study group with an AI that read your notes.", body: "Here's how it works, in about 25 seconds." } },
-  { at: 2600, camera: { target: "upload", zoom: 2 }, caption: { index: 1, step: "Step 1 of 4", title: "Drop in your notes.", body: "PDFs, slides and Markdown are chunked, embedded and indexed for your group." } },
+  { at: 2600, camera: { target: "upload", zoom: 2 }, caption: { index: 1, step: "Step 1 of 4", title: "Drop in your notes.", body: "Your PDFs are chunked, embedded and indexed for your group." } },
   { at: 3800, action: "dropFile" },
   { at: 6300, action: "indexed" },
   { at: 7600, camera: { target: "input", zoom: 2.2 }, caption: { index: 2, step: "Step 2 of 4", title: "Ask anything.", body: "Questions are answered only from your group's own material." } },

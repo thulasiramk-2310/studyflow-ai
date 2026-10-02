@@ -6,7 +6,7 @@ import { IntroStage } from "../../components/intro/IntroStage";
 
 const SECTIONS = [
   { title: "Groups and invites", body: "Create a group for each subject and invite classmates with its code.", to: "/groups", cta: "Open groups" },
-  { title: "Library and indexing", body: "Upload PDFs, slides or Markdown. Each file is chunked, embedded and indexed for its group.", to: "/resources", cta: "Open library" },
+  { title: "Library and indexing", body: "Upload PDFs (export slides and documents as PDF). Each file is chunked, embedded and indexed for its group.", to: "/resources", cta: "Open library" },
   { title: "Ask AI with citations", body: "Ask questions about a group's notes. Answers show the file and page they came from.", to: "/ai", cta: "Ask a question" },
   { title: "Sessions and the AI planner", body: "Plan the next session yourself or let the planner propose one from the learning path.", to: "/sessions", cta: "Open sessions" },
   { title: "Quizzes and flashcards", body: "Mark a session completed to get its summary, then generate a quiz and a flashcard deck from its notes.", to: "/sessions", cta: "Find a session" },

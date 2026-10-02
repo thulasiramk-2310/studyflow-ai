@@ -48,13 +48,14 @@ export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: 
 
   const validateAndSetFile = (file: File) => {
     setError(null);
-    const allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'text/markdown'];
-    const validExtensions = ['.pdf', '.docx', '.pptx', '.md'];
+    // Indexing extracts text from PDFs only (ai-service document_loader).
+    const allowed = ['application/pdf'];
+    const validExtensions = ['.pdf'];
     
     const isValid = allowed.includes(file.type) || validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
     
     if (!isValid) {
-      setError("Unsupported file type. Please upload PDF, DOCX, PPTX, or MD.");
+      setError("Only PDF files can be indexed right now. Export slides or documents as PDF first.");
       return;
     }
     
@@ -122,14 +123,14 @@ export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: 
                 ref={inputRef}
                 type="file" 
                 className="hidden" 
-                accept=".pdf,.docx,.pptx,.md"
+                accept=".pdf"
                 onChange={handleChange}
               />
               <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors ${dragActive ? 'bg-primary text-primary-foreground' : 'bg-border-soft text-muted-foreground'}`}>
                 <Upload className="w-6 h-6" />
               </div>
               <p className="font-semibold text-base mb-1">Click to upload or drag and drop</p>
-              <p className="text-muted-foreground text-sm">PDF, DOCX, PPTX, or MD (max. 50MB)</p>
+              <p className="text-muted-foreground text-sm">PDF (max. 25 MB). Export slides and documents as PDF.</p>
             </div>
           ) : (
             <div className="border border-border rounded-xl p-5 bg-background">
