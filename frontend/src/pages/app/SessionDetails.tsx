@@ -1,21 +1,17 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Clock, MapPin, Users, Video, Download, Sparkle, ExternalLink, Settings } from "lucide-react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { CheckCircle2, Clock, ExternalLink, ListChecks, MapPin, Pencil, Sparkles, Video } from "lucide-react";
 import { sessionService, type Session, type SessionSummary, type FlashcardDeckResponse, type SessionAttendanceResponse, type MeetingType } from "../../services/session.service";
 import { groupService, type Group } from "../../services/group.service";
 import { useAuth } from "../../hooks/useAuth";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { FlashcardViewer } from "../../components/study/FlashcardViewer";
-import { PageHeader, LoadingSkeleton, EmptyState } from "../../components/shared";
+import { Avatar, Badge, Button, Card, CardHeader, EmptyState, PageHeader, RichText, Skeleton } from "../../components/ui";
 import { EditSessionModal } from "../../components/sessions/EditSessionModal";
 
-const AGENDA = [
-  { n: 1, title: "Review previous topics", detail: "Go over chapter 4 notes", dur: "15m" },
-  { n: 2, title: "Practice problems", detail: "Work on set #3", dur: "45m" },
-  { n: 3, title: "Q&A Session", detail: "Discuss difficult concepts", dur: "30m" }
-];
-
 export function SessionDetails() {
+  const navigate = useNavigate();
   const { sessionId } = useParams();
   const { user } = useAuth();
   const [session, setSession] = useState<Session | null>(null);
@@ -228,38 +224,26 @@ export function SessionDetails() {
 
   if (loading) {
     return (
-      <div className="max-w-[1180px] mx-auto px-8 py-7 pb-12">
-        <PageHeader title="Loading Session..." />
-        <LoadingSkeleton />
+      <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8" aria-busy="true">
+        <Skeleton className="mb-3 h-5 w-64" />
+        <Skeleton className="mb-8 h-10 w-96" />
+        <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]"><Skeleton className="h-72" /><Skeleton className="h-72" /></div>
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="max-w-[1180px] mx-auto px-8 py-7 pb-12">
-        <PageHeader title="Session Details" />
-        <EmptyState icon={Clock} title="Session not found" description="The session you're looking for doesn't exist or has been removed." />
+      <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
+        <Card><EmptyState icon={Clock} title="Session not found" description="The session you're looking for doesn't exist or has been removed." /></Card>
       </div>
     );
   }
 
   const sessionDate = new Date(session.scheduled_at);
-  const month = sessionDate.toLocaleString('default', { month: 'short' }).toUpperCase();
-  const day = sessionDate.getDate();
-  const time = sessionDate.toLocaleTimeString('default', { hour: 'numeric', minute: '2-digit' });
   const isCompleted = session.status === "COMPLETED";
   const userRole = group?.members?.find((m) => m.user_id === Number(user?.id))?.role || "MEMBER";
   const canManageGroup = userRole === "ORGANIZER";
-  const getMeetingIcon = (type: MeetingType) => {
-    switch (type) {
-      case "GOOGLE_MEET": return <Video className="w-5 h-5 text-emerald-600" />;
-      case "ZOOM": return <Video className="w-5 h-5 text-blue-500" />;
-      case "MICROSOFT_TEAMS": return <Video className="w-5 h-5 text-indigo-600" />;
-      case "DISCORD": return <Video className="w-5 h-5 text-purple-500" />;
-      default: return <MapPin className="w-5 h-5 text-muted-foreground" />;
-    }
-  };
   const getMeetingName = (type: MeetingType) => {
     switch (type) {
       case "GOOGLE_MEET": return "Google Meet";
@@ -271,342 +255,223 @@ export function SessionDetails() {
     }
   };
 
+  const statusTone = session.status === "COMPLETED" ? "success" : session.status === "LIVE" ? "danger" : "neutral";
+  const isAI = (session as { generated_by?: string }).generated_by === "AI" || session.generated_by_ai;
+  const meName = (id: number, name?: string) => (id === Number(user?.id) ? `${name || `User ${id}`} (You)` : name || `User ${id}`);
+
   return (
-    <div className="max-w-[1180px] mx-auto px-8 py-7 pb-12 animate-[sfFade_0.25s_ease]">
+    <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
       {isEditModalOpen && (
-        <EditSessionModal 
-          isOpen={isEditModalOpen} 
-          onClose={() => setIsEditModalOpen(false)} 
-          session={session} 
-          onSuccess={fetchSession} 
-        />
+        <EditSessionModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} session={session} onSuccess={fetchSession} />
       )}
+
       <PageHeader
-        title={session.title}
-        subtitle={`${group?.name || 'Group Session'}`}
-        actions={
-          <div className="flex items-center gap-2">
-            {canManageGroup && (
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="bg-surface text-foreground border border-border rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-surface-hover transition-colors flex items-center gap-2"
-              >
-                <Settings className="w-4 h-4" /> Edit
-              </button>
-            )}
-            {canManageGroup && !isCompleted && (
-              <button
-                onClick={handleComplete}
-                disabled={completing}
-                className="bg-primary text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
-              >
-                {completing ? "Marking..." : "Mark Completed"}
-              </button>
-            )}
+        eyebrow={
+          <div className="flex flex-wrap items-center gap-2">
+            {isAI && <Badge tone="brand"><Sparkles className="h-3 w-3" />AI-planned</Badge>}
+            <Badge>{format(sessionDate, "EEE d MMM, HH:mm")} · {session.duration_minutes} min</Badge>
+            <Badge tone={statusTone}>{session.status}</Badge>
           </div>
+        }
+        title={session.title}
+        subtitle={group ? <Link to={`/groups/${group.id}`} className="hover:text-foreground">{group.name}</Link> : "Group session"}
+        actions={
+          <>
+            {canManageGroup && <Button size="sm" variant="secondary" icon={Pencil} onClick={() => setIsEditModalOpen(true)}>Edit</Button>}
+            {canManageGroup && !isCompleted && <Button size="sm" icon={CheckCircle2} loading={completing} onClick={handleComplete}>Mark completed</Button>}
+          </>
         }
       />
 
-      {/* Hero Stats */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col justify-center">
-          <div className="text-[12px] font-medium text-muted-foreground mb-1">Status</div>
-          <div className="text-[14px] font-bold">
-            <span className={`px-2 py-0.5 rounded text-[11.5px] font-bold ${
-              session.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-              session.status === 'LIVE' ? 'bg-rose-100 text-rose-700' :
-              'bg-amber-100 text-amber-700'
-            }`}>
-              {session.status}
-            </span>
-          </div>
-        </div>
-        <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col justify-center">
-          <div className="text-[12px] font-medium text-muted-foreground mb-1">Generated By</div>
-          <div className="text-[14px] font-bold flex items-center gap-1.5">
-            {(session as any).generated_by === 'AI' ? <Sparkle className="w-4 h-4 text-primary" /> : <Users className="w-4 h-4 text-muted-foreground" />}
-            {(session as any).generated_by || "MANUAL"}
-          </div>
-        </div>
-        <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col justify-center">
-          <div className="text-[12px] font-medium text-muted-foreground mb-1">Date</div>
-          <div className="text-[14px] font-bold">{month} {day}</div>
-        </div>
-        <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col justify-center">
-          <div className="text-[12px] font-medium text-muted-foreground mb-1">Time</div>
-          <div className="text-[14px] font-bold">{time}</div>
-        </div>
-        <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col justify-center">
-          <div className="text-[12px] font-medium text-muted-foreground mb-1">Duration</div>
-          <div className="text-[14px] font-bold">{session.duration_minutes} Minutes</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 mt-6 items-start">
-        <div className="flex flex-col gap-6">
-          {/* Meeting Block */}
+      <div className="grid items-start gap-5 lg:grid-cols-[1.6fr_1fr]">
+        <div className="flex flex-col gap-5">
           {!isCompleted && (
-            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow-[0_8px_24px_rgba(99,102,241,0.2)] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                  {getMeetingIcon(session.meeting_type)}
+            <>
+              <Card>
+                <CardHeader title="Meeting" />
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-text">
+                    {session.meeting_url ? <Video className="h-5 w-5" /> : <MapPin className="h-5 w-5" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-base font-semibold text-foreground">{getMeetingName(session.meeting_type)}</div>
+                    <div className="truncate text-sm text-muted-foreground">{session.meeting_url || "No link added yet"}</div>
+                  </div>
+                  <Button size="sm" icon={ExternalLink} loading={joining} disabled={!session.meeting_url} onClick={handleJoinMeeting}>Join meeting</Button>
                 </div>
-                <div>
-                  <h3 className="text-[16px] font-bold text-white">{getMeetingName(session.meeting_type)}</h3>
-                  {session.meeting_url ? (
-                    <p className="text-[13px] text-white/80 font-medium mt-0.5 truncate max-w-[200px] sm:max-w-xs">{session.meeting_url}</p>
-                  ) : (
-                    <p className="text-[13px] text-white/80 mt-0.5">Link not provided</p>
-                  )}
+              </Card>
+              <Card className="bg-primary-soft">
+                <div className="flex gap-3">
+                  <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary-text" />
+                  <div>
+                    <div className="text-base font-semibold text-foreground">Summary, quiz and flashcards come next</div>
+                    <p className="mt-0.5 text-sm text-muted-foreground">When the session is marked completed, StudyFlow writes a summary from the attached notes, and you can generate a quiz and flashcards.</p>
+                  </div>
                 </div>
-              </div>
-              <button 
-                onClick={handleJoinMeeting}
-                disabled={joining || !session.meeting_url}
-                className="w-full sm:w-auto bg-white text-indigo-600 rounded-xl px-5 py-2.5 text-[14px] font-bold hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {joining ? "Joining..." : "Join Meeting"}
-                {session.meeting_url && <ExternalLink className="w-4 h-4" />}
-              </button>
-            </div>
+              </Card>
+            </>
           )}
 
-          {/* After Completion AI Summaries */}
           {isCompleted && (
-            <div className="flex flex-col gap-6 animate-[sfFade_0.4s_ease]">
-              {/* Summary */}
-              {summary?.status === "READY" ? (
-                <div className="bg-surface border border-border rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.03)] overflow-hidden">
-                  <div className="px-6 py-5 border-b border-border-soft flex items-center justify-between">
-                    <h2 className="text-[16px] font-bold text-foreground flex items-center gap-2">
-                      <Sparkle className="w-5 h-5 text-primary" /> Session Summary
-                    </h2>
-                    {canManageGroup && (
-                      <button onClick={handleRegenerate} disabled={regenerating} className="text-[12.5px] text-muted-foreground hover:text-foreground font-medium disabled:opacity-50">
-                        {regenerating ? "Regenerating..." : "Regenerate"}
-                      </button>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-[14px] font-bold text-foreground mb-2">Executive Summary</h3>
-                    <p className="text-[14px] text-muted-foreground leading-relaxed mb-6">{summary.summary}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h3 className="text-[14px] font-bold text-foreground mb-3">Key Concepts</h3>
-                        <ul className="flex flex-col gap-2">
-                          {summary.key_concepts?.map((kc, i) => (
-                            <li key={i} className="flex items-start gap-2.5 text-[13.5px] text-muted-foreground">
-                              <div className="mt-1 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                              <span>{kc}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h3 className="text-[14px] font-bold text-foreground mb-3">Important Points</h3>
-                        <ul className="flex flex-col gap-2">
-                          {summary.important_points?.map((ip, i) => (
-                            <li key={i} className="flex items-start gap-2.5 text-[13.5px] text-muted-foreground">
-                              <div className="mt-1 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                              <span>{ip}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : summary?.status === "FAILED" ? (
-                <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-red-600 text-[13.5px] font-medium text-center">
-                  AI Summary failed to generate. <button onClick={handleRegenerate} className="underline">Try again</button>
-                </div>
-              ) : (
-                <div className="bg-primary-soft/50 border border-primary-soft rounded-2xl p-4 text-primary text-[13.5px] font-medium text-center">
-                  AI Summary <br/> ⏳ Generating...
-                </div>
-              )}
-
-              {/* Quiz */}
-              {quiz?.status === "READY" ? (
-                <div className="bg-surface border border-border rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.03)] overflow-hidden">
-                  <div className="px-6 py-5 border-b border-border-soft flex items-center justify-between">
-                    <h2 className="text-[16px] font-bold text-foreground flex items-center gap-2">
-                      <Sparkle className="w-5 h-5 text-primary" /> Session Quiz
-                    </h2>
-                    <div className="flex items-center gap-3">
-                      {canManageGroup && (
-                        <button onClick={handleRegenerateQuiz} disabled={regeneratingQuiz} className="text-[12.5px] text-muted-foreground hover:text-foreground font-medium disabled:opacity-50">
-                          {regeneratingQuiz ? "Regenerating..." : "Regenerate"}
-                        </button>
-                      )}
-                      <Link to={`/sessions/${session.id}/quiz`} className="bg-primary text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-primary-hover transition-colors">
-                        Take Quiz
-                      </Link>
-                    </div>
-                  </div>
-                  <div className="px-6 py-4 bg-surface text-[13px] text-muted-foreground flex justify-between">
-                    <span>{quiz.questions?.length || 0} questions generated from session materials</span>
-                    {quiz.model && <span className="text-[11px]">Generated by {quiz.model}</span>}
-                  </div>
-                </div>
-              ) : quiz?.status === "FAILED" ? (
-                <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-red-600 text-[13.5px] font-medium text-center">
-                  AI Quiz failed to generate. <button onClick={handleRegenerateQuiz} className="underline">Try again</button>
-                </div>
-              ) : !quiz ? (
-                <div className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
-                  <div>
-                    <h3 className="text-[14px] font-bold text-foreground">AI Quiz</h3>
-                    <p className="text-[12.5px] text-muted-foreground mt-0.5">Test your knowledge on this session's materials.</p>
-                  </div>
-                  {canManageGroup && (
-                    <button onClick={handleGenerateQuiz} disabled={generatingQuiz} className="bg-primary text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-primary-hover">
-                      Generate Quiz
-                    </button>
+            <>
+              <Card>
+                <CardHeader
+                  title="Summary"
+                  action={canManageGroup && summary?.status === "READY" && (
+                    <button onClick={handleRegenerate} disabled={regenerating} className="hover:text-foreground disabled:opacity-50">{regenerating ? "Regenerating…" : "Regenerate"}</button>
                   )}
-                </div>
-              ) : (
-                <div className="bg-primary-soft/50 border border-primary-soft rounded-2xl p-4 text-primary text-[13.5px] font-medium text-center">
-                  AI Quiz <br/> ⏳ Generating...
-                </div>
-              )}
-
-              {/* Flashcards */}
-              {flashcards?.status === "READY" ? (
-                <div className="bg-surface border border-border rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.03)] overflow-hidden">
-                  <div className="px-6 py-5 border-b border-border-soft flex items-center justify-between">
-                    <h2 className="text-[16px] font-bold text-foreground flex items-center gap-2">
-                      <Sparkle className="w-5 h-5 text-primary" /> Flashcards
-                    </h2>
-                    {canManageGroup && (
-                      <button onClick={handleRegenerateFlashcards} disabled={regeneratingFlashcards} className="text-[12.5px] text-muted-foreground hover:text-foreground font-medium disabled:opacity-50">
-                        {regeneratingFlashcards ? "Regenerating..." : "Regenerate"}
-                      </button>
-                    )}
-                  </div>
-                  <div className="p-6 bg-surface">
-                    <FlashcardViewer flashcards={flashcards.flashcards} />
-                  </div>
-                </div>
-              ) : flashcards?.status === "FAILED" ? (
-                <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-red-600 text-[13.5px] font-medium text-center">
-                  AI Flashcards failed to generate. <button onClick={handleRegenerateFlashcards} className="underline">Try again</button>
-                </div>
-              ) : !flashcards ? (
-                <div className="bg-surface border border-border rounded-2xl p-4 flex items-center justify-between shadow-[0_4px_12px_rgba(15,23,42,0.03)]">
-                  <div>
-                    <h3 className="text-[14px] font-bold text-foreground">AI Flashcards</h3>
-                    <p className="text-[12.5px] text-muted-foreground mt-0.5">Memorize key concepts from this session.</p>
-                  </div>
-                  {canManageGroup && (
-                    <button onClick={handleGenerateFlashcards} disabled={generatingFlashcards} className="bg-primary text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-primary-hover">
-                      Generate Flashcards
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-primary-soft/50 border border-primary-soft rounded-2xl p-4 text-primary text-[13.5px] font-medium text-center">
-                  AI Flashcards <br/> ⏳ Generating...
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Agenda */}
-          <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-            <div className="px-5 py-4 border-b border-border-soft text-[14px] font-bold">Agenda</div>
-            {session.agenda ? (
-              Array.isArray(session.agenda) ? (
-                session.agenda.map((a, i) => (
-                  <div key={i} className="flex flex-col gap-2 px-5 py-4 border-b border-border-soft last:border-0">
-                    <div className="flex items-start gap-4">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[12px] font-bold shrink-0">{i + 1}</div>
-                      <div className="flex-1">
-                        <div className="text-[13.5px] font-semibold">{a.title}</div>
-                        {a.description && (
-                          <div className="text-[12px] text-muted-foreground mt-0.5">{a.description}</div>
+                />
+                {summary?.status === "READY" ? (
+                  <>
+                    <RichText text={summary.summary ?? ""} className="text-base leading-relaxed text-foreground" />
+                    {!!summary.key_concepts?.length && (
+                      <div className="mt-4">
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Key concepts</div>
+                        {summary.key_concepts.every((k) => k.length <= 40) ? (
+                          <div className="flex flex-wrap gap-2">{summary.key_concepts.map((k) => <Badge key={k} tone="brand">{k}</Badge>)}</div>
+                        ) : (
+                          <ul className="list-disc space-y-1 pl-5 text-base text-foreground marker:text-primary-text">{summary.key_concepts.map((k) => <li key={k}>{k}</li>)}</ul>
                         )}
-                        <span className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider mt-1.5 inline-block bg-indigo-50 dark:bg-indigo-500/20 px-2 py-0.5 rounded">
-                          {a.activity_type}
-                        </span>
                       </div>
-                      <div className="flex items-center gap-1 text-[12px] text-muted-foreground shrink-0 font-medium">
-                        <Clock className="w-3.5 h-3.5" /> {a.duration_minutes} min
+                    )}
+                    {!!summary.important_points?.length && (
+                      <div className="mt-4">
+                        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Important points</div>
+                        <ul className="list-disc space-y-1 pl-5 text-base text-foreground">{summary.important_points.map((p) => <li key={p}>{p}</li>)}</ul>
                       </div>
-                    </div>
+                    )}
+                  </>
+                ) : summary?.status === "FAILED" ? (
+                  <p className="text-sm text-danger">The summary failed to generate. <button onClick={handleRegenerate} className="underline">Try again</button></p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-11/12" /><Skeleton className="h-4 w-3/4" />
+                    <p className="text-xs text-muted-foreground">Writing the summary from the attached notes…</p>
                   </div>
-                ))
-              ) : (
-                <div className="px-5 py-4 text-[13.5px] whitespace-pre-wrap">{session.agenda}</div>
-              )
-            ) : (
-              AGENDA.map((a, i) => (
-                <div key={i} className="flex items-start gap-4 px-5 py-4 border-b border-border-soft last:border-0">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[12px] font-bold shrink-0">{a.n}</div>
-                  <div className="flex-1">
-                    <div className="text-[13.5px] font-semibold">{a.title}</div>
-                    <div className="text-[12px] text-muted-foreground mt-0.5">{a.detail}</div>
-                  </div>
-                  <div className="flex items-center gap-1 text-[12px] text-muted-foreground shrink-0 font-medium">
-                    <Clock className="w-3.5 h-3.5" /> {a.dur}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                )}
+              </Card>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <Card>
+                  <CardHeader
+                    title="Quiz"
+                    action={canManageGroup && quiz?.status === "READY" && (
+                      <button onClick={handleRegenerateQuiz} disabled={regeneratingQuiz} className="hover:text-foreground disabled:opacity-50">{regeneratingQuiz ? "Regenerating…" : "Regenerate"}</button>
+                    )}
+                  />
+                  {quiz?.status === "READY" ? (
+                    <>
+                      <p className="mb-4 text-sm text-muted-foreground">{quiz.questions?.length || 0} questions from this session's notes.</p>
+                      <Button icon={ListChecks} onClick={() => navigate(`/sessions/${session.id}/quiz`)}>Take quiz</Button>
+                    </>
+                  ) : quiz?.status === "FAILED" ? (
+                    <p className="text-sm text-danger">The quiz failed to generate. <button onClick={handleRegenerateQuiz} className="underline">Try again</button></p>
+                  ) : !quiz ? (
+                    <>
+                      <p className="mb-4 text-sm text-muted-foreground">Test yourself on this session's materials.</p>
+                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingQuiz} onClick={handleGenerateQuiz}>Generate quiz</Button> : <p className="text-xs text-muted-foreground">The organizer can generate a quiz.</p>}
+                    </>
+                  ) : (
+                    <div className="flex flex-col gap-2"><Skeleton className="h-4 w-2/3" /><p className="text-xs text-muted-foreground">Writing questions…</p></div>
+                  )}
+                </Card>
+
+                <Card>
+                  <CardHeader
+                    title="Flashcards"
+                    action={canManageGroup && flashcards?.status === "READY" && (
+                      <button onClick={handleRegenerateFlashcards} disabled={regeneratingFlashcards} className="hover:text-foreground disabled:opacity-50">{regeneratingFlashcards ? "Regenerating…" : "Regenerate"}</button>
+                    )}
+                  />
+                  {flashcards?.status === "READY" ? (
+                    <p className="text-sm text-muted-foreground">{flashcards.flashcards.length} cards. Flip through them below.</p>
+                  ) : flashcards?.status === "FAILED" ? (
+                    <p className="text-sm text-danger">Flashcards failed to generate. <button onClick={handleRegenerateFlashcards} className="underline">Try again</button></p>
+                  ) : !flashcards ? (
+                    <>
+                      <p className="mb-4 text-sm text-muted-foreground">Memorise the key ideas from this session.</p>
+                      {canManageGroup ? <Button variant="secondary" icon={Sparkles} loading={generatingFlashcards} onClick={handleGenerateFlashcards}>Generate flashcards</Button> : <p className="text-xs text-muted-foreground">The organizer can generate flashcards.</p>}
+                    </>
+                  ) : (
+                    <div className="flex flex-col gap-2"><Skeleton className="h-4 w-2/3" /><p className="text-xs text-muted-foreground">Writing flashcards…</p></div>
+                  )}
+                </Card>
+              </div>
+
+              {flashcards?.status === "READY" && (
+                <Card>
+                  <FlashcardViewer flashcards={flashcards.flashcards} />
+                </Card>
+              )}
+            </>
+          )}
         </div>
 
-        {/* Right panel */}
-        <div className="flex flex-col gap-6">
-          <div className="bg-surface border border-border rounded-2xl p-5">
-            <div className="text-[13.5px] font-bold mb-4 flex items-center gap-2">
-              <Users className="w-4 h-4 text-primary" /> Attendance ({attendance.length} / {group?.members?.length || 0})
-            </div>
+        <div className="flex flex-col gap-5">
+          <Card>
+            <CardHeader title="Agenda" action={session.agenda && Array.isArray(session.agenda) ? `${session.agenda.length} items` : undefined} />
+            {session.agenda && Array.isArray(session.agenda) && session.agenda.length > 0 ? (
+              <ol className="flex flex-col gap-3">
+                {session.agenda.map((a, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary-soft text-xs font-bold text-primary-text">{i + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-base font-medium text-foreground">{a.title}</div>
+                      {a.description && <div className="text-sm text-muted-foreground">{a.description}</div>}
+                    </div>
+                    <span className="shrink-0 text-xs text-muted-foreground">{a.duration_minutes} min</span>
+                  </li>
+                ))}
+              </ol>
+            ) : typeof session.agenda === "string" && session.agenda ? (
+              <p className="whitespace-pre-wrap text-base text-foreground">{session.agenda}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">No agenda yet.</p>
+            )}
+          </Card>
+
+          {!!session.objectives?.length && (
+            <Card>
+              <CardHeader title="Objectives" />
+              <ul className="list-disc space-y-1 pl-5 text-base text-foreground">{session.objectives.map((o) => <li key={o}>{o}</li>)}</ul>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader title="Attending" action={`${attendance.length} / ${group?.members?.length || 0}`} />
             {attendance.length > 0 ? (
               <div className="flex flex-col gap-3">
-                {attendance.map((att) => {
-                  return (
-                    <div key={att.user_id} className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center text-[12px] font-bold">
-                        {att.name ? att.name.charAt(0).toUpperCase() : "U"}
-                      </div>
-                      <div className="flex-1 text-[13px] font-medium text-foreground">
-                        {att.user_id === Number(user?.id) ? `${att.name || `User ${att.user_id}`} (You)` : (att.name || `User ${att.user_id}`)}
-                      </div>
-                      <div className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">
-                        {att.status}
-                      </div>
-                    </div>
-                  );
-                })}
+                {attendance.map((att) => (
+                  <div key={att.user_id} className="flex items-center gap-3">
+                    <Avatar name={att.name || `User ${att.user_id}`} size="sm" />
+                    <span className="min-w-0 flex-1 truncate text-base text-foreground">{meName(att.user_id, att.name)}</span>
+                    <Badge tone="success">{att.status}</Badge>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center text-center py-4">
-                <div className="text-[13px] font-bold text-muted-foreground">No attendees yet</div>
-              </div>
+              <p className="text-sm text-muted-foreground">No one has joined yet.</p>
             )}
-          </div>
+          </Card>
 
-          <div className="bg-surface border border-border rounded-2xl p-5">
-            <div className="text-[13.5px] font-bold mb-4">Resources</div>
+          <Card>
+            <CardHeader title="Notes attached" />
             {session.resources && session.resources.length > 0 ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 {session.resources.map((r) => {
                   const filename = r.original_filename || r.filename;
-                  const type = filename.split('.').pop()?.toUpperCase() || "FILE";
                   return (
                     <div key={r.id} className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-extrabold shrink-0">{type}</div>
-                      <span className="text-[12.5px] font-medium flex-1 truncate">{filename}</span>
-                      <Download className="w-4 h-4 text-muted-foreground cursor-pointer shrink-0 hover:text-primary transition-colors" />
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">{(filename.split(".").pop() || "file").slice(0, 4).toUpperCase()}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm text-foreground">{filename}</span>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="text-[13px] text-muted-foreground">No resources attached.</div>
+              <p className="text-sm text-muted-foreground">No notes attached.</p>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>

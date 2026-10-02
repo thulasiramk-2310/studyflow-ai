@@ -48,7 +48,7 @@ export function EditSessionModal({ isOpen, onClose, session, onSuccess }: EditSe
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-foreground/30 backdrop-blur-[2px]" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -62,9 +62,9 @@ export function EditSessionModal({ isOpen, onClose, session, onSuccess }: EditSe
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-xl transition-all">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-xl border border-border bg-surface text-left align-middle shadow-float transition-all">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border-soft">
-                  <Dialog.Title as="h3" className="text-[16px] font-bold text-foreground">
+                  <Dialog.Title as="h3" className="text-md font-bold text-foreground">
                     Edit Session
                   </Dialog.Title>
                   <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
@@ -74,11 +74,11 @@ export function EditSessionModal({ isOpen, onClose, session, onSuccess }: EditSe
 
                 <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-bold text-foreground">Meeting Type</label>
+                    <label className="text-sm font-bold text-foreground">Meeting Type</label>
                     <select
                       value={meetingType}
                       onChange={(e) => setMeetingType(e.target.value as MeetingType)}
-                      className="w-full h-11 px-3.5 bg-surface border border-border rounded-xl text-[14px] outline-none focus:border-primary transition-colors"
+                      className="w-full h-11 px-3.5 bg-surface border border-border rounded-xl text-base outline-none focus:border-primary transition-colors"
                     >
                       <option value="NONE">None</option>
                       <option value="GOOGLE_MEET">Google Meet</option>
@@ -91,13 +91,13 @@ export function EditSessionModal({ isOpen, onClose, session, onSuccess }: EditSe
 
                   {meetingType !== "NONE" && (
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-bold text-foreground">Meeting URL</label>
+                      <label className="text-sm font-bold text-foreground">Meeting URL</label>
                       <input
                         type="url"
                         value={meetingUrl}
                         onChange={(e) => setMeetingUrl(e.target.value)}
                         placeholder="https://..."
-                        className="w-full h-11 px-3.5 bg-surface border border-border rounded-xl text-[14px] outline-none focus:border-primary transition-colors"
+                        className="w-full h-11 px-3.5 bg-surface border border-border rounded-xl text-base outline-none focus:border-primary transition-colors"
                         required
                       />
                     </div>
@@ -107,7 +107,7 @@ export function EditSessionModal({ isOpen, onClose, session, onSuccess }: EditSe
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full h-11 bg-primary text-white rounded-xl text-[14px] font-bold hover:bg-primary-hover transition-colors disabled:opacity-50"
+                      className="w-full h-11 bg-primary text-primary-foreground rounded-lg text-base font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
                     >
                       {loading ? "Saving..." : "Save Changes"}
                     </button>
