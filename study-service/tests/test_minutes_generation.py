@@ -64,7 +64,7 @@ def _session(db, transcript=None):
     return g, s
 
 
-def test_a_transcript_produces_draft_minutes_without_announcing_them(db, ai):
+def test_a_transcript_produces_draft_minutes_announced_only_to_the_organizer(db, ai):
     g, s = _session(db, "Priya: I'll send the draft by Friday.")
     summary_service.generate_session_summary_task(s.id, g.id, [])  # no documents attached
     url, sent = ai[0]
@@ -74,7 +74,7 @@ def test_a_transcript_produces_draft_minutes_without_announcing_them(db, ai):
     assert m.status == SummaryStatus.READY and m.review_status == "DRAFT"
     assert m.decisions == ["Ship Postgres 16"] and m.action_items[0]["owner"] == "Priya"
     assert m.source == "transcript" and m.source_by == 8
-    assert db.query(Notification).count() == 0
+    assert [n.user_id for n in db.query(Notification).all()] == [7]  # the member hears on approval
 
 
 def test_without_a_transcript_the_document_summary_is_unchanged(db, ai):

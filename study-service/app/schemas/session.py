@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List, Dict, Any, Union
+from typing import Annotated, Optional, List, Dict, Any, Union
 from datetime import datetime
 from app.models.session import SessionStatus, SummaryStatus, MeetingType, AttendanceStatus, StudySessionType
 from typing import Literal
@@ -62,6 +62,7 @@ class SessionSummaryResponse(BaseModel):
     decisions: Optional[List[str]] = None
     open_questions: Optional[List[str]] = None
     source: Optional[str] = None
+    source_by: Optional[int] = None
     review_status: Optional[str] = None
     approved_at: Optional[UTCDateTime] = None
     status: SummaryStatus
@@ -85,13 +86,16 @@ class TranscriptResponse(BaseModel):
     at: Optional[UTCDateTime] = None
 
 
+MinutesLine = Annotated[str, Field(max_length=1000)]
+
+
 class MinutesUpdate(BaseModel):
     summary: Optional[str] = Field(None, max_length=20_000)
-    key_concepts: Optional[List[str]] = None
-    important_points: Optional[List[str]] = None
-    decisions: Optional[List[str]] = None
-    open_questions: Optional[List[str]] = None
-    action_items: Optional[List[ActionItem]] = None
+    key_concepts: Optional[List[MinutesLine]] = Field(None, max_length=50)
+    important_points: Optional[List[MinutesLine]] = Field(None, max_length=50)
+    decisions: Optional[List[MinutesLine]] = Field(None, max_length=50)
+    open_questions: Optional[List[MinutesLine]] = Field(None, max_length=50)
+    action_items: Optional[List[ActionItem]] = Field(None, max_length=50)
 
 from datetime import timezone
 

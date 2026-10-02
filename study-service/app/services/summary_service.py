@@ -25,6 +25,7 @@ def generate_session_summary_task(session_id: int, group_id: int, resource_ids: 
     try:
         session = db.query(StudySession).filter(StudySession.id == session_id).first()
         transcript = session.meeting_transcript if session else None
+        transcript_at = session.meeting_transcript_at if session else None
 
         # Create or update summary record to GENERATING
         summary = db.query(SessionSummary).filter(SessionSummary.session_id == session_id).first()
@@ -98,15 +99,40 @@ def generate_session_summary_task(session_id: int, group_id: int, resource_ids: 
             logger.error(f"Failed to generate summary for session {session_id}: {e}")
             summary.status = SummaryStatus.FAILED
 
+        # A newer transcript was saved while this job ran; its own job writes the minutes.
+        if session is not None:
+            try:
+                db.refresh(session)
+                replaced = session.meeting_transcript_at != transcript_at
+            except Exception:  # the session was deleted while the job ran
+                replaced = True
+            if replaced:
+                db.rollback()
+                logger.info(f"Discarding summary for session {session_id}: transcript replaced mid-job")
+                return
+
         end_time = time.time()
         summary.generation_time_ms = int((end_time - start_time) * 1000)
         summary.generated_at = datetime.utcnow()
         db.commit()
 
-        # Minutes are announced when the organizer approves them, not as a draft.
-        if summary.status == SummaryStatus.READY and not transcript:
-            from app.services.notification_service import notify_group_members
-            from app.models.notification import NotificationType
+        from app.services.notification_service import notify_group_members
+        from app.models.notification import NotificationType
+
+        # Draft minutes go to the organizers to review; the group hears about them on approval.
+        if summary.status == SummaryStatus.READY and transcript:
+            pro = audience == "professional"
+            notify_group_members(
+                db=db,
+                group_id=group_id,
+                title="Draft minutes ready to review" if pro else "Draft session summary ready to review",
+                message=f"Review and approve the {'minutes' if pro else 'summary'} before the group sees them as final.",
+                type=NotificationType.SUMMARY_READY,
+                entity_type="SESSION",
+                entity_id=session_id,
+                organizers_only=True,
+            )
+        elif summary.status == SummaryStatus.READY:
             notify_group_members(
                 db=db,
                 group_id=group_id,

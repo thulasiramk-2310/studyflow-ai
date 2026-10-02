@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.notification import Notification, NotificationType
-from app.models.group import GroupMember
+from app.models.group import GroupMember, GroupRole
 import logging
 
 logger = logging.getLogger(__name__)
@@ -53,9 +53,12 @@ def _muted_users(db: Session, user_ids: list[int], type: NotificationType) -> se
     return {r.user_id for r in rows if not getattr(r, category)}
 
 
-def notify_group_members(db: Session, group_id: int, title: str, message: str, type: NotificationType, exclude_user_id: int = None, entity_type: str = None, entity_id: int = None):
+def notify_group_members(db: Session, group_id: int, title: str, message: str, type: NotificationType, exclude_user_id: int = None, entity_type: str = None, entity_id: int = None, organizers_only: bool = False):
     try:
-        members = db.query(GroupMember).filter(GroupMember.group_id == group_id).all()
+        query = db.query(GroupMember).filter(GroupMember.group_id == group_id)
+        if organizers_only:
+            query = query.filter(GroupMember.role == GroupRole.ORGANIZER)
+        members = query.all()
         muted = _muted_users(db, [m.user_id for m in members], type)
         notifs = []
         for m in members:
