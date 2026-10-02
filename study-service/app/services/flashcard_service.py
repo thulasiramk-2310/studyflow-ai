@@ -21,10 +21,11 @@ def generate_flashcards_task(session_id: int, group_id: int, resource_ids: list[
         # Create or update flashcard deck to GENERATING
         deck = db.query(FlashcardDeck).filter(FlashcardDeck.session_id == session_id).first()
         if not deck:
-            deck = FlashcardDeck(session_id=session_id, status=FlashcardDeckStatus.GENERATING)
+            deck = FlashcardDeck(session_id=session_id, status=FlashcardDeckStatus.GENERATING, started_at=datetime.utcnow())
             db.add(deck)
         else:
             deck.status = FlashcardDeckStatus.GENERATING
+            deck.started_at = datetime.utcnow()
             # Delete old cards
             for c in deck.flashcards:
                 db.delete(c)
