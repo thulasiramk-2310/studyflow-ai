@@ -1,6 +1,0 @@
-[
-  "src/components/landing/ArchitectureSVG.tsx",
-  "src/components/landing/RAGFlowSVG.tsx",
-  "src/components/layout/LandingLayout.tsx",
-  "src/pages/public/Landing.tsx"
-]

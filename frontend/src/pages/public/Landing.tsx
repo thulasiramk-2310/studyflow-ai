@@ -1,276 +1,202 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, MessageSquare, BookOpen, Calendar, Users, Bell, Brain, Settings, CheckCircle2, Cloud, FileText, LayoutDashboard, ShieldCheck, Database, Server, Cpu, Lock } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, BrainCircuit, FileUp, Layers, Play, Quote, Search, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuth";
-import { RAGFlowSVG } from "../../components/landing/RAGFlowSVG";
+import { Logo } from "../../components/Icons";
+import { Badge, Button } from "../../components/ui";
 import { ArchitectureSVG } from "../../components/landing/ArchitectureSVG";
+import { MiniChat, MiniGuardrail, MiniInvite, MiniPlanner, MiniQuiz, MiniSummary } from "../../components/landing/MiniUI";
+
+const GITHUB_URL = "https://github.com/thulasiramk-2310/studyflow-ai";
+
+const FEATURES = [
+  { title: "Ask AI with citations", body: "Answers come only from your group's notes, with the file and page they came from.", Mini: MiniChat },
+  { title: "AI study planner", body: "Reads the learning path and notes, then proposes the next session with an agenda.", Mini: MiniPlanner },
+  { title: "Quizzes and flashcards", body: "Generated for every session and graded with explanations.", Mini: MiniQuiz },
+  { title: "Session summaries", body: "Key concepts and important points, written for revision.", Mini: MiniSummary },
+  { title: "Groups and invites", body: "Invite classmates with a code and track the group's progress together.", Mini: MiniInvite },
+  { title: "Guardrails built in", body: "Prompt-injection attempts are blocked and personal data is masked before the model sees it.", Mini: MiniGuardrail },
+];
+
+const STEPS = [
+  { icon: FileUp, title: "Upload", body: "PDF, DOCX, PPTX, Markdown" },
+  { icon: Layers, title: "Chunk + embed", body: "MiniLM sentence embeddings" },
+  { icon: Search, title: "FAISS index", body: "One index per group" },
+  { icon: BrainCircuit, title: "Agent router", body: "LangGraph + guardrails" },
+  { icon: Quote, title: "Grounded answer", body: "With page citations" },
+];
+
+const STACK = ["React + TypeScript", "Spring Boot auth", "FastAPI services", "LangGraph", "FAISS", "PostgreSQL", "nginx", "Docker", "GitHub Actions", "Terraform (AWS)", "Caddy HTTPS"];
+
+const PROOF = [
+  { value: "93%", label: "answer recall on the eval set" },
+  { value: "100%", label: "prompt-injection attacks blocked" },
+  { value: "~10 ms", label: "p50 API latency" },
+];
 
 export function Landing() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, login } = useAuth();
+  const navigate = useNavigate();
+  const [demoLoading, setDemoLoading] = useState(false);
+  const demoEmail = import.meta.env.VITE_DEMO_EMAIL as string | undefined;
+  const demoPassword = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
+
+  const tryDemo = async () => {
+    if (isAuthenticated) return navigate("/dashboard");
+    if (!demoEmail || !demoPassword) return navigate("/login");
+    setDemoLoading(true);
+    try {
+      await login(demoEmail, demoPassword);
+      navigate("/dashboard");
+    } catch {
+      toast.error("The demo account isn't available right now. Try signing in instead.");
+      navigate("/login");
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+  const playIntro = () => window.dispatchEvent(new Event("sf:play-intro"));
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 overflow-hidden font-sans selection:bg-rose-500 selection:text-white">
-      {/* ── Navbar ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 h-16">
-        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white font-bold shadow-lg shadow-rose-500/20">
-              S
-            </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">StudyFlow AI</span>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Nav */}
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
+        <nav className="mx-auto flex h-16 max-w-[1120px] items-center gap-6 px-6">
+          <Link to="/" className="flex items-center gap-2">
+            <Logo className="h-5 w-5 text-primary-text" />
+            <span className="font-serif text-lg text-primary-text">StudyFlow</span>
+          </Link>
+          <div className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+            <a href="#features" className="hover:text-foreground">Features</a>
+            <a href="#how" className="hover:text-foreground">How it works</a>
+            <a href="#architecture" className="hover:text-foreground">Architecture</a>
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-foreground">GitHub</a>
           </div>
-          <div className="flex items-center gap-4">
-            {isLoading ? (
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-8 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-md" />
-                <div className="w-24 h-9 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-full" />
-              </div>
-            ) : isAuthenticated ? (
-              <Link to="/dashboard" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+          <div className="ml-auto flex items-center gap-3">
+            {isLoading ? null : isAuthenticated ? (
+              <Button size="sm" onClick={() => navigate("/dashboard")}>Go to dashboard <ArrowRight className="h-4 w-4" /></Button>
             ) : (
               <>
-                <Link to="/login" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">Log in</Link>
-                <Link to="/register" className="h-9 px-4 inline-flex items-center justify-center rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">Get started</Link>
+                <Link to="/login" className="text-sm font-semibold text-muted-foreground hover:text-foreground">Log in</Link>
+                <Button size="sm" loading={demoLoading} onClick={tryDemo}>Try the live demo</Button>
               </>
             )}
           </div>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
-      {/* ── Hero Section ── */}
-      <main className="pt-32 pb-24 relative overflow-hidden">
-        {/* Background glow effects */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[500px] pointer-events-none opacity-40 dark:opacity-50">
-          <div className="absolute top-10 left-10 w-96 h-96 bg-rose-400 dark:bg-rose-500 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[100px] opacity-40 animate-[sfFade_8s_ease-in-out_infinite_alternate]" />
-          <div className="absolute top-20 right-10 w-96 h-96 bg-indigo-400 dark:bg-indigo-500 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[100px] opacity-40 animate-[sfFade_8s_ease-in-out_infinite_alternate_2s]" />
-          <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-purple-400 dark:bg-purple-500 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[120px] opacity-30 animate-[sfFade_8s_ease-in-out_infinite_alternate_4s]" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Left Content */}
-            <div className="max-w-2xl text-left">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 text-sm font-semibold mb-6">
-                  <Sparkles className="w-4 h-4" />
-                  Study Smarter, Together
-                </span>
-                <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-6 leading-[1.1]">
-                  The AI Workspace for <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-indigo-600 dark:from-rose-400 dark:to-indigo-400">
-                    Collaborative Learning
-                  </span>
-                </h1>
-                <p className="text-lg text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                  Create collaborative study spaces where AI transforms your documents into summaries, quizzes, flashcards, and intelligent study plans—grounded entirely in your own notes.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 mb-10">
-                  <Link to="/register" className="h-12 px-8 inline-flex items-center justify-center gap-2 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-                    Get Started Free
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-
-
-              </motion.div>
-            </div>
-
-            {/* Right Realistic Product Mockup */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.2 }}
-              className="relative hidden lg:block"
-            >
-              <div className="absolute inset-0 bg-gradient-to-tr from-gray-100 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl transform rotate-3 scale-105 border border-gray-200/50 dark:border-gray-700/50 shadow-xl" />
-              <div className="relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex h-[480px]">
-                {/* Sidebar */}
-                <div className="w-48 bg-gray-50 dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 p-4 flex flex-col">
-                  <div className="flex items-center gap-2 mb-8 text-gray-900 dark:text-white font-bold">
-                    <div className="w-6 h-6 rounded bg-gradient-to-br from-rose-500 to-rose-600 text-white flex items-center justify-center text-xs">S</div>
-                    StudyFlow
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-gray-200/50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-medium">
-                      <LayoutDashboard className="w-4 h-4" /> Dashboard
-                    </div>
-                    <div className="flex items-center gap-3 px-2 py-2 rounded-lg text-gray-500 dark:text-gray-400 text-sm font-medium">
-                      <MessageSquare className="w-4 h-4" /> AI Chat
-                    </div>
-                    <div className="flex items-center gap-3 px-2 py-2 rounded-lg text-gray-500 dark:text-gray-400 text-sm font-medium">
-                      <FileText className="w-4 h-4" /> Flashcards
-                    </div>
-                  </div>
-                  <div className="mt-auto">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 px-2">
-                      <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-500/20 border border-indigo-200 dark:border-indigo-500/30" /> User
-                    </div>
-                  </div>
-                </div>
-                {/* Main Content Area */}
-                <div className="flex-1 bg-white dark:bg-gray-900 flex flex-col p-6 overflow-hidden">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Advanced Machine Learning Group</h2>
-
-                  {/* Top Stats */}
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 shadow-sm">
-                      <div className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase mb-1">Upcoming Session</div>
-                      <div className="text-gray-900 dark:text-white font-bold">Today, 4:00 PM</div>
-                    </div>
-                    <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 shadow-sm">
-                      <div className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase mb-1">Members</div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex -space-x-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-500/30 border-2 border-white dark:border-gray-900"/>
-                          <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/30 border-2 border-white dark:border-gray-900"/>
-                          <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-500/30 border-2 border-white dark:border-gray-900"/>
-                        </div>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">+4</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mock AI Chat Interface */}
-                  <div className="flex-1 border border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-950/50 flex flex-col overflow-hidden relative">
-                    <div className="p-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center gap-2">
-                      <Brain className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-                      <span className="text-sm font-bold text-gray-700 dark:text-gray-200">StudyFlow AI</span>
-                    </div>
-                    <div className="p-4 space-y-4">
-                       <div className="flex gap-3">
-                         <div className="w-6 h-6 rounded-full bg-rose-100 dark:bg-rose-500/20 flex-shrink-0" />
-                         <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-sm text-gray-600 dark:text-gray-300 max-w-[80%]">
-                           Can you explain the self-attention mechanism?
-                         </div>
-                       </div>
-                       <div className="flex gap-3">
-                         <div className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-500/20 flex-shrink-0 flex items-center justify-center"><Brain className="w-3 h-3 text-purple-600 dark:text-purple-400"/></div>
-                         <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-purple-100 dark:border-purple-500/30 shadow-sm text-sm text-gray-800 dark:text-gray-200 max-w-[90%]">
-                           <p className="mb-2"><strong>Self-Attention Mechanism:</strong></p>
-                           <p className="text-xs text-gray-600 dark:text-gray-400">Self-attention allows the model to weigh the importance of different words in a sequence regardless of their positional distance... <span className="text-purple-600 dark:text-purple-400 font-mono bg-purple-50 dark:bg-purple-500/10 px-1 rounded">[pg. 42]</span></p>
-                         </div>
-                       </div>
-                    </div>
-                    <div className="absolute bottom-3 left-3 right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full h-10 px-4 flex items-center">
-                       <span className="text-gray-400 dark:text-gray-500 text-sm">Ask a question based on notes...</span>
-                    </div>
-                  </div>
-                </div>
+      {/* Hero */}
+      <section className="mx-auto grid max-w-[1120px] items-center gap-12 px-6 pb-20 pt-16 lg:grid-cols-[1.05fr_1fr]">
+        <div>
+          <Badge tone="brand">Open source · RAG · LangGraph agents</Badge>
+          <h1 className="mt-5 font-serif leading-[1.02] text-foreground" style={{ fontSize: "clamp(40px, 6.4vw, 66px)" }}>
+            Study groups that <em className="text-primary-text">actually</em> study.
+          </h1>
+          <p className="mt-5 max-w-lg text-md text-muted-foreground">
+            Upload your notes. StudyFlow answers with citations from your own material, writes the quiz and flashcards, and plans your next session.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Button loading={demoLoading} onClick={tryDemo}>Try the live demo — no sign-up</Button>
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer"><Button variant="secondary">View on GitHub</Button></a>
+            <Button variant="ghost" icon={Play} onClick={playIntro}>Watch how it works</Button>
+          </div>
+          <dl className="mt-10 grid max-w-lg grid-cols-3 gap-6">
+            {PROOF.map((p) => (
+              <div key={p.label}>
+                <dt className="sr-only">{p.label}</dt>
+                <dd className="font-serif text-xl text-foreground">{p.value}</dd>
+                <dd className="mt-1 text-xs text-muted-foreground">{p.label}</dd>
               </div>
-            </motion.div>
+            ))}
+          </dl>
+        </div>
+
+        <div className="relative">
+          <div className="absolute -inset-6 -z-10 rounded-[28px] bg-primary-soft/60 blur-2xl" aria-hidden />
+          <div className="rounded-xl border border-border bg-surface p-4 shadow-float">
+            <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="h-2 w-2 rounded-sm bg-primary" /> Operating Systems · Ask AI
+            </div>
+            <MiniChat />
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <MiniQuiz />
+              <MiniPlanner />
+            </div>
           </div>
         </div>
-      </main>
+      </section>
 
-
-
-      {/* ── Core Features Grid ── */}
-      <section id="features" className="py-24 bg-white dark:bg-gray-950 relative border-t border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Everything you need to learn smarter</h2>
-            <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto text-lg">Upload your materials once. StudyFlow AI handles the rest.</p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { icon: MessageSquare, title: "AI Chat (RAG)", desc: "Ask questions and get answers grounded entirely in your uploaded group documents, complete with citations.", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-500/10", border: "hover:border-purple-200 dark:hover:border-purple-500/40" },
-              { icon: BookOpen, title: "Quiz Generator", desc: "Automatically generate multiple-choice, short-answer, and true/false quizzes to test your group's knowledge.", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10", border: "hover:border-emerald-200 dark:hover:border-emerald-500/40" },
-              { icon: Sparkles, title: "Flashcards", desc: "Turn dense PDFs into spaced-repetition flashcard decks with a single click. Master concepts faster.", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10", border: "hover:border-amber-200 dark:hover:border-amber-500/40" },
-              { icon: Calendar, title: "AI Study Planner", desc: "Let AI analyze your group's progress and automatically schedule the next optimal study session.", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-500/10", border: "hover:border-indigo-200 dark:hover:border-indigo-500/40" },
-              { icon: Users, title: "Collaborative Sessions", desc: "Join live sessions with your peers. Discuss materials, take quizzes together, and track attendance.", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10", border: "hover:border-blue-200 dark:hover:border-blue-500/40" },
-              { icon: Bell, title: "Smart Notifications", desc: "Never miss an upload or an upcoming session. Get real-time alerts when your study group is active.", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-500/10", border: "hover:border-rose-200 dark:hover:border-rose-500/40" }
-            ].map((f, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                className={`p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-lg dark:hover:shadow-black/40 transition-all duration-300 hover:-translate-y-1 ${f.border} group`}
-              >
-                <div className={`w-12 h-12 rounded-xl ${f.bg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
-                  <f.icon className={`w-6 h-6 ${f.color}`} />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{f.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{f.desc}</p>
-              </motion.div>
+      {/* Features */}
+      <section id="features" className="border-t border-border bg-sidebar/40">
+        <div className="mx-auto max-w-[1120px] px-6 py-20">
+          <h2 className="font-serif text-2xl text-foreground">Everything a study group needs, nothing it doesn't</h2>
+          <p className="mt-2 max-w-xl text-md text-muted-foreground">Every feature works on your group's own notes.</p>
+          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map(({ title, body, Mini }) => (
+              <div key={title} className="rounded-xl border border-border bg-surface p-4">
+                <Mini />
+                <h3 className="mt-4 text-md font-semibold text-foreground">{title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{body}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
+      {/* How it works */}
+      <section id="how" className="border-t border-border">
+        <div className="mx-auto max-w-[1120px] px-6 py-20">
+          <h2 className="font-serif text-2xl text-foreground">How an answer is made</h2>
+          <p className="mt-2 max-w-xl text-md text-muted-foreground">Retrieval-augmented generation, with guardrails before and after the model.</p>
+          <ol className="mt-10 grid gap-3 md:grid-cols-5">
+            {STEPS.map(({ icon: Icon, title, body }, i) => (
+              <li key={title} className="relative rounded-xl border border-border bg-surface p-4">
+                <span className="text-xs font-semibold text-muted-foreground">Step {i + 1}</span>
+                <Icon className="mt-3 h-5 w-5 text-primary-text" />
+                <div className="mt-2 text-base font-semibold text-foreground">{title}</div>
+                <div className="text-sm text-muted-foreground">{body}</div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
 
-
-      {/* ── Final CTA ── */}
-      <section className="py-24 bg-white dark:bg-gray-950">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="bg-gray-900 dark:bg-gray-900 rounded-3xl p-12 text-center shadow-2xl relative overflow-hidden border border-transparent dark:border-gray-800">
-            <div className="absolute inset-0 bg-gradient-to-tr from-rose-500/20 to-indigo-500/20" />
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 relative z-10">Ready to transform collaborative learning?</h2>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10">
-              <Link to="/register" className="h-12 px-8 inline-flex items-center justify-center rounded-full bg-white text-gray-900 font-bold hover:bg-gray-100 transition-colors">
-                Create Account
-              </Link>
-              <Link to="/login" className="h-12 px-8 inline-flex items-center justify-center rounded-full bg-gray-800 dark:bg-gray-700 text-white font-semibold hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
-                Explore Features
-              </Link>
+      {/* Architecture */}
+      <section id="architecture" className="border-t border-border bg-sidebar/40">
+        <div className="mx-auto max-w-[1120px] px-6 py-20">
+          <div className="grid gap-12 lg:grid-cols-[1fr_1.3fr]">
+            <div>
+              <h2 className="font-serif text-2xl text-foreground">Built like production software</h2>
+              <p className="mt-3 text-md text-muted-foreground">
+                Three services behind an nginx gateway, deployed with CI/CD, health checks, smoke tests and automatic rollback.
+                Every AI answer passes guardrails, and offline evals track answer quality.
+              </p>
+              <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground"><ShieldCheck className="h-4 w-4 text-primary-text" /> Prompt-injection and PII guardrails</div>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {STACK.map((s) => <span key={s} className="rounded-full border border-border bg-surface px-3 py-1 text-sm text-foreground">{s}</span>)}
+              </div>
             </div>
+            <ArchitectureSVG />
           </div>
         </div>
       </section>
 
-      {/* ── Professional Footer ── */}
-      <footer className="pt-16 pb-8 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-        <div className="max-w-7xl mx-auto px-6">
-           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
-              <div className="col-span-2">
-                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-gray-900 font-bold">
-                     S
-                  </div>
-                  <span className="font-bold text-gray-900 dark:text-white text-lg">StudyFlow AI</span>
-                 </div>
-                 <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mb-6">
-                    The advanced AI workspace built for students, universities, and engineering teams to learn collaboratively.
-                 </p>
-                 <div className="flex gap-4">
-                    {/* Social icons placeholder */}
-                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800" />
-                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800" />
-                 </div>
-              </div>
+      {/* CTA */}
+      <section className="bg-primary text-primary-foreground">
+        <div className="mx-auto flex max-w-[1120px] flex-col items-center gap-5 px-6 py-16 text-center">
+          <h2 className="font-serif text-2xl">See it with real notes in under a minute</h2>
+          <Button variant="secondary" loading={demoLoading} onClick={tryDemo}>Try the live demo</Button>
+        </div>
+      </section>
 
-              <div>
-                 <h4 className="font-bold text-gray-900 dark:text-white mb-4">Product</h4>
-                 <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-                    <li><Link to="/register" className="hover:text-gray-900 dark:hover:text-white">Sign Up</Link></li>
-                    <li><Link to="/login" className="hover:text-gray-900 dark:hover:text-white">Login</Link></li>
-                    <li><a href="#features" className="hover:text-gray-900 dark:hover:text-white">Features</a></li>
-                 </ul>
-              </div>
-
-              <div>
-                 <h4 className="font-bold text-gray-900 dark:text-white mb-4">Engineering</h4>
-                 <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-                    <li><a href="#architecture" className="hover:text-gray-900 dark:hover:text-white">Architecture</a></li>
-                    <li><a href="#" className="hover:text-gray-900 dark:hover:text-white">Documentation</a></li>
-                    <li><a href="#" className="hover:text-gray-900 dark:hover:text-white">GitHub Source</a></li>
-                 </ul>
-              </div>
-
-              <div>
-                 <h4 className="font-bold text-gray-900 dark:text-white mb-4">Legal</h4>
-                 <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-                    <li><a href="#" className="hover:text-gray-900 dark:hover:text-white">Privacy Policy</a></li>
-                    <li><a href="#" className="hover:text-gray-900 dark:hover:text-white">Terms of Service</a></li>
-                 </ul>
-              </div>
-           </div>
-
-           <div className="pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-gray-400 dark:text-gray-500">© 2026 StudyFlow AI. Designed for production scale.</p>
-              <div className="flex gap-2 items-center text-sm font-mono text-gray-400 dark:text-gray-500">
-                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> All Systems Operational
-              </div>
-           </div>
+      {/* Footer */}
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-5 px-6 py-8 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2"><Logo className="h-4 w-4 text-primary-text" /><span className="font-serif text-md text-primary-text">StudyFlow</span></span>
+          <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-foreground">GitHub</a>
+          <button onClick={playIntro} className="hover:text-foreground">How it works</button>
+          <span className="ml-auto">Built by thulasiramk-2310</span>
         </div>
       </footer>
     </div>
