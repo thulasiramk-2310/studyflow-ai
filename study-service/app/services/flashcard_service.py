@@ -7,6 +7,7 @@ from app.core.config import settings
 from datetime import datetime
 import time
 import os
+from app.services.audience import group_audience
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ def generate_flashcards_task(session_id: int, group_id: int, resource_ids: list[
             # Delete old cards
             for c in deck.flashcards:
                 db.delete(c)
+        audience = group_audience(db, group_id)
+        deck.audience = audience
         db.commit()
         db.refresh(deck)
 
@@ -49,6 +52,7 @@ def generate_flashcards_task(session_id: int, group_id: int, resource_ids: list[
                         "sessionId": session_id,
                         "groupId": group_id,
                         "resourceIds": resource_ids,
+                        "audience": audience,
                         "count": count
                     }
                 )

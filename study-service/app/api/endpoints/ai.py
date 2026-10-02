@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 import httpx
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Literal, List, Optional
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
@@ -23,6 +23,7 @@ class ChatRequest(BaseModel):
     groupId: int
     query: str
     sessionId: Optional[int] = None
+    audience: Literal["student", "professional"] = "student"  # the asking user's account type
 
 class RetrieveRequest(BaseModel):
     groupId: int
