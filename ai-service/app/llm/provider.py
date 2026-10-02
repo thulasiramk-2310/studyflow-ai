@@ -9,6 +9,7 @@ identical in both cases, so no test needs to patch module internals.
 from __future__ import annotations
 
 import logging
+import time
 from collections import deque
 from typing import Iterable, Optional, Protocol, runtime_checkable
 
@@ -21,6 +22,11 @@ logger = logging.getLogger(__name__)
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 AI_UNAVAILABLE_DETAIL = "AI is temporarily unavailable. Please try again in a minute."
+# Room for long JSON answers (quizzes, flashcards) plus the reasoning tokens gpt-oss spends first.
+MAX_COMPLETION_TOKENS = 8192
+# Free-tier rate limits clear within seconds; wait once, briefly, before giving up.
+RATE_LIMIT_MAX_WAIT_SECONDS = 10.0
+RATE_LIMIT_DEFAULT_WAIT_SECONDS = 2.0
 
 
 @runtime_checkable
@@ -57,11 +63,19 @@ class GroqProvider:
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
             "stream": False,
+            "max_completion_tokens": MAX_COMPLETION_TOKENS,
         }
+        if "gpt-oss" in self.model:
+            payload["reasoning_effort"] = "low"
 
         try:
             logger.info(f"Sending prompt to Groq ({self.model})")
             response = requests.post(GROQ_URL, headers=headers, json=payload, timeout=self.timeout)
+            if response.status_code == 429:
+                wait = _retry_after_seconds(response)
+                logger.warning(f"Groq rate limit hit; retrying once in {wait:.1f}s")
+                time.sleep(wait)
+                response = requests.post(GROQ_URL, headers=headers, json=payload, timeout=self.timeout)
             response.raise_for_status()
             data = response.json()
             return data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
@@ -72,6 +86,14 @@ class GroqProvider:
             # Covers HTTP errors (429 quota, 5xx) and connection failures.
             logger.error(f"Failed to communicate with Groq: {e}")
             raise HTTPException(status_code=503, detail=AI_UNAVAILABLE_DETAIL)
+
+
+def _retry_after_seconds(response) -> float:
+    try:
+        wait = float(response.headers.get("retry-after", RATE_LIMIT_DEFAULT_WAIT_SECONDS))
+    except (TypeError, ValueError):
+        wait = RATE_LIMIT_DEFAULT_WAIT_SECONDS
+    return max(0.0, min(wait, RATE_LIMIT_MAX_WAIT_SECONDS))
 
 
 class MockProvider:
