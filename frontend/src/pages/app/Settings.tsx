@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTerms } from "../../hooks/useTerms";
 import { toast } from "sonner";
 import { useTheme } from "../../context/ThemeContext";
 import { Sun, Moon, Laptop, Save, BookOpen } from "lucide-react";
@@ -11,11 +12,11 @@ type Tab = (typeof SET_TABS)[number];
 
 
 
-const NOTIF_SETTINGS = [
-  { title: "Session reminders", desc: "Email me before a session starts" },
-  { title: "New resources", desc: "Notify when someone uploads to my groups" },
-  { title: "AI recommendations", desc: "Weekly digest of AI study suggestions" },
-  { title: "Member activity", desc: "When members join or complete quizzes" },
+const notifSettings = (t: ReturnType<typeof useTerms>) => [
+  { title: `${t.session} reminders`, desc: `Email me before a ${t.sessionLower} starts` },
+  { title: "New resources", desc: `Notify when someone uploads to my ${t.groupsLower}` },
+  { title: "AI recommendations", desc: "Weekly digest of AI suggestions" },
+  { title: "Member activity", desc: `When members join or complete ${t.quizzes.toLowerCase()}` },
 ];
 
 const DISPLAY_THEMES = [
@@ -26,6 +27,7 @@ const DISPLAY_THEMES = [
 
 export function Settings() {
   const { user, setAccountType } = useAuth();
+  const NOTIF_SETTINGS = notifSettings(useTerms());
   const [tab, setTab] = useState<Tab>("Appearance");
   const { theme, setTheme } = useTheme();
   const [notifOn, setNotifOn] = useState([true, true, false, true]);
@@ -132,7 +134,7 @@ export function Settings() {
           <>
             <div className="bg-surface border border-border rounded-xl p-5">
               <div className="text-base font-bold mb-1">Account type</div>
-              <div className="text-xs text-muted-foreground mb-4">Changes the wording you see across StudyFlow. Each team or study group keeps its own style.</div>
+              <div className="text-xs text-muted-foreground mb-4">Changes the wording you see across StudyFlow. Each team or study group keeps its own style. {/* terms-ok: names both styles */}</div>
               <div className="flex gap-3">
                 {([["STUDENT", "Student"], ["PROFESSIONAL", "Professional"]] as const).map(([value, label]) => (
                   <button key={value} aria-pressed={user?.accountType === value} onClick={async () => {

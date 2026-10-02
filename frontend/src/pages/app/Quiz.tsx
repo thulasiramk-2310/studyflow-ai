@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { useTerms } from "../../hooks/useTerms";
+import { useGroupTerms } from "../../hooks/useTerms";
+import { groupService } from "../../services/group.service";
+import type { Audience } from "../../types";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Sparkle } from "../../components/Icons";
@@ -12,9 +14,10 @@ import type { QuizResponse, Session, QuizGradeResponse } from "../../services/se
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
 export function Quiz() {
-  const terms = useTerms();
-  const quizWord = terms.quiz.toLowerCase();
   const { sessionId } = useParams();
+  const [groupAudience, setGroupAudience] = useState<Audience | null>(null);
+  const terms = useGroupTerms(groupAudience ? { audience: groupAudience } : null);
+  const quizWord = terms.quiz.toLowerCase();
   const [session, setSession] = useState<Session | null>(null);
   const [quizData, setQuizData] = useState<QuizResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,12 +30,15 @@ export function Quiz() {
     let isMounted = true;
     if (!sessionId) return;
     
-    Promise.all([
-      sessionService.getSession(Number(sessionId)),
-      sessionService.getSessionQuiz(Number(sessionId))
-    ]).then(([sess, q]) => {
+    // The session (and its group's wording) loads even when the quiz isn't ready yet.
+    sessionService.getSession(Number(sessionId)).then((sess) => {
       if (!isMounted) return;
       setSession(sess);
+      return groupService.getGroup(sess.group_id).then((g) => { if (isMounted && g.audience) setGroupAudience(g.audience); });
+    }).catch(() => { /* the quiz request below reports errors */ });
+
+    sessionService.getSessionQuiz(Number(sessionId)).then((q) => {
+      if (!isMounted) return;
       setQuizData(q);
       setLoading(false);
     }).catch(err => {
@@ -53,7 +59,7 @@ export function Quiz() {
   }
   
   if (!quizData || !quizData.questions || quizData.questions.length === 0) {
-    return <div className="mx-auto max-w-[760px] px-6 py-8"><Card><EmptyState icon={ListChecks} title="This quiz isn't ready" description="It may still be generating, or it failed. Go back to the session to generate it again." action={<Link to={`/sessions/${sessionId}`}><Button variant="secondary">Back to session</Button></Link>} /></Card></div>;
+    return <div className="mx-auto max-w-[760px] px-6 py-8"><Card><EmptyState icon={ListChecks} title={`This ${quizWord} isn't ready`} description={`It may still be generating, or it failed. Go back to the ${terms.sessionLower} to generate it again.`} action={<Link to={`/sessions/${sessionId}`}><Button variant="secondary">Back to {terms.sessionLower}</Button></Link>} /></Card></div>;
   }
 
   // Pre-process questions to find the correct index based on `correct_answer`

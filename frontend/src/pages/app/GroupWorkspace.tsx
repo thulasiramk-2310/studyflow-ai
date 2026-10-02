@@ -17,7 +17,7 @@ import { StudyRoadmap } from "../../components/groups/StudyRoadmap";
 import { DragDropUploader } from "../../components/resources/DragDropUploader";
 import { Avatar, Badge, Button, Card, CardHeader, EmptyState, PageHeader, Select, Skeleton, Tabs } from "../../components/ui";
 
-const TABS = ["Overview", "Sessions", "Library", "Members", "Ask AI"];
+const TABS = ["Overview", "Sessions", "Library", "Members", "Ask AI"]; // state keys; labels come from terms. terms-ok
 
 function fileTag(name: string) {
   return (name.split(".").pop() ?? "file").slice(0, 4).toUpperCase();
@@ -141,7 +141,7 @@ export function GroupWorkspace() {
   if (!group) {
     return (
       <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
-        <Card><EmptyState icon={FileText} title="Couldn't load this group" description="It may have been deleted, or you're no longer a member." action={<Button variant="secondary" onClick={() => navigate("/groups")}>Back to groups</Button>} /></Card>
+        <Card><EmptyState icon={FileText} title={`Couldn't load this ${terms.groupLower}`} description="It may have been deleted, or you're no longer a member." action={<Button variant="secondary" onClick={() => navigate("/groups")}>Back to {terms.groupsLower}</Button>} /></Card>
       </div>
     );
   }
@@ -153,13 +153,13 @@ export function GroupWorkspace() {
   const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
   
   const handleLeaveGroup = async () => {
-    if (!confirm("Are you sure you want to leave this group?")) return;
+    if (!confirm(`Are you sure you want to leave this ${terms.groupLower}?`)) return;
     try {
       await groupService.leaveGroup(group.id);
-      toast.success("Left group successfully");
+      toast.success(`Left ${terms.groupLower} successfully`);
       window.location.href = "/groups";
     } catch (err: any) {
-      toast.error(err.message || "Failed to leave group");
+      toast.error(err.message || `Failed to leave ${terms.groupLower}`);
     }
   };
 
@@ -199,7 +199,7 @@ export function GroupWorkspace() {
     if (!groupId) return;
     try {
       setIsGeneratingPlan(true);
-      toast.loading("AI is analyzing group progress...", { id: "generate-plan" });
+      toast.loading(`AI is analyzing ${terms.groupLower} progress...`, { id: "generate-plan" });
       const proposal = await groupService.generateStudyPlan(Number(groupId), targetDuration);
       setAiProposal(proposal);
       setIsPlanModalOpen(true);
@@ -272,10 +272,10 @@ export function GroupWorkspace() {
               ))}
             </div>
             {canManageGroup && (
-              <Select aria-label="Group style" value={group.audience ?? "student"} onChange={async (e) => {
+              <Select aria-label="Group style" /* terms-ok */ value={group.audience ?? "student"} onChange={async (e) => {
                 const audience = e.target.value as Audience;
                 try { const updated = await groupService.updateGroup(group.id, { name: group.name, audience }); setGroup({ ...group, audience: updated.audience }); toast.success("Group style updated"); }
-                catch { toast.error("Couldn't update the group style"); }
+                catch { toast.error("Couldn't update the group style"); } // terms-ok
               }}>
                 <option value="student">Study group style</option>
                 <option value="professional">Team style</option>

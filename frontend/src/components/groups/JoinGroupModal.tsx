@@ -20,12 +20,12 @@ export function JoinGroupModal({ isOpen, onClose, onSuccess }: Props) {
     setLoading(true);
     try {
       await groupService.joinGroup(inviteCode.trim().toUpperCase());
-      toast.success("Successfully joined the group!");
+      toast.success(`Successfully joined the ${terms.groupLower}!`);
       setInviteCode("");
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Failed to join group");
+      toast.error(err.message || `Failed to join ${terms.groupLower}`);
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,7 @@ export function JoinGroupModal({ isOpen, onClose, onSuccess }: Props) {
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit" form="join-group-form" loading={loading} disabled={!inviteCode.trim()}>Join group</Button>
+          <Button type="submit" form="join-group-form" loading={loading} disabled={!inviteCode.trim()}>{terms.joinGroup}</Button>
         </>
       }
     >

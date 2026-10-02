@@ -4,10 +4,22 @@ import { join, relative } from "node:path";
 
 const ROOT = new URL("../src/", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const SCAN = ["components/layout", "components/groups", "components/sessions", "components/study", "components/ai", "components/shared", "pages/app"];
-// Visible JSX text or string literals that a professional must never see.
-const BANNED = /(>|["'`])[^<>"'`{}]*\b(study groups?|Study [Gg]roups?|Learning [Pp]ath|Organizer|Flashcards|Quizzes)\b[^<>"'`{}]*(<|["'`])/;
-// <option> labels name the styles themselves ("Study group style" / "Team style").
-const ALLOW = [/import /, /className=/, /services\//, /\/api\//, /<option /];
+
+// Nouns that differ between student and professional wording (any case).
+const NOUN = /\b(study groups?|groups?|sessions?|learning paths?|quiz(?:zes)?|flashcards?|organizers?|library)\b/i;
+// Visible text: JSX text between tags, or a quoted/template string literal.
+const TEXT = /(?:>([^<>{}]+)<)|(?:"([^"]*)")|(?:'([^']*)')|(?:`([^`]*)`)/g;
+
+// Strings that are code, not copy: paths, ids, enum values, imports, service calls.
+const CODE_LIKE = [
+  /^\//,                                   // "/groups", "/sessions/1"
+  /^[a-z_]+$/,                             // "session", "quiz" (keys, enum-ish identifiers)
+  /^[A-Z_]+$/,                             // "SESSION_CREATED"
+  /^[\w.-]+-[\w.-]+$/,                     // "create-session", ids
+  /\$\{[^}]*\}/,                           // template literals built from terms
+  /^\.\.?\//,                              // relative import paths
+];
+const SKIP_LINE = [/terms-ok/, /^\s*import /, /^\s*\/\//, /^\s*\*/, /console\.(log|error|warn)/, /Service\./, /\/api\//, /<option /, /openTab|setActiveTab|activeTab ===|=== "Sessions"|=== "Library"/];
 
 const files = [];
 const walk = (d) => readdirSync(d).forEach((f) => { const p = join(d, f); statSync(p).isDirectory() ? walk(p) : p.endsWith(".tsx") && files.push(p); });
@@ -15,8 +27,17 @@ SCAN.forEach((d) => walk(join(ROOT, d)));
 
 const hits = [];
 for (const f of files) {
-  readFileSync(f, "utf8").split("\n").forEach((line, i) => {
-    if (BANNED.test(line) && !ALLOW.some((a) => a.test(line))) hits.push(`${relative(ROOT, f)}:${i + 1}: ${line.trim().slice(0, 100)}`);
+  readFileSync(f, "utf8").split("\n").forEach((raw, i) => {
+    if (SKIP_LINE.some((r) => r.test(raw))) return;
+    const line = raw.replace(/className=("[^"]*"|\{`[^`]*`\}|\{[^}]*\})/g, ""); // class names are not copy
+    // JSX text with {expressions} inside: drop the expressions and scan the words around them.
+    let jsxText = line;
+    while (/\{[^{}]*\}/.test(jsxText)) jsxText = jsxText.replace(/\{[^{}]*\}/g, " "); // nested ${} inside {}
+    for (const m of [...line.matchAll(TEXT), ...jsxText.matchAll(/>([^<>]+)</g)]) {
+      const text = (m[1] ?? m[2] ?? m[3] ?? m[4] ?? "").trim();
+      if (!text || !NOUN.test(text) || CODE_LIKE.some((r) => r.test(text))) continue;
+      hits.push(`${relative(ROOT, f)}:${i + 1}: ${text.slice(0, 90)}`);
+    }
   });
 }
 if (hits.length) {
