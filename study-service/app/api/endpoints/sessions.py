@@ -20,6 +20,11 @@ from app.models.notification import NotificationType
 from app.clients import auth_client
 from app.repositories import group_repo
 from app.services.job_recovery import expire_if_stale
+import os
+from datetime import datetime
+from fastapi import UploadFile, File
+from app.schemas.session import TranscriptNotes, TranscriptResponse
+from app.services import transcript_service
 
 router = APIRouter()
 
@@ -294,6 +299,83 @@ def complete_session(session_id: int, background_tasks: BackgroundTasks, db: Ses
     s_dict = {c.name: getattr(session, c.name) for c in session.__table__.columns}
     s_dict["resources"] = [sr.resource for sr in session.resources]
     return {"success": True, "data": s_dict}
+
+def _session_for_transcript(db: Session, session_id: int, user_id: int) -> StudySession:
+    session = db.query(StudySession).filter(StudySession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    check_group_membership(db, session.group_id, user_id)
+    if not transcript_service.transcript_window_open(session):
+        raise HTTPException(status_code=400, detail="Add the transcript once the session has started.")
+    return session
+
+
+def _store_transcript(db: Session, session: StudySession, text: str, source: str, user_id: int, background_tasks: BackgroundTasks) -> dict:
+    session.meeting_transcript = text
+    session.meeting_transcript_source = source
+    session.meeting_transcript_by = user_id
+    session.meeting_transcript_at = datetime.utcnow()
+    db.commit()
+    if session.status == SessionStatus.COMPLETED:
+        background_tasks.add_task(generate_session_summary_task, session.id, session.group_id, [sr.resource_id for sr in session.resources])
+    return {"source": source, "by": user_id, "at": session.meeting_transcript_at, "characters": len(text)}
+
+
+@router.get("/{session_id}/transcript", response_model=SuccessResponse[TranscriptResponse])
+async def get_session_transcript(session_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    session = db.query(StudySession).filter(StudySession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    check_group_membership(db, session.group_id, user.get("userId"))
+    if not session.meeting_transcript:
+        raise HTTPException(status_code=404, detail="No transcript yet")
+    by_name = None
+    if session.meeting_transcript_by:
+        try:
+            profile = await auth_client.get_user_profile(session.meeting_transcript_by)
+            by_name = (profile or {}).get("name")
+        except Exception:
+            by_name = None
+    return {"success": True, "data": {
+        "text": session.meeting_transcript, "source": session.meeting_transcript_source,
+        "by": session.meeting_transcript_by, "by_name": by_name, "at": session.meeting_transcript_at,
+    }}
+
+
+@router.put("/{session_id}/transcript", response_model=SuccessResponse[dict])
+def save_transcript_notes(session_id: int, body: TranscriptNotes, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    user_id = user.get("userId")
+    session = _session_for_transcript(db, session_id, user_id)
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Write or paste the notes first.")
+    if len(text) > transcript_service.MAX_TRANSCRIPT_CHARS:
+        raise HTTPException(status_code=413, detail="Notes are limited to 200,000 characters.")
+    return {"success": True, "data": _store_transcript(db, session, text, "notes", user_id, background_tasks)}
+
+
+@router.post("/{session_id}/transcript/file", response_model=SuccessResponse[dict])
+def upload_transcript_file(session_id: int, background_tasks: BackgroundTasks, file: UploadFile = File(...), db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    user_id = user.get("userId")
+    session = _session_for_transcript(db, session_id, user_id)
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in transcript_service.TRANSCRIPT_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Upload a .vtt, .txt or .docx transcript.")
+    data = file.file.read(transcript_service.MAX_TRANSCRIPT_FILE_BYTES + 1)
+    if len(data) > transcript_service.MAX_TRANSCRIPT_FILE_BYTES:
+        raise HTTPException(status_code=413, detail="Transcript files are limited to 5 MB.")
+    if not data:
+        raise HTTPException(status_code=400, detail="The file is empty.")
+    try:
+        text = transcript_service.parse_transcript_file(file.filename, data)
+    except transcript_service.TranscriptParseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=502, detail="Couldn't read the transcript right now. Try again.")
+    if len(text) > transcript_service.MAX_TRANSCRIPT_CHARS:
+        raise HTTPException(status_code=413, detail="Transcripts are limited to 200,000 characters.")
+    return {"success": True, "data": _store_transcript(db, session, text, "transcript", user_id, background_tasks)}
+
 
 @router.get("/{session_id}/summary", response_model=SuccessResponse[SessionSummaryResponse])
 def get_session_summary(session_id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
