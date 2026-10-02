@@ -20,6 +20,8 @@ class StudyGroup(Base):
     name = Column(String(255), nullable=False)
     description = Column(String(1000))
     goal = Column(String(500), nullable=True)
+    # Who the group's shared AI content is written for: "student" or "professional".
+    audience = Column(String(20), nullable=False, default="student", server_default="student")
     invite_code = Column(String(10), unique=True, index=True, nullable=False)
     
     # We store the created_by as an integer representing the user_id from the auth service's users table.

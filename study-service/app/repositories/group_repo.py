@@ -32,6 +32,7 @@ def create_group(db: Session, group_in: StudyGroupCreate, user_id: int):
         name=group_in.name,
         description=group_in.description,
         goal=group_in.goal,
+        audience=group_in.audience or "student",
         invite_code=invite_code,
         created_by=user_id
     )
@@ -63,6 +64,8 @@ def update_group(db: Session, db_group: StudyGroup, group_in: StudyGroupUpdate):
         db_group.description = group_in.description
     if group_in.goal is not None:
         db_group.goal = group_in.goal
+    if group_in.audience is not None:
+        db_group.audience = group_in.audience
     db.commit()
     db.refresh(db_group)
     return db_group

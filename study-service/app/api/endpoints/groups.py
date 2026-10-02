@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Any, Optional
 from pydantic import BaseModel, Field
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.api.deps import get_current_user
 from app.schemas.group import (
     StudyGroupCreate, 
@@ -83,6 +84,21 @@ def get_user_groups(
         result.append(g_dict)
         
     return {"success": True, "data": result}
+
+@router.get("/{group_id}/internal-audience")
+def get_group_audience_internal(
+    group_id: int,
+    db: Session = Depends(get_db),
+    internal_key: str = Header(None, alias="X-Internal-Key"),
+):
+    """Service-to-service: the audience for a group's shared AI content (used by the MCP planner)."""
+    if internal_key != settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    group = group_repo.get_group_by_id(db=db, group_id=group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return {"audience": group.audience}
+
 
 @router.get("/{group_id}", response_model=SuccessResponse[StudyGroupDetailResponse])
 async def get_group(
