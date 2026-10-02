@@ -151,3 +151,42 @@ def test_chat_still_requires_a_user_id(client):
     response = client().post(URL, json=_payload(userId=None), headers=HEADERS)
 
     assert response.status_code == 401
+
+
+def test_a_slow_answer_does_not_block_other_requests(client, chunk):
+    """Model work is synchronous; it must run off the event loop so /health stays fast."""
+    import asyncio
+    import time
+
+    import httpx
+
+    client()  # installs the graph and the test database
+
+    def slow_retriever(group_id, query, top_k=3):
+        time.sleep(0.8)
+        return [chunk(CHUNK)]
+
+    set_default_graph(
+        build_graph(
+            provider=MockProvider(default="Round Robin assigns a fixed time slice to each process."),
+            retriever=slow_retriever,
+            index_lister=lambda gid: [{"resource_id": 1, "filename": "os.pdf", "chunks": 3}],
+            scheduler=lambda ctx, dur: {"title": "Revision", "duration_minutes": dur, "confidence": 0.6},
+        )
+    )
+
+    async def run():
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as http:
+            await http.get("/health")  # warm up
+            started = time.perf_counter()
+            chat = asyncio.create_task(http.post(URL, json=_payload(), headers=HEADERS))
+            await asyncio.sleep(0.05)  # let the chat request reach the slow retriever
+            health = await http.get("/health")
+            health_seconds = time.perf_counter() - started
+            await chat
+            return health.status_code, health_seconds
+
+    status, seconds = asyncio.run(run())
+    assert status == 200
+    assert seconds < 0.5, f"/health waited {seconds:.2f}s behind the chat request"
