@@ -14,6 +14,7 @@
 
 import { apiClient } from "./api.client";
 import type {
+  AccountType,
   User,
   LoginRequest,
   LoginResponse,
@@ -46,6 +47,8 @@ function normaliseUser(raw: Partial<User> & { name: string; email: string }): Us
     name: raw.name,
     email: raw.email,
     initials: raw.initials ?? toInitials(raw.name),
+    // Accounts created before account types existed read as students.
+    accountType: raw.accountType === "PROFESSIONAL" ? "PROFESSIONAL" : "STUDENT",
   };
 }
 
@@ -74,9 +77,10 @@ export const authService = {
   register: async (
     name: string,
     email: string,
-    password: string
+    password: string,
+    accountType: AccountType = "STUDENT"
   ): Promise<{ user: User }> => {
-    const body: RegisterRequest = { name, email, password };
+    const body: RegisterRequest = { name, email, password, accountType };
     const data = await apiClient.post<RegisterResponse>("/auth/register", body);
 
     let user: User;
@@ -87,6 +91,14 @@ export const authService = {
     }
 
     return { user };
+  },
+
+  /**
+   * PATCH /auth/me — switch between student and professional wording.
+   */
+  updateAccountType: async (accountType: AccountType): Promise<User> => {
+    const data = await apiClient.patch<User>("/auth/me", { accountType });
+    return normaliseUser(data);
   },
 
   /**

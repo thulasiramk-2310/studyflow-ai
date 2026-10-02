@@ -1,4 +1,5 @@
 import { apiClient } from "./api.client";
+import type { Audience } from "../types";
 
 export interface ChatCitation {
   filename: string;
@@ -34,9 +35,10 @@ export interface ChatSession {
 }
 
 class AIService {
-  async chat(groupId: number, query: string, sessionId?: number): Promise<ChatResponse> {
+  async chat(groupId: number, query: string, sessionId?: number, audience?: Audience): Promise<ChatResponse> {
     const payload: any = { groupId, query };
     if (sessionId) payload.sessionId = sessionId;
+    if (audience) payload.audience = audience; // answers in the asking user's wording
     const data = await apiClient.post<ChatResponse>("/api/v1/ai/chat", payload);
     return data;
   }

@@ -1,11 +1,16 @@
 // ─── User & Auth ───────────────────────────────────────────────────────────
 
+export type AccountType = "STUDENT" | "PROFESSIONAL";
+export type Audience = "student" | "professional";
+export const audienceOf = (t: AccountType | undefined | null): Audience => (t === "PROFESSIONAL" ? "professional" : "student");
+
 /** User profile as returned by GET /auth/me */
 export interface User {
   id: string;
   name: string;
   email: string;
   initials: string;
+  accountType: AccountType;
 }
 
 export interface AuthState {
@@ -31,6 +36,7 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
+  accountType?: AccountType;
 }
 
 /** POST /auth/register  – response body (same shape as login) */
