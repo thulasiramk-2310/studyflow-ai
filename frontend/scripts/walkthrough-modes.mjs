@@ -73,6 +73,26 @@ async function createGroup(p, name) {
 const browser = await chromium.launch();
 let inviteCode = "";
 try {
+  // ── Landing: the students/teams toggle swaps the copy and the sign-up link ──
+  for (const width of [1440, 390]) {
+    const ctx = await browser.newContext({ viewport: { width, height: 900 } });
+    await ctx.addInitScript(() => { try { localStorage.setItem("sf_intro_seen", "1"); } catch { /* ignore */ } });
+    const p = await ctx.newPage();
+    p.setDefaultTimeout(30_000);
+    await step(p, `landing teams toggle at ${width}px`, async () => {
+      await p.goto(`${BASE}/`);
+      await p.getByRole("tab", { name: "For teams" }).click();
+      const h1 = await p.locator("h1").first().innerText();
+      if (!/move work forward/.test(h1)) throw new Error(`teams headline not shown: "${h1}"`);
+      const extra = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      if (extra > 1) throw new Error(`landing scrolls sideways by ${extra}px`);
+      await p.getByRole("button", { name: /Get started free/ }).first().click();
+      await p.waitForURL(/\/register\?for=teams/);
+      if ((await p.getByRole("radio", { name: /professional/i }).getAttribute("aria-checked")) !== "true") throw new Error("professional not preselected");
+    });
+    await ctx.close();
+  }
+
   // ── Student owner creates a study group and shares its code ─────────────
   const student = await newUser(browser, { teams: false });
   await step(student.p, "student sees student wording", async () => {
