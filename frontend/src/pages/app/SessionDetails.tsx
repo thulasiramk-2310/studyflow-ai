@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { FlashcardViewer } from "../../components/study/FlashcardViewer";
 import { Avatar, Badge, Button, Card, CardHeader, EmptyState, PageHeader, RichText, Skeleton } from "../../components/ui";
 import { EditSessionModal } from "../../components/sessions/EditSessionModal";
+import { TranscriptCard } from "../../components/sessions/TranscriptCard";
+import { MinutesView } from "../../components/sessions/MinutesView";
 
 export function SessionDetails() {
   const navigate = useNavigate();
@@ -34,6 +36,18 @@ export function SessionDetails() {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [transcriptByName, setTranscriptByName] = useState<string | null>(null);
+
+  // "From notes by <name>" needs the name of whoever pasted the notes.
+  useEffect(() => {
+    if (session?.meeting_transcript_source !== "notes") return;
+    sessionService.getTranscript(session.id).then((t) => setTranscriptByName(t.by_name)).catch(() => setTranscriptByName(null));
+  }, [session?.id, session?.meeting_transcript_source, session?.meeting_transcript_at]);
+
+  const handleTranscriptSaved = () => {
+    fetchSession();
+    if (session?.status === "COMPLETED") setSummary((prev) => (prev ? { ...prev, status: "GENERATING" } : prev));
+  };
 
   const fetchSession = async () => {
     try {
@@ -292,20 +306,25 @@ export function SessionDetails() {
                   </div>
                 </div>
               </Card>
+              <TranscriptCard session={session} terms={terms} onSaved={handleTranscriptSaved} />
             </>
           )}
 
           {isCompleted && (
             <>
+              <TranscriptCard session={session} terms={terms} onSaved={handleTranscriptSaved} />
               <Card>
                 <CardHeader
-                  title="Summary"
+                  title={summary?.source ? terms.minutes : "Summary"}
                   action={canManageGroup && summary?.status === "READY" && (
                     <button onClick={handleRegenerate} disabled={regenerating} className="hover:text-foreground disabled:opacity-50">{regenerating ? "Regenerating…" : "Regenerate"}</button>
                   )}
                 />
-                {summary?.status === "READY" ? (
+                {summary?.status === "READY" && summary.source ? (
+                  <MinutesView sessionId={session.id} summary={summary} terms={terms} canManage={canManageGroup} transcriptByName={transcriptByName} onChange={setSummary} />
+                ) : summary?.status === "READY" ? (
                   <>
+                    <p className="mb-3 text-sm text-muted-foreground">Written from the attached notes. Add a transcript to get {terms.minutes.toLowerCase()} of what was said.</p>
                     <RichText text={summary.summary ?? ""} className="text-base leading-relaxed text-foreground" />
                     {!!summary.key_concepts?.length && (
                       <div className="mt-4">
@@ -329,7 +348,7 @@ export function SessionDetails() {
                 ) : (
                   <div className="flex flex-col gap-2">
                     <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-11/12" /><Skeleton className="h-4 w-3/4" />
-                    <p className="text-xs text-muted-foreground">Writing the summary from the attached notes…</p>
+                    <p className="text-xs text-muted-foreground">{session.meeting_transcript_source ? `Writing the ${terms.minutes.toLowerCase()} from what was said…` : "Writing the summary from the attached notes…"}</p>
                   </div>
                 )}
               </Card>

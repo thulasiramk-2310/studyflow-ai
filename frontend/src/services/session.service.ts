@@ -11,6 +11,11 @@ export interface SessionResource {
 }
 
 export type SummaryStatus = "PENDING" | "GENERATING" | "READY" | "FAILED";
+export type TranscriptSource = "transcript" | "recording" | "notes";
+export interface ActionItem { task: string; owner?: string | null; due?: string | null }
+export const asActionItem = (a: ActionItem | string): ActionItem => (typeof a === "string" ? { task: a } : a);
+export interface TranscriptInfo { text: string; source: TranscriptSource; by: number | null; by_name: string | null; at: string | null }
+export type MinutesPatch = Partial<Pick<SessionSummary, "summary" | "decisions" | "open_questions" | "key_concepts" | "important_points">> & { action_items?: ActionItem[] };
 
 export interface SessionSummary {
   id: number;
@@ -18,7 +23,12 @@ export interface SessionSummary {
   summary: string | null;
   key_concepts: string[] | null;
   important_points: string[] | null;
-  action_items: string[] | null;
+  action_items: (ActionItem | string)[] | null;
+  decisions?: string[] | null;
+  open_questions?: string[] | null;
+  source?: TranscriptSource | null;
+  review_status?: "DRAFT" | "APPROVED" | null;
+  approved_at?: string | null;
   status: SummaryStatus;
   model: string | null;
   generated_at: string | null;
@@ -114,6 +124,9 @@ export interface Session {
   created_at: string;
   updated_at: string | null;
   resources: SessionResource[];
+  meeting_transcript_source?: TranscriptSource | null;
+  meeting_transcript_by?: number | null;
+  meeting_transcript_at?: string | null;
 }
 
 export interface SessionAttendanceResponse {
@@ -275,6 +288,36 @@ class SessionService {
     const json = await res.json();
     if (!json.success) throw new Error(json.error?.message || "Failed to fetch session summary");
     return json.data;
+  }
+
+  private async send<T>(path: string, init: RequestInit, fallback: string): Promise<T> {
+    const res = await fetch(`${BASE_URL}/api/v1/sessions/${path}`, { credentials: "include", ...init });
+    const json = await res.json().catch(() => ({}));
+    if (!json.success) throw new Error(json.error?.message || json.detail || fallback);
+    return json.data as T;
+  }
+
+  getTranscript(sessionId: number): Promise<TranscriptInfo> {
+    return this.send(`${sessionId}/transcript`, { headers: this.getHeaders() }, "No transcript yet");
+  }
+
+  async saveTranscriptNotes(sessionId: number, text: string): Promise<void> {
+    await this.send(`${sessionId}/transcript`, { method: "PUT", headers: this.getHeaders(), body: JSON.stringify({ text }) }, "Couldn't save the notes");
+  }
+
+  async uploadTranscriptFile(sessionId: number, file: File): Promise<void> {
+    const form = new FormData();
+    form.append("file", file);
+    // No JSON content type: the browser sets the multipart boundary.
+    await this.send(`${sessionId}/transcript/file`, { method: "POST", body: form }, "Couldn't upload the transcript");
+  }
+
+  updateSummary(sessionId: number, patch: MinutesPatch): Promise<SessionSummary> {
+    return this.send(`${sessionId}/summary`, { method: "PATCH", headers: this.getHeaders(), body: JSON.stringify(patch) }, "Couldn't save the changes");
+  }
+
+  approveSummary(sessionId: number): Promise<SessionSummary> {
+    return this.send(`${sessionId}/summary/approve`, { method: "POST", headers: this.getHeaders() }, "Couldn't approve");
   }
 
   async regenerateSessionSummary(sessionId: number): Promise<void> {
