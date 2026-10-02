@@ -27,6 +27,7 @@ export interface SessionSummary {
   decisions?: string[] | null;
   open_questions?: string[] | null;
   source?: TranscriptSource | null;
+  source_by?: number | null;
   review_status?: "DRAFT" | "APPROVED" | null;
   approved_at?: string | null;
   status: SummaryStatus;

@@ -36,14 +36,6 @@ export function SessionDetails() {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [joining, setJoining] = useState(false);
-  const [transcriptByName, setTranscriptByName] = useState<string | null>(null);
-
-  // "From notes by <name>" needs the name of whoever pasted the notes.
-  useEffect(() => {
-    if (session?.meeting_transcript_source !== "notes") return;
-    sessionService.getTranscript(session.id).then((t) => setTranscriptByName(t.by_name)).catch(() => setTranscriptByName(null));
-  }, [session?.id, session?.meeting_transcript_source, session?.meeting_transcript_at]);
-
   const handleTranscriptSaved = () => {
     fetchSession();
     if (session?.status === "COMPLETED") setSummary((prev) => (prev ? { ...prev, status: "GENERATING" } : prev));
@@ -321,7 +313,7 @@ export function SessionDetails() {
                   )}
                 />
                 {summary?.status === "READY" && summary.source ? (
-                  <MinutesView sessionId={session.id} summary={summary} terms={terms} canManage={canManageGroup} transcriptByName={transcriptByName} onChange={setSummary} />
+                  <MinutesView sessionId={session.id} summary={summary} terms={terms} canManage={canManageGroup} sourceByName={group?.members?.find((m) => m.user_id === summary.source_by)?.name ?? null} onChange={setSummary} />
                 ) : summary?.status === "READY" ? (
                   <>
                     <p className="mb-3 text-sm text-muted-foreground">Written from the attached notes. Add a transcript to get {terms.minutes.toLowerCase()} of what was said.</p>
