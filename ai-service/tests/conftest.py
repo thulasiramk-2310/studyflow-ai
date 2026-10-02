@@ -45,6 +45,19 @@ def _plan_store_in_memory():
 
 
 @pytest.fixture(autouse=True)
+def _faiss_lock_without_postgres(monkeypatch):
+    """FAISS writers take a Postgres advisory lock; tests have no Postgres."""
+    from sqlalchemy import create_engine
+
+    from app.vectorstore import faiss_store
+
+    engine = create_engine("sqlite://")
+    monkeypatch.setattr(faiss_store, "_lock_engine", lambda: engine)
+    yield
+    engine.dispose()
+
+
+@pytest.fixture(autouse=True)
 def _clean_provider():
     """Never let a provider set by one test leak into the next."""
     reset_provider()

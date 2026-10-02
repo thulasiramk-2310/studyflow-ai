@@ -2,7 +2,9 @@ import os
 import json
 import threading
 from collections import defaultdict
+from contextlib import contextmanager
 import faiss
+from sqlalchemy import text
 import numpy as np
 from pathlib import Path
 from app.core.config import settings
@@ -12,15 +14,41 @@ from app.services.s3_sync import sync_group_index_from_s3, sync_group_index_to_s
 logger = logging.getLogger(__name__)
 
 # Indexing is a read-modify-write of three files; serialise writers per group so
-# parallel uploads cannot overwrite each other. (One process; a second replica
-# would need a shared lock or store.)
+# parallel uploads cannot overwrite each other. Threads in this process share a
+# lock; separate processes and replicas share a Postgres advisory lock in ai_db.
 _group_locks: defaultdict[int, threading.Lock] = defaultdict(threading.Lock)
 _locks_guard = threading.Lock()
+_ADVISORY_LOCK_NAMESPACE = 7311  # first key of pg_advisory_lock(ns, group_id)
 
 
 def _group_lock(group_id: int) -> threading.Lock:
     with _locks_guard:
         return _group_locks[group_id]
+
+
+def _lock_engine():
+    from app.core.database import engine
+
+    return engine
+
+
+@contextmanager
+def _group_write_lock(group_id: int):
+    with _group_lock(group_id):
+        engine = _lock_engine()
+        if engine.dialect.name != "postgresql":
+            yield
+            return
+        conn = engine.connect()
+        params = {"ns": _ADVISORY_LOCK_NAMESPACE, "gid": group_id}
+        try:
+            conn.execute(text("SELECT pg_advisory_lock(:ns, :gid)"), params)
+            try:
+                yield
+            finally:
+                conn.execute(text("SELECT pg_advisory_unlock(:ns, :gid)"), params)
+        finally:
+            conn.close()
 
 
 def _atomic_write_json(path: Path, data) -> None:
@@ -80,7 +108,7 @@ def add_to_index(group_id: int, resource_id: int, filename: str, chunks: list[di
     Add new chunks and embeddings to the FAISS index for a specific group.
     `chunks` is a list of dicts: [{"page_num": int, "text": str}]
     """
-    with _group_lock(group_id):
+    with _group_write_lock(group_id):
         _add_to_index_locked(group_id, resource_id, filename, chunks, embeddings)
 
 

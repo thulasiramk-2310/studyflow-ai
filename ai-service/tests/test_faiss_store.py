@@ -52,3 +52,47 @@ def test_parallel_uploads_to_one_group_keep_every_chunk(tmp_path, monkeypatch):
     assert len(documents) == 6
     assert sorted(d["vector_id"] for d in documents) == list(range(6))
     assert faiss_store.load_metadata(group_dir)["total_chunks"] == 6
+
+
+def test_writers_on_postgres_take_a_per_group_advisory_lock(monkeypatch):
+    """Replicas don't share memory, so the write lock must live in the shared database."""
+    calls: list[str] = []
+
+    class FakeConn:
+        def execute(self, statement, params=None):
+            calls.append(f"{statement.text} {params}")
+
+        def commit(self):
+            pass
+
+        def close(self):
+            calls.append("close")
+
+    class FakeEngine:
+        dialect = type("D", (), {"name": "postgresql"})()
+
+        def connect(self):
+            return FakeConn()
+
+    monkeypatch.setattr(faiss_store, "_lock_engine", lambda: FakeEngine())
+
+    with faiss_store._group_write_lock(42):
+        calls.append("write")
+
+    assert calls[0].startswith("SELECT pg_advisory_lock(") and "42" in calls[0]
+    assert calls[1] == "write"
+    assert calls[2].startswith("SELECT pg_advisory_unlock(") and "42" in calls[2]
+    assert calls[3] == "close"
+
+
+def test_writers_without_postgres_fall_back_to_the_process_lock(monkeypatch):
+    class SqliteEngine:
+        dialect = type("D", (), {"name": "sqlite"})()
+
+        def connect(self):
+            raise AssertionError("no database lock expected")
+
+    monkeypatch.setattr(faiss_store, "_lock_engine", lambda: SqliteEngine())
+
+    with faiss_store._group_write_lock(1):
+        pass
