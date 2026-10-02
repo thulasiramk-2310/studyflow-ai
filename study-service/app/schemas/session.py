@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from app.models.session import SessionStatus, SummaryStatus, MeetingType, AttendanceStatus, StudySessionType
 from typing import Literal
@@ -46,13 +46,24 @@ class AgendaItem(BaseModel):
     def map_activity_type(cls, v):
         return normalize_activity_type(v)
 
+class ActionItem(BaseModel):
+    task: str = Field(..., min_length=1, max_length=500)
+    owner: Optional[str] = Field(None, max_length=100)
+    due: Optional[str] = Field(None, max_length=100)
+
+
 class SessionSummaryResponse(BaseModel):
     id: int
     session_id: int
     summary: Optional[str] = None
     key_concepts: Optional[List[str]] = None
     important_points: Optional[List[str]] = None
-    action_items: Optional[List[str]] = None
+    action_items: Optional[List[Union[ActionItem, str]]] = None
+    decisions: Optional[List[str]] = None
+    open_questions: Optional[List[str]] = None
+    source: Optional[str] = None
+    review_status: Optional[str] = None
+    approved_at: Optional[UTCDateTime] = None
     status: SummaryStatus
     model: Optional[str] = None
     generated_at: Optional[UTCDateTime] = None
@@ -60,6 +71,27 @@ class SessionSummaryResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TranscriptNotes(BaseModel):
+    text: str
+
+
+class TranscriptResponse(BaseModel):
+    text: str
+    source: str
+    by: Optional[int] = None
+    by_name: Optional[str] = None
+    at: Optional[UTCDateTime] = None
+
+
+class MinutesUpdate(BaseModel):
+    summary: Optional[str] = Field(None, max_length=20_000)
+    key_concepts: Optional[List[str]] = None
+    important_points: Optional[List[str]] = None
+    decisions: Optional[List[str]] = None
+    open_questions: Optional[List[str]] = None
+    action_items: Optional[List[ActionItem]] = None
 
 from datetime import timezone
 
@@ -144,6 +176,9 @@ class SessionResponse(SessionBase):
     created_at: UTCDateTime
     updated_at: UTCDateTime
     resources: List[SessionResourceResponse] = []
+    meeting_transcript_source: Optional[str] = None
+    meeting_transcript_by: Optional[int] = None
+    meeting_transcript_at: Optional[UTCDateTime] = None
 
     class Config:
         from_attributes = True

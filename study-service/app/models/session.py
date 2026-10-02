@@ -79,6 +79,15 @@ class SessionSummary(Base):
     audience = Column(String(20), nullable=True)  # audience the content was generated for
     generation_time_ms = Column(Integer, nullable=True)
 
+    # Minutes of a meeting (set when the summary was written from a transcript)
+    decisions = Column(JSON, nullable=True)
+    open_questions = Column(JSON, nullable=True)
+    source = Column(String(20), nullable=True)        # transcript | recording | notes
+    source_by = Column(Integer, nullable=True)        # who added the transcript
+    review_status = Column(String(20), nullable=True)  # DRAFT | APPROVED; NULL for document summaries
+    approved_by = Column(Integer, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+
     session = relationship("StudySession", back_populates="summary")
 
 
@@ -104,6 +113,10 @@ class StudySession(Base):
     meeting_url = Column(String(512), nullable=True)
     start_time = Column(DateTime, nullable=True)
     end_time = Column(DateTime, nullable=True)
+    meeting_transcript = Column(Text, nullable=True)
+    meeting_transcript_source = Column(String(20), nullable=True)  # transcript | recording | notes
+    meeting_transcript_by = Column(Integer, nullable=True)
+    meeting_transcript_at = Column(DateTime, nullable=True)
     
     generated_by = Column(String(20), default="MANUAL", nullable=False)
     created_by = Column(Integer, nullable=False) # User ID from Auth Service
