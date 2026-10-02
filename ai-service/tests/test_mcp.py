@@ -27,6 +27,11 @@ PLAN = {"title": "Revision", "duration_minutes": 60, "confidence": 0.6}
 
 
 @pytest.fixture(autouse=True)
+def _group_audience_offline(monkeypatch):
+    monkeypatch.setattr("app.mcp.tools._fetch_group_audience", lambda group_id: "student")
+
+
+@pytest.fixture(autouse=True)
 def _clear_plans():
     plan_store.clear()
     yield

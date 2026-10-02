@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional, Any
+from typing import List, Literal, Optional, Any
 from datetime import datetime
 
 class ChatRequest(BaseModel):
@@ -7,6 +7,7 @@ class ChatRequest(BaseModel):
     query: str
     sessionId: Optional[int] = None
     userId: Optional[int] = None # Added by study-service proxy
+    audience: Literal["student", "professional"] = "student"  # the asking user's account type
 
 class ChatCitation(BaseModel):
     filename: str

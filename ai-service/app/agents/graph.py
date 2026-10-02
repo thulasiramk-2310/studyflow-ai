@@ -117,6 +117,7 @@ def run_agents(
     context: str = "",
     target_duration: int = 60,
     graph=None,
+    audience: str = "student",
     **build_kwargs,
 ) -> AgentState:
     """Run one request through the graph and return the final state."""
@@ -128,6 +129,7 @@ def run_agents(
         history=history,
         context=context,
         target_duration=target_duration,
+        audience=audience,
     )
     # recursion_limit is a second belt on top of the step counter: it bounds
     # LangGraph's own super-step count if a routing bug ever creates a cycle.

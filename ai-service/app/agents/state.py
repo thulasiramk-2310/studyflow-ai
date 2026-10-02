@@ -28,6 +28,7 @@ class AgentState(TypedDict, total=False):
     resource_ids: list[int]
     target_duration: int
     context: str
+    audience: str  # "student" or "professional": who the answer is written for
 
     # --- routing ---
     intent: str
@@ -57,6 +58,7 @@ def new_state(
     resource_ids: Optional[list[int]] = None,
     target_duration: int = 60,
     context: str = "",
+    audience: str = "student",
 ) -> AgentState:
     """Build a fresh state with every field initialised."""
     return AgentState(
@@ -67,6 +69,7 @@ def new_state(
         resource_ids=resource_ids or [],
         target_duration=target_duration,
         context=context,
+        audience=audience,
         intent="",
         pending_intents=[],
         steps=0,

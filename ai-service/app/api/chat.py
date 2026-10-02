@@ -128,6 +128,7 @@ def chat_with_documents(request: ChatRequest, background_tasks: BackgroundTasks,
         query=guarded_query,
         user_id=request.userId,
         history=recent_history,
+        audience=request.audience,
     )
     latency_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
     

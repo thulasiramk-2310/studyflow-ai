@@ -13,6 +13,7 @@ import logging
 from typing import Any, Callable, Optional
 
 from app.mcp import plan_store
+from app.prompts.audience import with_audience
 from app.mcp.storage_path import StoragePathError, resolve_storage_key
 
 logger = logging.getLogger(__name__)
@@ -194,6 +195,20 @@ def answer_from_notes(
     }
 
 
+def _fetch_group_audience(group_id: int) -> str:
+    import requests
+
+    from app.core.config import settings
+
+    res = requests.get(
+        f"{settings.STUDY_SERVICE_URL}/groups/{group_id}/internal-audience",
+        headers={"X-Internal-Key": settings.INTERNAL_API_KEY},
+        timeout=5,
+    )
+    res.raise_for_status()
+    return res.json()["audience"]
+
+
 def get_study_plan(group_id: int, user_id: int) -> dict[str, Any]:
     plan = plan_store.get_plan(group_id, user_id)
     if plan is None:
@@ -209,10 +224,18 @@ def create_study_plan(
     confirm: bool = False,
     target_duration: int = 60,
     scheduler: Optional[Callable[..., Any]] = None,
+    audience_fetcher: Optional[Callable[[int], str]] = None,
 ) -> dict[str, Any]:
     """Write tool. Refuses without an explicit confirmation flag."""
     if confirm is not True:
         raise ToolError(CONFIRM_REQUIRED_ERROR)
+
+    # Plans follow the group's stored audience. Never guess when it can't be read.
+    fetch = audience_fetcher or _fetch_group_audience
+    try:
+        audience = fetch(group_id)
+    except Exception as e:
+        raise ToolError(f"Could not load the group's audience ({type(e).__name__}); try again.") from e
 
     if scheduler is None:
         from app.agents.retrieval import default_scheduler as scheduler
@@ -223,6 +246,7 @@ def create_study_plan(
         f"Dates: {', '.join(dates) if dates else 'none supplied'}\n"
         f"Target Duration: {target_duration}"
     )
+    context = with_audience(context, audience)
 
     plan = scheduler(context, target_duration)
     plan_store.save_plan(group_id, user_id, plan)

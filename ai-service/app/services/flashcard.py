@@ -4,11 +4,12 @@ from app.embeddings.embedding_service import generate_embeddings
 from app.vectorstore.faiss_store import search_index, get_group_dir
 from app.prompts.flashcard_prompt import build_flashcard_prompt
 from app.services.llm_service import generate_answer
+from app.prompts.audience import with_audience
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-def generate_flashcards(group_id: int, resource_ids: list[int], count: int = 15) -> dict:
+def generate_flashcards(group_id: int, resource_ids: list[int], count: int = 15, audience: str = "student") -> dict:
     """
     Retrieves chunks for the given resources, generates flashcards using LLM,
     and returns a parsed JSON dict.
@@ -33,7 +34,7 @@ def generate_flashcards(group_id: int, resource_ids: list[int], count: int = 15)
         
     chunks_text = [r["content"] for r in top_results]
     
-    prompt = build_flashcard_prompt(chunks_text, count)
+    prompt = with_audience(build_flashcard_prompt(chunks_text, count), audience)
     
     max_retries = 2
     for attempt in range(max_retries + 1):

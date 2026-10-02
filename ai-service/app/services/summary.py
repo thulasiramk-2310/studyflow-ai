@@ -4,11 +4,12 @@ from app.embeddings.embedding_service import generate_embeddings
 from app.vectorstore.faiss_store import search_index, get_group_dir
 from app.prompts.summary_prompt import build_summary_prompt
 from app.services.llm_service import generate_answer
+from app.prompts.audience import with_audience
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-def generate_summary(group_id: int, resource_ids: list[int]) -> dict:
+def generate_summary(group_id: int, resource_ids: list[int], audience: str = "student") -> dict:
     """
     Retrieves chunks for the given resources, generates a summary using Qwen3,
     and returns a parsed JSON dict.
@@ -37,7 +38,7 @@ def generate_summary(group_id: int, resource_ids: list[int]) -> dict:
     chunks_text = [r["content"] for r in top_results]
     
     # 2. Build Prompt
-    prompt = build_summary_prompt(chunks_text)
+    prompt = with_audience(build_summary_prompt(chunks_text), audience)
     
     # 3. Generate & Parse (with 1 retry)
     max_retries = 1
