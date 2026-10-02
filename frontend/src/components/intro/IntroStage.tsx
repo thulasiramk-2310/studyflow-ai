@@ -116,7 +116,7 @@ export function IntroStage({ onDone, embedded = false }: { onDone: () => void; e
       role="dialog"
       aria-label="How StudyFlow works"
       className={cn(
-        "flex flex-col overflow-hidden bg-background",
+        "flex flex-col overflow-clip bg-background",
         embedded ? "absolute inset-0" : "fixed inset-0 z-[60] min-[900px]:grid min-[900px]:grid-cols-[36%_1fr]",
       )}
     >
@@ -126,13 +126,13 @@ export function IntroStage({ onDone, embedded = false }: { onDone: () => void; e
       <Button size="sm" variant="secondary" onClick={onDone} className="absolute right-4 top-4 z-30">Skip intro →</Button>
 
       {/* Split-stage caption */}
-      <div className={cn("relative z-10 flex shrink-0 flex-col justify-center gap-3 px-8 pb-4 pt-14", !embedded && "min-[900px]:border-r min-[900px]:border-border min-[900px]:bg-sidebar/60 min-[900px]:px-12 min-[900px]:py-0")}>
+      <div className={cn("relative z-10 flex shrink-0 flex-col justify-center", embedded ? "gap-1 px-5 pb-2 pt-3 pr-36" : "gap-3 px-8 pb-4 pt-14 min-[900px]:border-r min-[900px]:border-border min-[900px]:bg-sidebar/60 min-[900px]:px-12 min-[900px]:py-0")}>
         <div key={caption.title} className="animate-[sfFade_0.4s_ease]">
           <div className="text-xs font-bold uppercase tracking-[0.14em] text-primary-text">{caption.step}</div>
-          <div className="mt-2 font-serif text-foreground" style={{ fontSize: embedded ? "clamp(22px, 2.6vw, 30px)" : "clamp(28px, 3.4vw, 44px)", lineHeight: 1.05 }}>{caption.title}</div>
-          {caption.body && <p className="mt-3 max-w-md text-md text-muted-foreground">{caption.body}</p>}
+          <div className="mt-2 font-serif text-foreground" style={{ fontSize: embedded ? "clamp(18px, 2vw, 24px)" : "clamp(28px, 3.4vw, 44px)", lineHeight: 1.05 }}>{caption.title}</div>
+          {caption.body && !embedded && <p className="mt-3 max-w-md text-md text-muted-foreground">{caption.body}</p>}
         </div>
-        <div className="mt-2 flex gap-1.5" aria-hidden>
+        <div className={cn("flex gap-1.5", embedded ? "mt-1" : "mt-2")} aria-hidden>
           {[1, 2, 3, 4].map((i) => (
             <span key={i} className={cn("h-[3px] w-7 rounded-full transition-colors duration-300", caption.index >= i || (caption.index === 0 && ended) ? "bg-primary" : "bg-border")} />
           ))}
@@ -140,7 +140,7 @@ export function IntroStage({ onDone, embedded = false }: { onDone: () => void; e
       </div>
 
       {/* Camera viewport */}
-      <div ref={viewport} className="relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(120%_100%_at_70%_0%,hsl(var(--primary-soft))_0%,hsl(var(--background))_60%)]">
+      <div ref={viewport} className="relative min-h-0 flex-1 overflow-clip bg-[radial-gradient(120%_100%_at_70%_0%,hsl(var(--primary-soft))_0%,hsl(var(--background))_60%)]">
         <div
           ref={world}
           className="absolute left-0 top-0"

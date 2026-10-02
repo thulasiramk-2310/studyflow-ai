@@ -24,6 +24,7 @@ import { AIAssistant }    from "../pages/app/AIAssistant";
 import { Notifications }  from "../pages/app/Notifications";
 import { Profile }        from "../pages/app/Profile";
 import { Settings }       from "../pages/app/Settings";
+import { Guide }          from "../pages/app/Guide";
 
 // Error Pages
 import { NotFound, Forbidden, ServerError } from "../pages/errors/ErrorPages";
@@ -56,6 +57,7 @@ export function AppRoutes() {
           <Route path="/notifications"          element={<Notifications />} />
           <Route path="/profile"               element={<Profile />} />
           <Route path="/settings"              element={<Settings />} />
+          <Route path="/guide"                 element={<Guide />} />
         </Route>
       </Route>
 
