@@ -24,6 +24,7 @@ The same product works for students and professionals: switch the account type a
 - **Ask AI.** Answers come only from the group's notes and show the file and page they came from. If the notes don't cover a question, it says so instead of guessing.
 - **AI session planner.** Proposes the next session with a timed agenda; the organizer reviews it before it is created.
 - **After a session:** an AI summary, a graded quiz with explanations, and flashcards.
+- **Meeting minutes.** Add the meeting's transcript (.vtt, .txt or .docx from Google Meet, Zoom or Teams) or paste notes, and the AI writes minutes from what was said: decisions, action items with owners and due dates when they were stated, and open questions. Each item must be backed by the transcript, and the minutes stay a draft until the organizer edits and approves them.
 - **Accounts that behave like a real product:** change password (other sessions are signed out), reset a forgotten password by email (one-time links that expire after 30 minutes), notification preferences per category, and account deletion that also removes your AI chat history.
 - Notifications, global search (Ctrl K), light and dark themes, a short product tour and a Guide page.
 
@@ -79,10 +80,10 @@ AI features are limited by the Groq account, not by these servers: chat, summari
 ## Testing
 
 - `auth-service`: 28 JUnit tests (sign-up, cookies, password change and reset, revocation, account deletion).
-- `study-service`: 67 pytest tests (transactions, job leases, invite-code visibility, audiences, notification preferences, upload types).
-- `ai-service`: 226 pytest tests (guardrails, grounding, agents, MCP, FAISS locking and S3 snapshots, document loaders, key failover).
+- `study-service`: 85 pytest tests (transactions, job leases, invite-code visibility, audiences, notification preferences, upload types, transcripts and minutes review).
+- `ai-service`: 244 pytest tests (guardrails, grounding, agents, MCP, FAISS locking and S3 snapshots, document loaders, key failover, transcript parsing and minutes).
 - Offline RAG eval (`python -m evals.rag_eval`, add `--live` for Groq): decision recall 14/15, faithfulness 15/15, not-in-notes 5/5.
-- Frontend: `npm run lint` (oxlint plus colour-token and wording guards), `npm run walkthrough` (Playwright end to end in light, dark and 390 px) and `npm run walkthrough:modes` (25 checks across student and professional modes).
+- Frontend: `npm run lint` (oxlint plus colour-token and wording guards), `npm run walkthrough` (Playwright end to end in light, dark and 390 px) and `npm run walkthrough:modes` (26 checks across student and professional modes, including transcript minutes).
 
 ## Folder structure
 
@@ -138,7 +139,7 @@ An AWS alternative (ECS Fargate, ALB, RDS, S3, CloudFront) is kept as Terraform 
 
 ## Roadmap
 
-- **Meeting minutes:** upload a transcript or a recording (transcribed with Groq Whisper), and the AI writes minutes with decisions, action items and open questions for the organizer to approve. In progress.
+- **Meeting recordings:** upload or record a meeting's audio and transcribe it with Groq Whisper, so minutes work without an exported transcript. In progress.
 - **Study session coach:** store quiz scores so the planner can target weak topics.
 - **OCR** for scanned PDFs (today only files with a text layer are indexed).
 - **Durable job queue** so failed generation jobs re-run automatically.

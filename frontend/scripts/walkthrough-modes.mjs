@@ -12,6 +12,7 @@ const BASE = (process.env.BASE_URL || "http://localhost").replace(/\/$/, "");
 const OUT = resolve(HERE, "../walkthrough-output/modes");
 const NOTES = resolve(HERE, "../../ai-service/evals/data/os_notes.pdf");
 const DOCX = resolve(HERE, "fixtures/sample-notes.docx");
+const VTT = resolve(HERE, "fixtures/sample-meeting.vtt");
 const stamp = Date.now().toString().slice(-6);
 const report = [];
 let shot = 0;
@@ -163,8 +164,9 @@ try {
     await pro.p.getByText("File uploaded successfully").waitFor();
     await collect();
   });
+  let proMeeting = "";
   await step(pro.p, "professional meeting page has no student words", async () => {
-    await scheduleIn(pro.p, `Platform Team ${stamp}`, `Q3 planning sync ${stamp}`);
+    proMeeting = await scheduleIn(pro.p, `Platform Team ${stamp}`, `Q3 planning sync ${stamp}`);
     const text = (await visibleText(pro.p)).replace(`Q3 planning sync ${stamp}`, "");
     const hit = text.match(STUDENT_WORDS);
     if (hit) throw new Error(`student word "${hit[0]}" on a professional meeting page`);
@@ -185,6 +187,21 @@ try {
     if (missing.length) throw new Error(`professional pages never showed: ${missing.join(", ")}`);
     const leaking = seen.findIndex((t) => /study group/i.test(t));
     if (leaking !== -1) throw new Error(`"Study group" appears on professional page #${leaking + 1}`);
+  });
+
+  await step(pro.p, "professional adds a transcript and approves the minutes", async () => {
+    await pro.p.goto(BASE + proMeeting);
+    await pro.p.getByRole("button", { name: "Mark completed" }).click();
+    await pro.p.getByRole("button", { name: "Upload transcript" }).waitFor();
+    await pro.p.getByLabel("Transcript file").setInputFiles(VTT);
+    await pro.p.getByText("Draft — awaiting review").waitFor({ timeout: 180_000 });
+    for (const want of ["Minutes of meeting", "From transcript (speakers named)", "Decisions", "Action items"]) {
+      if (!(await pro.p.getByText(want, { exact: true }).count())) throw new Error(`minutes missing "${want}"`);
+    }
+    const item = await pro.p.locator("li", { hasText: /migration plan/i }).first().innerText();
+    if (!/Priya/.test(item)) throw new Error(`action item owner not taken from the speaker name: "${item}"`);
+    await pro.p.getByRole("button", { name: "Approve", exact: true }).click();
+    await pro.p.getByText("Approved", { exact: true }).waitFor();
   });
 
   // ── The professional joins the student's group with its code ────────────

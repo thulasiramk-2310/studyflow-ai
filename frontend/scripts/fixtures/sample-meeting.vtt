@@ -1,0 +1,17 @@
+WEBVTT
+
+1
+00:00:01.000 --> 00:00:05.000
+Priya Sharma: Let's agree to move the reporting database to Postgres 16.
+
+2
+00:00:05.000 --> 00:00:09.000
+Arjun Kumar: Agreed, we move the reporting database to Postgres 16.
+
+3
+00:00:09.000 --> 00:00:14.000
+Priya Sharma: I'll send the migration plan by Friday.
+
+4
+00:00:14.000 --> 00:00:18.000
+Arjun Kumar: Open question: do we need read replicas for the dashboards?
