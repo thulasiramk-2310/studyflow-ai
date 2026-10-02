@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ChevronRight, Upload, Calendar, Sparkles, Trash2, Download, Users, CheckCircle, BrainCircuit } from "lucide-react";
+import { Calendar, Copy, Download, FileText, LogOut, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { groupService } from "../../services/group.service";
 import type { Group } from "../../services/group.service";
@@ -11,8 +12,60 @@ import type { Session } from "../../services/session.service";
 import { useAuth } from "../../hooks/useAuth";
 import { StudyPlanModal } from "../../components/study/StudyPlanModal";
 import { StudyRoadmap } from "../../components/groups/StudyRoadmap";
+import { DragDropUploader } from "../../components/resources/DragDropUploader";
+import { Avatar, Badge, Button, Card, CardHeader, EmptyState, PageHeader, Select, Skeleton, Tabs } from "../../components/ui";
 
-const TABS = ["Overview", "Resources", "Sessions", "Members", "AI Assistant"];
+const TABS = ["Overview", "Sessions", "Library", "Members", "Ask AI"];
+
+function fileTag(name: string) {
+  return (name.split(".").pop() ?? "file").slice(0, 4).toUpperCase();
+}
+
+function ResourceRow({ resource, onDelete }: { resource: Resource; onDelete?: () => void }) {
+  return (
+    <div className="group flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-muted text-xs font-bold text-muted-foreground group-hover:bg-surface">{fileTag(resource.original_filename)}</span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-base text-foreground">{resource.original_filename}</div>
+        <div className="text-xs text-muted-foreground">
+          {format(new Date(resource.created_at), "d MMM yyyy")} · {resourceService.formatFileSize(resource.size)}
+          {resource.uploader_name ? ` · ${resource.uploader_name}` : ""}
+        </div>
+      </div>
+      <button onClick={() => resourceService.downloadResource(resource.id, resource.original_filename)} aria-label="Download" className="rounded-lg p-1.5 text-muted-foreground hover:bg-surface hover:text-foreground">
+        <Download className="h-4 w-4" />
+      </button>
+      {onDelete && (
+        <button onClick={onDelete} aria-label="Delete" className="rounded-lg p-1.5 text-muted-foreground hover:bg-danger-soft hover:text-danger">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SessionRow({ session }: { session: Session }) {
+  const d = new Date(session.scheduled_at);
+  const tone = session.status === "COMPLETED" ? "success" : session.status === "LIVE" ? "danger" : "neutral";
+  return (
+    <Link to={`/sessions/${session.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-muted">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-text">
+        <span className="text-center leading-none">
+          <span className="block text-xs font-semibold uppercase">{format(d, "MMM")}</span>
+          <span className="block font-serif text-lg">{format(d, "d")}</span>
+        </span>
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-base font-semibold text-foreground">{session.title}</div>
+        <div className="text-sm text-muted-foreground">
+          {format(d, "EEE HH:mm")} · {session.duration_minutes} min{session.generated_by_ai ? " · AI-planned" : ""}
+        </div>
+      </div>
+      <Badge tone={tone}>{session.status}</Badge>
+    </Link>
+  );
+}
+
 
 export function GroupWorkspace() {
   const { groupId } = useParams();
@@ -32,6 +85,7 @@ export function GroupWorkspace() {
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [targetDuration, setTargetDuration] = useState(60);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   const loadData = async () => {
     if (!groupId) return;
@@ -73,18 +127,18 @@ export function GroupWorkspace() {
 
   if (loading) {
     return (
-      <div className="max-w-[1180px] mx-auto px-8 py-7 pb-12 animate-pulse">
-        <div className="h-4 bg-border-soft w-48 rounded mb-6"></div>
-        <div className="h-16 bg-border-soft rounded-2xl mb-8"></div>
-        <div className="h-96 bg-border-soft rounded-2xl"></div>
+      <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
+        <Skeleton className="mb-3 h-4 w-40" />
+        <Skeleton className="mb-8 h-10 w-80" />
+        <Skeleton className="h-96" />
       </div>
     );
   }
 
   if (!group) {
     return (
-      <div className="max-w-[1180px] mx-auto px-8 py-7 text-center text-muted-foreground">
-        Failed to load group.
+      <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
+        <Card><EmptyState icon={FileText} title="Couldn't load this group" description="It may have been deleted, or you're no longer a member." action={<Button variant="secondary" onClick={() => navigate("/groups")}>Back to groups</Button>} /></Card>
       </div>
     );
   }
@@ -186,419 +240,175 @@ export function GroupWorkspace() {
     }
   };
 
+  const canDelete = (r: Resource) => canManageGroup || r.uploaded_by === Number(user?.id);
+  const memberName = (m: { user_id: number; name?: string }) =>
+    m.user_id === Number(user?.id) ? `${user?.name} (You)` : m.name || `User ${m.user_id}`;
+  const memberCount = group.members?.length ?? 1;
+
   return (
-    <div className="max-w-[1180px] mx-auto px-8 py-7 pb-12 animate-[sfFade_0.25s_ease]">
-      {/* Breadcrumb */}
-      <div className="text-[12.5px] text-muted-foreground flex items-center gap-1.5">
-        <Link to="/groups" className="text-primary hover:underline">My Groups</Link>
-        <ChevronRight className="w-3 h-3" />
-        <span className="text-foreground font-semibold">{group.name}</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex items-center gap-4 mt-3.5">
-        <div className="w-[52px] h-[52px] rounded-2xl bg-primary-soft text-primary flex items-center justify-center text-[19px] font-extrabold shrink-0">
-          {getInitials(group.name)}
-        </div>
-        <div className="flex-1">
-          <div className="text-[21px] font-extrabold tracking-tight flex items-center gap-2.5">
-            {group.name}
-            <span className="text-[10.5px] font-bold text-secondary bg-secondary-soft border border-purple-100 px-2 py-0.5 rounded-full capitalize">
-              {userRole.toLowerCase()}
-            </span>
+    <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
+      <PageHeader
+        eyebrow={
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Link to="/groups" className="hover:text-foreground">Groups</Link>
+            <span>/</span>
+            <span className="truncate text-foreground">{group.name}</span>
           </div>
-          <div className="text-[13px] text-muted-foreground mt-0.5">
-            {group.members?.length || 1} members · {resources.length} resources
-          </div>
-        </div>
-        <div className="flex">
-          {(group.members || []).slice(0, 4).map((m, i) => {
-            const isMe = m.user_id === Number(user?.id);
-            const memberInitials = m.name ? m.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : `U${m.user_id}`;
-            const initials = isMe ? user?.initials : memberInitials;
-            return (
-              <div key={i} className="w-[30px] h-[30px] rounded-full bg-primary text-white flex items-center justify-center text-[10.5px] font-bold border-2 border-background -ml-2 first:ml-0">
-                {initials}
-              </div>
-            );
-          })}
-          {(group.members?.length || 0) > 4 && (
-            <div className="w-[30px] h-[30px] rounded-full bg-border-soft text-muted-foreground flex items-center justify-center text-[10px] font-bold border-2 border-background -ml-2">
-              +{(group.members?.length || 0) - 4}
+        }
+        title={group.name}
+        subtitle={
+          <span>
+            {group.goal || group.description || "Study group"} · {memberCount} member{memberCount === 1 ? "" : "s"} · {resources.length} note{resources.length === 1 ? "" : "s"}
+          </span>
+        }
+        actions={
+          <>
+            <div className="mr-1 flex -space-x-2">
+              {(group.members || []).slice(0, 4).map((m) => (
+                <Avatar key={m.user_id} name={m.name || `User ${m.user_id}`} size="sm" />
+              ))}
             </div>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {canManageGroup && (
-            <div className="relative group/invite">
-              <button className="bg-primary text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-primary-hover transition-colors">
-                Invite members
-              </button>
-              <div className="absolute right-0 top-full mt-2 w-48 bg-surface border border-border rounded-xl shadow-lg opacity-0 invisible group-hover/invite:opacity-100 group-hover/invite:visible transition-all z-10 p-2">
-                <div className="px-3 py-2 text-[12px] text-muted-foreground border-b border-border-soft mb-1">
-                  Code: <span className="font-mono text-foreground font-semibold select-all bg-background px-1.5 py-0.5 rounded">{group.invite_code}</span>
-                </div>
-                <button onClick={handleCopyInviteCode} className="w-full text-left px-3 py-2 text-[13px] hover:bg-background rounded-lg transition-colors">
-                  Copy to Clipboard
-                </button>
-                <button onClick={handleRegenerateInvite} className="w-full text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors mt-1">
-                  Regenerate Code
-                </button>
-              </div>
-            </div>
-          )}
-          <button onClick={handleLeaveGroup} className="bg-surface border border-border text-red-600 rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-red-50 hover:border-red-100 transition-colors">
-            Leave
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-0.5 mt-5 border-b border-border overflow-x-auto no-scrollbar">
-        {TABS.map((tab) => (
-          <div 
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2.5 text-[13px] font-semibold cursor-pointer transition-colors -mb-px whitespace-nowrap ${activeTab === tab ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"}`}
-          >
-            {tab}
-          </div>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div className="grid grid-cols-[1fr_320px] gap-5 mt-5 items-start">
-        <div className="flex flex-col gap-5">
-          
-          {activeTab === "Resources" && (
-            <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-              <div className="px-5 py-4 border-b border-border-soft flex justify-between items-center">
-                <span className="text-[14px] font-bold">All Resources ({resources.length})</span>
-              </div>
-              {resources.length === 0 ? (
-                <div className="px-5 py-6 text-center text-[13px] text-muted-foreground">
-                  No resources uploaded yet.
-                </div>
-              ) : (
-                resources.map((r) => {
-                  const isPdf = r.original_filename.toLowerCase().endsWith(".pdf");
-                  const typeName = isPdf ? "PDF" : "DOC";
-                  const typeBg = isPdf ? "bg-red-100" : "bg-blue-100";
-                  const typeColor = isPdf ? "text-red-600" : "text-blue-600";
-                  
-                  return (
-                    <div key={r.id} className="flex items-center gap-3.5 px-5 py-3 border-b border-border-soft hover:bg-background transition-colors last:border-0 group">
-                      <div className={`w-9 h-9 rounded-xl ${typeBg} ${typeColor} flex items-center justify-center text-[10px] font-extrabold shrink-0`}>
-                        {typeName}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-semibold truncate">{r.original_filename}</div>
-                        <div className="text-[12px] text-muted-foreground mt-0.5">
-                          {new Date(r.created_at).toLocaleDateString()} · {resourceService.formatFileSize(r.size)}
-                        </div>
-                      </div>
-                      
-                      {/* Actions */}
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => resourceService.downloadResource(r.id, r.original_filename)} className="w-8 h-8 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-primary hover:bg-primary-soft transition-colors">
-                          <Download className="w-3.5 h-3.5" />
-                        </button>
-                        {(canManageGroup || r.uploaded_by === Number(user?.id)) && (
-                          <button onClick={() => handleDeleteResource(r.id)} className="w-8 h-8 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          )}
-
-          {/* Sessions Tab */}
-          {activeTab === "Sessions" && (
-            <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-              <div className="px-5 py-4 border-b border-border-soft flex justify-between items-center">
-                <span className="text-[14px] font-bold">All Sessions ({sessions.length})</span>
-                {canManageGroup && (
-                  <div className="flex items-center gap-3">
-                    <select 
-                      value={targetDuration}
-                      onChange={e => setTargetDuration(Number(e.target.value))}
-                      className="text-[12.5px] border border-border-soft rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary bg-surface text-foreground"
-                    >
-                      <option value={30}>30 min</option>
-                      <option value={45}>45 min</option>
-                      <option value={60}>60 min</option>
-                      <option value={90}>90 min</option>
-                      <option value={120}>120 min</option>
-                    </select>
-                    <button 
-                      onClick={handleGeneratePlan}
-                      disabled={isGeneratingPlan}
-                      className="text-[12.5px] font-bold text-primary bg-primary-soft/50 hover:bg-primary-soft px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      {isGeneratingPlan ? "Analyzing..." : "AI Study Planner"}
-                    </button>
-                    <Link to="/sessions" className="text-[12.5px] font-semibold text-muted-foreground hover:text-foreground">
-                      Schedule Manual
-                    </Link>
-                  </div>
-                )}
-              </div>
-              {sessions.length === 0 ? (
-                <div className="px-5 py-6 text-center text-[13px] text-muted-foreground">
-                  No sessions scheduled yet.
-                </div>
-              ) : (
-                sessions.map((s) => {
-                  const date = new Date(s.scheduled_at);
-                  const mon = date.toLocaleString('default', { month: 'short' }).toUpperCase();
-                  const day = date.getDate();
-                  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                  return (
-                    <Link to={`/sessions/${s.id}`} key={s.id} className="flex items-center gap-3.5 px-5 py-3.5 border-b border-border-soft hover:bg-background transition-colors cursor-pointer last:border-0">
-                      <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex flex-col items-center justify-center shrink-0">
-                        <span className="text-[9px] font-bold uppercase">{mon}</span>
-                        <span className="text-[15px] font-extrabold leading-none">{day}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-[13px] font-semibold">{s.title}</div>
-                        <div className="text-[11.5px] text-muted-foreground mt-0.5">
-                          {time} · {s.duration_minutes} mins
-                        </div>
-                      </div>
-                      <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${s.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : s.status === 'LIVE' ? 'bg-red-100 text-red-700' : 'bg-primary-soft text-primary'}`}>
-                        {s.status}
-                      </span>
-                    </Link>
-                  );
-                })
-              )}
-            </div>
-          )}
-
-          {/* Members Tab */}
-          {activeTab === "Members" && (
-            <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-              <div className="px-5 py-4 border-b border-border-soft flex justify-between items-center">
-                <span className="text-[14px] font-bold">Group Members ({group.members?.length || 1})</span>
-                {canManageGroup && (
-                  <button className="text-[12.5px] font-semibold text-primary hover:underline">
-                    Invite Member
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
-                {(group.members || []).map((m) => {
-                  const isMe = m.user_id === Number(user?.id);
-                  const memberInitials = m.name ? m.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : `U${m.user_id}`;
-                  const initials = isMe ? user?.initials : memberInitials;
-                  const name = isMe ? (user?.name + " (You)") : (m.name || `User ${m.user_id}`);
-                  
-                  return (
-                    <div key={m.user_id} className="flex items-center gap-3 p-3 border border-border-soft rounded-xl bg-background group">
-                      <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-[12px] font-bold shrink-0">
-                        {initials}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] font-semibold truncate">{name}</div>
-                        <div className="text-[12px] text-muted-foreground capitalize flex items-center gap-1 mt-0.5">
-                          <Users className="w-3 h-3" /> {m.role.toLowerCase()}
-                        </div>
-                      </div>
-                      {canManageGroup && m.role !== "ORGANIZER" && !isMe && (
-                        <button 
-                          onClick={() => handleRemoveMember(m.user_id)} 
-                          className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-red-600 hover:bg-red-50 shrink-0"
-                          title="Remove Member"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* AI Assistant Tab */}
-          {activeTab === "AI Assistant" && (
-            <div className="bg-surface border border-border rounded-2xl p-8 text-center flex flex-col items-center">
-              <div className="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
-                <BrainCircuit className="w-7 h-7" />
-              </div>
-              <h3 className="text-[18px] font-extrabold tracking-tight mb-2">Your AI Study Buddy for {group.name}</h3>
-              <p className="text-[13.5px] text-muted-foreground max-w-lg mb-6">
-                Chat with our AI Assistant to ask questions about any of the {resources.length} resources uploaded to this group. It can explain concepts, summarize documents, and help you prepare for exams.
-              </p>
-              <Link to="/ai" className="bg-primary text-white rounded-lg px-6 py-2.5 text-[14px] font-bold hover:bg-primary-hover transition-colors shadow-sm flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> Start AI Chat
-              </Link>
-            </div>
-          )}
-
-          {activeTab === "Overview" && (
-            <>
-              {/* Group Overview */}
-              <div className="bg-surface border border-border rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                <h3 className="text-[15px] font-bold mb-2 text-foreground">Group Overview</h3>
-                {group.description && (
-                  <div className="mb-4">
-                    <h4 className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Description</h4>
-                    <p className="text-[13.5px] text-foreground leading-relaxed">{group.description}</p>
-                  </div>
-                )}
-                {group.goal && (
-                  <div>
-                    <h4 className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Goal</h4>
-                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 inline-block">
-                      <p className="text-[13px] font-semibold text-primary-hover flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" /> {group.goal}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {!group.description && !group.goal && (
-                  <p className="text-[13.5px] text-muted-foreground">This group doesn't have a description or goal set.</p>
-                )}
-              </div>
-
-              {/* Study Roadmap */}
-              <StudyRoadmap 
-                groupId={group.id} 
-                items={group.learning_plan || []} 
-                canManage={true} 
-                onUpdate={loadData} 
-                progressPercent={(group as any).progress_percent || 0}
-                completedCount={(group as any).completed_items_count || 0}
-              />
-
-
-          {/* Resources */}
-          <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-            <div className="flex justify-between items-center px-5 py-4 border-b border-border-soft">
-              <span className="text-[14px] font-bold">Recent resources</span>
-              <Link to="/resources" className="text-[12.5px] font-semibold text-primary">View all</Link>
-            </div>
-            {recentResources.length === 0 ? (
-              <div className="px-5 py-6 text-center text-[13px] text-muted-foreground">
-                No resources uploaded yet.
-              </div>
-            ) : (
-              recentResources.map((r) => {
-                const isPdf = r.original_filename.toLowerCase().endsWith(".pdf");
-                const typeName = isPdf ? "PDF" : "DOC";
-                const typeBg = isPdf ? "bg-red-100" : "bg-blue-100";
-                const typeColor = isPdf ? "text-red-600" : "text-blue-600";
-                
-                return (
-                  <div key={r.id} className="flex items-center gap-3.5 px-5 py-3 border-b border-border-soft hover:bg-background transition-colors cursor-pointer last:border-0">
-                    <div className={`w-9 h-9 rounded-xl ${typeBg} ${typeColor} flex items-center justify-center text-[10px] font-extrabold shrink-0`}>
-                      {typeName}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold truncate">{r.original_filename}</div>
-                      <div className="text-[12px] text-muted-foreground mt-0.5">
-                        {new Date(r.created_at).toLocaleDateString()} · {resourceService.formatFileSize(r.size)}
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-border shrink-0" />
-                  </div>
-                );
-              })
+            {canManageGroup && (
+              <Button size="sm" variant="secondary" icon={Copy} onClick={handleCopyInviteCode}>
+                Invite · {group.invite_code}
+              </Button>
             )}
-          </div>
-
-          {/* Sessions */}
-          <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-            <div className="flex justify-between items-center px-5 py-4 border-b border-border-soft">
-              <span className="text-[14px] font-bold">Upcoming sessions</span>
-              <Link to="/sessions" className="text-[12.5px] font-semibold text-primary">View all</Link>
-            </div>
-            {upcomingSessions.length === 0 ? (
-              <div className="px-5 py-6 text-center text-[13px] text-muted-foreground">
-                No upcoming sessions.
-              </div>
-            ) : (
-              upcomingSessions.map((s) => {
-                const date = new Date(s.scheduled_at);
-                const mon = date.toLocaleString('default', { month: 'short' }).toUpperCase();
-                const day = date.getDate();
-                const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                return (
-                  <Link to={`/sessions/${s.id}`} key={s.id} className="flex items-center gap-3.5 px-5 py-3.5 border-b border-border-soft hover:bg-background transition-colors cursor-pointer last:border-0">
-                    <div className="w-10 h-10 rounded-xl bg-primary-soft text-primary flex flex-col items-center justify-center shrink-0">
-                      <span className="text-[9px] font-bold uppercase">{mon}</span>
-                      <span className="text-[15px] font-extrabold leading-none">{day}</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-[13px] font-semibold">{s.title}</div>
-                      <div className="text-[11.5px] text-muted-foreground mt-0.5">
-                        {time} · {s.duration_minutes} mins
-                      </div>
-                    </div>
-                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-primary-soft text-primary">
-                      {s.status}
-                    </span>
-                  </Link>
-                );
-              })
+            {canManageGroup && (
+              <Button size="sm" icon={Sparkles} loading={isGeneratingPlan} onClick={handleGeneratePlan}>
+                Plan next session
+              </Button>
             )}
-          </div>
           </>
-          )}
-        </div>
+        }
+      />
 
-        {/* Right sidebar */}
-        <div className="flex flex-col gap-3.5">
-          <div className="bg-surface border border-border rounded-2xl p-4.5">
-            <div className="text-[13.5px] font-bold mb-3">Quick actions</div>
-            <div className="flex flex-col gap-2">
-              <Link to="/resources" className="flex items-center gap-2.5 bg-background border border-border rounded-xl px-3.5 py-2.5 text-[13px] font-semibold hover:bg-border-soft transition-colors">
-                <Upload className="w-4 h-4 text-muted-foreground" /> Upload resource
-              </Link>
-              <Link to="/sessions" className="flex items-center gap-2.5 bg-background border border-border rounded-xl px-3.5 py-2.5 text-[13px] font-semibold hover:bg-border-soft transition-colors">
-                <Calendar className="w-4 h-4 text-muted-foreground" /> Schedule session
-              </Link>
-              <Link to="/ai" className="flex items-center gap-2.5 bg-background border border-border rounded-xl px-3.5 py-2.5 text-[13px] font-semibold hover:bg-border-soft transition-colors">
-                <Sparkles className="w-4 h-4 text-muted-foreground" /> Ask AI about this group
-              </Link>
-            </div>
+      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+
+      {activeTab === "Overview" && (
+        <div className="mt-6 grid items-start gap-5 lg:grid-cols-[1.5fr_1fr]">
+          <StudyRoadmap
+            groupId={group.id}
+            items={group.learning_plan || []}
+            canManage={true}
+            onUpdate={loadData}
+            progressPercent={group.progress_percent || 0}
+            completedCount={group.completed_items_count || 0}
+          />
+          <div className="flex flex-col gap-5">
+            <Card>
+              <CardHeader title="Upcoming" action={<button onClick={() => setActiveTab("Sessions")} className="hover:text-foreground">All sessions</button>} />
+              {upcomingSessions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No upcoming sessions. Use “Plan next session” to let the AI propose one.</p>
+              ) : (
+                upcomingSessions.slice(0, 3).map((s) => <SessionRow key={s.id} session={s} />)
+              )}
+            </Card>
+            <Card>
+              <CardHeader title={`Library · ${resources.length}`} action={<button onClick={() => setActiveTab("Library")} className="hover:text-foreground">View all</button>} />
+              {recentResources.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No notes yet. Upload PDFs, slides or Markdown.</p>
+              ) : (
+                recentResources.map((r) => <ResourceRow key={r.id} resource={r} />)
+              )}
+            </Card>
+            {group.description && group.goal && (
+              <Card>
+                <CardHeader title="About" />
+                <p className="text-base text-muted-foreground">{group.description}</p>
+              </Card>
+            )}
           </div>
+        </div>
+      )}
 
-          {/* Members preview */}
-          <div className="bg-surface border border-border rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-            <div className="px-4 py-3.5 border-b border-border-soft text-[13.5px] font-bold">
-              Members ({group.members?.length || 1})
-            </div>
+      {activeTab === "Sessions" && (
+        <Card className="mt-6">
+          <CardHeader
+            title={`Sessions · ${sessions.length}`}
+            action={
+              canManageGroup && (
+                <div className="flex items-center gap-2">
+                  <Select aria-label="Session length" value={targetDuration} onChange={(e) => setTargetDuration(Number(e.target.value))} className="h-8 w-28 text-sm">
+                    {[30, 45, 60, 90, 120].map((m) => (
+                      <option key={m} value={m}>{m} min</option>
+                    ))}
+                  </Select>
+                  <Button size="sm" icon={Sparkles} loading={isGeneratingPlan} onClick={handleGeneratePlan}>AI planner</Button>
+                  <Button size="sm" variant="secondary" icon={Calendar} onClick={() => navigate("/sessions")}>Schedule</Button>
+                </div>
+              )
+            }
+          />
+          {sessions.length === 0 ? (
+            <EmptyState icon={Calendar} title="No sessions yet" description="Plan one with the AI planner or schedule it yourself." />
+          ) : (
+            sessions.map((s) => <SessionRow key={s.id} session={s} />)
+          )}
+        </Card>
+      )}
+
+      {activeTab === "Library" && (
+        <Card className="mt-6">
+          <CardHeader title={`Library · ${resources.length}`} action={<Button size="sm" icon={Upload} onClick={() => setIsUploadOpen(true)}>Upload notes</Button>} />
+          {resources.length === 0 ? (
+            <EmptyState icon={FileText} title="No notes yet" description="Upload PDFs, DOCX, PPTX or Markdown. They're indexed so Ask AI can cite them." />
+          ) : (
+            resources.map((r) => (
+              <ResourceRow key={r.id} resource={r} onDelete={canDelete(r) ? () => handleDeleteResource(r.id) : undefined} />
+            ))
+          )}
+        </Card>
+      )}
+
+      {activeTab === "Members" && (
+        <Card className="mt-6">
+          <CardHeader title={`Members · ${memberCount}`} />
+          <div className="grid gap-3 md:grid-cols-2">
             {(group.members || []).map((m) => {
               const isMe = m.user_id === Number(user?.id);
-              const memberInitials = m.name ? m.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : `U${m.user_id}`;
-              const initials = isMe ? user?.initials : memberInitials;
-              const name = isMe ? (user?.name + " (You)") : (m.name || `User ${m.user_id}`);
-
               return (
-                <div key={m.user_id} className="flex items-center gap-3 px-4 py-3 border-b border-border-soft last:border-0">
-                  <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-[11px] font-bold shrink-0">
-                    {initials}
+                <div key={m.user_id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                  <Avatar name={m.name || `User ${m.user_id}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-base font-semibold text-foreground">{memberName(m)}</div>
+                    <div className="text-sm capitalize text-muted-foreground">{m.role.toLowerCase()}</div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-semibold truncate">{name}</div>
-                    <div className="text-[11px] text-muted-foreground capitalize">{m.role.toLowerCase()}</div>
-                  </div>
+                  {m.role === "ORGANIZER" && <Badge tone="brand">Organizer</Badge>}
+                  {canManageGroup && m.role !== "ORGANIZER" && !isMe && (
+                    <button onClick={() => handleRemoveMember(m.user_id)} title="Remove member" aria-label="Remove member" className="rounded-lg p-1.5 text-muted-foreground hover:bg-danger-soft hover:text-danger">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               );
             })}
           </div>
-        </div>
-      </div>
-      
+          <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
+            {canManageGroup && <Button size="sm" variant="ghost" icon={RefreshCw} onClick={handleRegenerateInvite}>Regenerate invite code</Button>}
+            <Button size="sm" variant="danger" icon={LogOut} onClick={handleLeaveGroup}>Leave group</Button>
+          </div>
+        </Card>
+      )}
+
+      {activeTab === "Ask AI" && (
+        <Card className="mt-6">
+          <EmptyState
+            icon={Sparkles}
+            title={`Ask about ${group.name}`}
+            description={`Answers come only from this group's ${resources.length} note${resources.length === 1 ? "" : "s"}, with the page they came from.`}
+            action={<Button icon={Sparkles} onClick={() => navigate("/ai")}>Open Ask AI</Button>}
+          />
+        </Card>
+      )}
+
+      {isUploadOpen && (
+        <DragDropUploader
+          groupId={group.id}
+          onClose={() => setIsUploadOpen(false)}
+          onUploadSuccess={() => { setIsUploadOpen(false); loadData(); }}
+        />
+      )}
+
       {aiProposal && (
         <StudyPlanModal
           isOpen={isPlanModalOpen}
