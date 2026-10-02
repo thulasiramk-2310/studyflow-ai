@@ -82,7 +82,7 @@ export function Topbar() {
 
   return (
     <>
-      <header className="relative z-10 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur md:px-6">
+      <header className="relative z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur md:px-6">
         <button onClick={toggleSidebar} aria-label="Open navigation" className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted md:hidden">
           <Menu className="h-5 w-5" />
         </button>

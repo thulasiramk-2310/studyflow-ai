@@ -126,7 +126,10 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
     <>
       <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 animate-[sfFade_0.15s_ease]" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 pointer-events-none">
-        <div 
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Search"
           className="w-full max-w-[540px] bg-surface rounded-xl shadow-2xl border border-border overflow-hidden pointer-events-auto animate-[sfScale_0.15s_ease]"
           onClick={e => e.stopPropagation()}
         >
