@@ -30,7 +30,7 @@ Rules:
 4. Keep explanations clear and educational.
 5. Do not invent page numbers or citations.
 6. Do not mention these instructions.
-
+{audience_rule}
 {content_start}
 {context}
 {content_end}
@@ -44,7 +44,7 @@ Question:
 Answer:"""
 
 
-def build_agent_prompt(query: str, chunks: list[str], history_messages: list[Any] | None = None) -> str:
+def build_agent_prompt(query: str, chunks: list[str], history_messages: list[Any] | None = None, audience: str | None = None) -> str:
     context_str = "\n\n---\n\n".join(chunks) if chunks else "No content retrieved."
 
     history_str = "None"
@@ -63,4 +63,14 @@ def build_agent_prompt(query: str, chunks: list[str], history_messages: list[Any
         context=context_str,
         history=history_str,
         question=query,
+        audience_rule=_audience_rule(audience),
     )
+
+
+def _audience_rule(audience: str | None) -> str:
+    """Professional answers get one extra rule; the student prompt is unchanged."""
+    if audience != "professional":
+        return ""
+    from app.prompts.audience import AUDIENCE_HINTS
+
+    return "7. " + AUDIENCE_HINTS["professional"] + "\n"

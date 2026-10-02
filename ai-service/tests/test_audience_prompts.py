@@ -76,3 +76,26 @@ def test_mcp_plan_errors_when_audience_unavailable():
     with pytest.raises(ToolError):
         create_study_plan(group_id=1, user_id=7, topics=[], dates=[], confirm=True,
                           scheduler=lambda ctx, dur: {"title": "x"}, audience_fetcher=down)
+
+
+def test_chat_hint_sits_inside_the_prompt_not_after_the_answer_cue(stub_retriever, chunk):
+    """'Answer:' must stay the last thing the model reads."""
+    from app.agents.graph import build_graph
+    from app.services.agent_chat import run_agent_chat
+
+    provider = MockProvider(default="Round Robin assigns a fixed time slice to each process.")
+    graph = build_graph(provider=provider, retriever=stub_retriever([chunk("Round Robin assigns a fixed time slice to each process.")]),
+                        index_lister=lambda gid: [], scheduler=lambda ctx, dur: {})
+    run_agent_chat(group_id=1, query="What is Round Robin?", graph=graph, audience="professional")
+
+    prompt = next(c for c in provider.calls if TEAM_HINT in c)
+    assert prompt.rstrip().endswith("Answer:")
+    assert prompt.index(TEAM_HINT) < prompt.index("Question:")
+
+
+def test_student_chat_prompt_is_unchanged():
+    from app.prompts.agent_prompt import build_agent_prompt
+
+    before = build_agent_prompt("What is Round Robin?", ["chunk"], None)
+    assert build_agent_prompt("What is Round Robin?", ["chunk"], None, audience="student") == before
+    assert STUDENT_HINT not in before and TEAM_HINT not in before
