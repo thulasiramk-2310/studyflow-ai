@@ -108,6 +108,10 @@ export const authService = {
 
   /** Removes all auth data from localStorage. */
   clearSession: () => {
-    localStorage.removeItem(USER_KEY);
+    try {
+      localStorage.removeItem(USER_KEY);
+    } catch {
+      /* storage unavailable (private mode / blocked): nothing to clear */
+    }
   },
 };
