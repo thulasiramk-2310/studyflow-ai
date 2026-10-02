@@ -61,6 +61,22 @@ def test_reading_an_active_job_leaves_it_alone(db):
     assert quiz.status == QuizStatus.GENERATING
 
 
+def test_expiring_a_stale_read_does_not_overwrite_a_completed_job(db):
+    quiz = Quiz(session_id=1, status=QuizStatus.GENERATING, started_at=EXPIRED)
+    db.add(quiz)
+    db.commit()
+
+    # A worker completed after this request loaded its ORM object.
+    db.query(Quiz).filter(Quiz.id == quiz.id).update(
+        {Quiz.status: QuizStatus.READY}, synchronize_session=False
+    )
+    db.commit()
+
+    expire_if_stale(db, quiz, now=NOW)
+
+    assert quiz.status == QuizStatus.READY
+
+
 def test_starting_a_job_takes_a_fresh_lease(db, monkeypatch):
     from app.services import quiz_service
 
