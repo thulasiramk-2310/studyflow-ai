@@ -24,6 +24,17 @@ public class HttpStudyServiceClient implements StudyServiceClient {
         this.internalKey = internalKey;
     }
 
+    /** study-service wraps errors as {"success": false, "error": {"message": ...}}; plain FastAPI uses "detail". */
+    @SuppressWarnings("unchecked")
+    static String blockedMessage(Map<String, Object> body) {
+        if (body != null) {
+            Object error = body.get("error");
+            if (error instanceof Map<?, ?> e && e.get("message") != null) return e.get("message").toString();
+            if (body.get("detail") != null) return body.get("detail").toString();
+        }
+        return "You still own groups with other members.";
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public Result removeUser(long userId) {
@@ -35,9 +46,7 @@ public class HttpStudyServiceClient implements StudyServiceClient {
                         HttpStatusCode status = response.getStatusCode();
                         if (status.is2xxSuccessful()) return Result.ok();
                         if (status.value() == 409) {
-                            Map<String, Object> body = response.bodyTo(Map.class);
-                            Object detail = body == null ? null : body.get("detail");
-                            return Result.blocked(detail == null ? "You still own groups with other members." : detail.toString());
+                            return Result.blocked(blockedMessage(response.bodyTo(Map.class)));
                         }
                         log.error("study-service refused user cleanup: HTTP {}", status.value());
                         return Result.unavailable();
