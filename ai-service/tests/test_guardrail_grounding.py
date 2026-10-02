@@ -33,10 +33,26 @@ def test_unrelated_answer_is_not_grounded():
     assert result.grounded is False
 
 
-def test_one_supported_sentence_is_enough():
+def test_a_fabricated_sentence_fails_the_whole_answer():
+    """A sourced claim must not launder an invented one."""
     answer = "Round Robin assigns a fixed time slice to each process. It was invented in Paris in 1802."
 
+    result = check_grounding(answer, [CHUNK])
+    assert result.grounded is False
+    assert (result.supported_sentences, result.checked_sentences) == (1, 2)
+
+
+def test_every_supported_sentence_passes():
+    answer = "Round Robin assigns a fixed time slice to each process. Each process runs in turn."
+
     assert check_grounding(answer, [CHUNK]).grounded is True
+
+
+def test_enforce_replaces_an_answer_with_one_invented_claim():
+    answer = "Round Robin assigns a fixed time slice to each process. It was invented in Paris in 1802."
+
+    replaced, _ = enforce_grounding(answer, [CHUNK])
+    assert replaced == UNSUPPORTED_MESSAGE
 
 
 def test_empty_chunks_are_never_grounded():
@@ -110,3 +126,19 @@ def test_rag_node_keeps_a_grounded_answer(stub_retriever, chunk):
     assert update["answer"] == "Round Robin assigns a fixed time slice to each process."
     assert update["grounded"] is True
     assert update["citations"] == [{"filename": "os.pdf", "page": 2, "score": 0.77}]
+
+
+def test_rag_node_drops_citations_for_an_answer_too_short_to_check(stub_retriever, chunk):
+    """Citations imply the answer was checked against them; an unchecked answer gets none."""
+    provider = MockProvider(responses=["Yes."])
+    retriever = stub_retriever([chunk(CHUNK, "os.pdf", page=2, score=0.77)])
+
+    update = rag_node(
+        new_state(group_id=1, message="Is Round Robin preemptive?"),
+        provider=provider,
+        retriever=retriever,
+    )
+
+    assert update["answer"] == "Yes."
+    assert update["grounded"] is False
+    assert update["citations"] == []

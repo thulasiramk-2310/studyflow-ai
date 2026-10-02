@@ -1,10 +1,10 @@
 """Grounding check for RAG answers.
 
-After the RAGAgent replies, at least one sentence of the answer must be
+After the RAGAgent replies, every substantive sentence of the answer must be
 supported by a retrieved chunk. Support is either a direct substring match or
-enough token overlap with a single chunk. If nothing is supported, the answer
-is replaced rather than shown - an unsupported answer is a hallucination even
-when it is fluent.
+enough token overlap with a single chunk. If any sentence is unsupported, the
+answer is replaced rather than shown - one sourced claim must not lend its
+citations to an invented one.
 
 This is a cheap lexical check on purpose: it runs on every response, needs no
 model call, and is deterministic in tests.
@@ -114,7 +114,7 @@ def check_grounding(
             supported += 1
 
     return GroundingResult(
-        grounded=supported > 0,
+        grounded=checked > 0 and supported == checked,
         supported_sentences=supported,
         checked_sentences=checked,
         best_overlap=best_overlap,

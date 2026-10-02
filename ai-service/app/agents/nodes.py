@@ -178,6 +178,9 @@ def rag_node(
     # source for text that no source backs.
     if final_answer in (NOT_IN_NOTES, UNSUPPORTED_MESSAGE):
         citations = []
+    # Too short to check (e.g. "Yes."): show it, but don't present sources as proof.
+    elif grounding.checked_sentences == 0:
+        citations = []
 
     update.update(
         {
