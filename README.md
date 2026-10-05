@@ -6,10 +6,9 @@ The same product works for students and professionals: switch the account type a
 
 ## Demo
 
-<!-- To play the video inline on GitHub: edit this README on github.com, drag docs/media/studyflow-demo.mp4
-     into the editor, and replace this comment with the user-attachments link GitHub generates. -->
+https://github.com/user-attachments/assets/d5536f45-2d9c-4bdf-9e5d-3d56ad75752b
 
-[Watch the 2-minute walkthrough](docs/media/studyflow-demo.mp4): an organizer creates a group and uploads notes, a professional joins with the invite code, then Ask AI, the session planner, a summary, a quiz, flashcards and settings.
+A 2-minute walkthrough ([download the mp4](docs/media/studyflow-demo.mp4)): an organizer creates a group and uploads notes, a professional joins with the invite code, then Ask AI, the session planner, a summary, a quiz, flashcards and settings.
 
 | Ask AI, with the file and page behind each answer | The same group in professional mode |
 | --- | --- |
