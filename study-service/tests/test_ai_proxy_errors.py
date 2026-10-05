@@ -14,8 +14,13 @@ def test_json_detail_is_unwrapped():
     assert exc.detail == "AI is temporarily unavailable. Please try again in a minute."
 
 
-def test_non_json_body_is_passed_through():
-    response = httpx.Response(502, text="Bad Gateway")
+def test_upstream_server_body_is_not_exposed():
+    response = httpx.Response(502, text="Traceback: internal database password")
     exc = upstream_error(response)
     assert exc.status_code == 502
-    assert exc.detail == "Bad Gateway"
+    assert exc.detail == "AI is temporarily unavailable. Please try again in a minute."
+
+
+def test_user_errors_remain_readable():
+    response = httpx.Response(400, json={"detail": "Query cannot be empty"})
+    assert upstream_error(response).detail == "Query cannot be empty"

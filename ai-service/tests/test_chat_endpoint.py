@@ -153,6 +153,72 @@ def test_chat_still_requires_a_user_id(client):
     assert response.status_code == 401
 
 
+@pytest.mark.parametrize("overrides", [{"query": "a" * 8001}, {"groupId": 0}, {"sessionId": -1}])
+def test_chat_validates_request_bounds(client, overrides):
+    assert client().post(URL, json=_payload(**overrides), headers=HEADERS).status_code == 422
+
+
+@pytest.mark.parametrize("params", ["limit=-1", "limit=101", "offset=-1", "offset=10001", "before_id=0"])
+def test_message_paging_rejects_invalid_bounds(client, params):
+    response = client().get(f"{URL}/sessions/1?user_id=7&group_id=1&{params}", headers=HEADERS)
+    assert response.status_code == 422
+
+
+def _seed_history(count=65):
+    from app.models.chat import ChatMessage, ChatSession
+    generator = app.dependency_overrides[get_db]()
+    db = next(generator)
+    try:
+        session = ChatSession(user_id=7, group_id=1, title="Saved conversation")
+        db.add(session)
+        db.flush()
+        session_id = session.id
+        db.add_all([ChatMessage(session_id=session_id, role="user", content=f"Message {i}") for i in range(count)])
+        db.commit()
+        return session_id
+    finally:
+        generator.close()
+
+
+def test_recent_messages_and_cursor_preserve_all_history(client):
+    http = client()
+    sid = _seed_history()
+    url = f"{URL}/sessions/{sid}?user_id=7&group_id=1&latest=true"
+    recent = http.get(url, headers=HEADERS).json()
+    assert len(recent) == 30
+    assert recent[0]["content"] == "Message 35"
+    assert recent[-1]["content"] == "Message 64"
+    older = http.get(f"{url}&before_id={recent[0]['id']}", headers=HEADERS).json()
+    first = http.get(f"{url}&before_id={older[0]['id']}", headers=HEADERS).json()
+    assert [m["content"] for m in first + older + recent] == [f"Message {i}" for i in range(65)]
+
+
+@pytest.mark.parametrize("user_id,group_id", [(8, 1), (7, 2)])
+def test_history_and_delete_cannot_cross_owner_or_group(client, user_id, group_id):
+    http = client()
+    sid = _seed_history()
+    url = f"{URL}/sessions/{sid}?user_id={user_id}&group_id={group_id}"
+    assert http.get(url, headers=HEADERS).status_code == 404
+    assert http.delete(url, headers=HEADERS).status_code == 404
+    assert http.post(URL, json=_payload(sessionId=sid, userId=user_id, groupId=group_id), headers=HEADERS).status_code == 404
+
+
+def test_chat_reads_only_four_recent_context_messages(client, monkeypatch):
+    from app.api import chat
+    from app.schemas.chat import ChatResponse
+    http = client()
+    sid = _seed_history()
+    seen = []
+
+    def answer(**kwargs):
+        seen.extend(m.content for m in kwargs["history"])
+        return ChatResponse(success=True, answer="Answer", citations=[], confidence=0)
+
+    monkeypatch.setattr(chat, "run_agent_chat", answer)
+    assert http.post(URL, json=_payload(sessionId=sid), headers=HEADERS).status_code == 200
+    assert seen == [f"Message {i}" for i in range(61, 65)]
+
+
 def test_a_slow_answer_does_not_block_other_requests(client, chunk):
     """Model work is synchronous; it must run off the event loop so /health stays fast."""
     import asyncio

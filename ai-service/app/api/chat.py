@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Annotated
 from datetime import datetime
 from app.core.database import get_db, SessionLocal
 from app.models.chat import ChatSession, ChatMessage
@@ -117,8 +117,9 @@ def chat_with_documents(request: ChatRequest, background_tasks: BackgroundTasks,
         background_tasks.add_task(generate_chat_title, session_id, guarded_query)
         
     # Fetch last 4 messages for context
-    history_messages = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc()).all()
-    recent_history = history_messages[-4:] if history_messages else []
+    recent_history = (db.query(ChatMessage).filter(ChatMessage.session_id == session_id)
+                      .order_by(ChatMessage.id.desc()).limit(4).all())
+    recent_history.reverse()
 
     # Run the agent graph. Guardrails already ran on `request.query` above, so
     # `guarded_query` is the injection-checked, PII-masked message.
@@ -160,23 +161,35 @@ def chat_with_documents(request: ChatRequest, background_tasks: BackgroundTasks,
     return {"success": True, "data": chat_response.model_dump()}
 
 @router.get("/sessions", response_model=List[ChatSessionResponse])
-def get_chat_sessions(group_id: int, user_id: int, db: Session = Depends(get_db)):
+def get_chat_sessions(group_id: int, user_id: int, db: Session = Depends(get_db),
+                      limit: Annotated[int, Query(ge=1, le=100)] = 50,
+                      offset: Annotated[int, Query(ge=0, le=10000)] = 0):
     sessions = db.query(ChatSession).filter(
         ChatSession.group_id == group_id,
         ChatSession.user_id == user_id,
         ChatSession.deleted_at == None
-    ).order_by(ChatSession.updated_at.desc()).all()
+    ).order_by(ChatSession.updated_at.desc(), ChatSession.id.desc()).offset(offset).limit(limit).all()
     return sessions
 
 @router.get("/sessions/{session_id}", response_model=List[ChatMessageResponse])
-def get_chat_session_messages(session_id: int, user_id: int, group_id: int, limit: int = 30, offset: int = 0, db: Session = Depends(get_db)):
+def get_chat_session_messages(session_id: int, user_id: int, group_id: int,
+                              limit: Annotated[int, Query(ge=1, le=100)] = 30,
+                              offset: Annotated[int, Query(ge=0, le=10000)] = 0,
+                              db: Session = Depends(get_db), latest: bool = False,
+                              before_id: Annotated[Optional[int], Query(gt=0)] = None):
     chat_session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.deleted_at == None).first()
     if not chat_session:
         raise HTTPException(status_code=404, detail="Chat session not found")
     if chat_session.user_id != user_id or chat_session.group_id != group_id:
         raise HTTPException(status_code=404, detail="Chat session not found")
         
-    messages = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc()).offset(offset).limit(limit).all()
+    query = db.query(ChatMessage).filter(ChatMessage.session_id == session_id)
+    if before_id is not None:
+        query = query.filter(ChatMessage.id < before_id)
+    newest_first = latest or before_id is not None
+    messages = query.order_by(ChatMessage.id.desc() if newest_first else ChatMessage.id.asc()).offset(offset).limit(limit).all()
+    if newest_first:
+        messages.reverse()
     return messages
 
 @router.delete("/users/{user_id}")
