@@ -113,6 +113,22 @@ def test_rag_node_replaces_a_hallucinated_answer(stub_retriever, chunk):
     assert update["confidence"] == 0.0
 
 
+def test_rag_node_keeps_grounded_sentences_and_drops_unsupported_ones(stub_retriever, chunk):
+    answer = "Round Robin assigns a fixed time slice to each process. It was invented in Paris in 1802."
+    provider = MockProvider(responses=[answer])
+    retriever = stub_retriever([chunk(CHUNK, "os.pdf", page=2, score=0.77)])
+
+    update = rag_node(
+        new_state(group_id=1, message="What is Round Robin?"),
+        provider=provider,
+        retriever=retriever,
+    )
+
+    assert update["answer"] == "Round Robin assigns a fixed time slice to each process."
+    assert update["grounded"] is True
+    assert update["citations"] == [{"filename": "os.pdf", "page": 2, "score": 0.77}]
+
+
 def test_rag_node_keeps_a_grounded_answer(stub_retriever, chunk):
     provider = MockProvider(responses=["Round Robin assigns a fixed time slice to each process."])
     retriever = stub_retriever([chunk(CHUNK, "os.pdf", page=2, score=0.77)])
