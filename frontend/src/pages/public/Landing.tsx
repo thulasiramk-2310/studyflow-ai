@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, BookOpenCheck, CalendarClock, Check, FileUp, GraduationCap, MessagesSquare, Play, Plus, UserPlus, Users } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { Logo } from "../../components/Icons";
 import { Button } from "../../components/ui";
 import { cn } from "../../components/ui/cn";
-import { MiniChat, MiniFlashcards, MiniInvite, MiniPlanner, MiniQuiz, MiniSummary } from "../../components/landing/MiniUI";
+import { MiniChat, MiniFlashcards, MiniInvite, MiniMinutes, MiniPlanner, MiniQuiz, MiniSummary } from "../../components/landing/MiniUI";
 import { IntroExperience } from "../../components/intro/IntroExperience";
+import { playIntro as playIntroFor } from "../../components/intro/introStorage";
 
 const FORMATS_STUDENTS = ["Lecture slides", "Readings", "Handouts", "Past papers"];
 
@@ -48,17 +49,17 @@ const FAQ_STUDENTS = [
 const FORMATS_TEAMS = ["Onboarding docs", "Project specs", "Policies", "Runbooks"];
 
 const PROBLEMS_TEAMS = [
-  { before: "Answers buried across drives and old threads", after: "One shared document space per team, searchable by question" },
+  { before: "New hires spend weeks hunting for the right document", after: "Everyone who joins gets the whole team's documents, searchable by question" },
   { before: "Meetings that wander without an agenda", after: "Every meeting starts with a planned agenda" },
   { before: "Nobody checks what people actually took in", after: "Knowledge checks and key-point cards after every meeting" },
 ];
 
 const FEATURES_TEAMS = [
-  { title: "Ask your documents", body: "Get answers from your team's own documents, with the file and page each one came from.", Mini: MiniChat },
+  { title: "Onboard new members in a day", body: "A new teammate joins with a code and asks the team's runbooks and specs, with the file and page behind every answer.", Mini: MiniChat },
   { title: "Plan the next meeting", body: "StudyFlow reads your roadmap and documents, then suggests what the next meeting should cover.", Mini: MiniPlanner },
   { title: "Knowledge checks", body: "A short check after each meeting, graded instantly, with the reason behind each answer.", Mini: MiniQuiz },
   { title: "Key-point cards", body: "The important terms and decisions from the material, turned into cards anyone can review.", Mini: MiniFlashcards },
-  { title: "Meeting summaries", body: "The key ideas from the material each meeting covered, written up for everyone.", Mini: MiniSummary },
+  { title: "Minutes of meeting", body: "Upload the meeting transcript and get decisions, action items with owners, and open questions, approved by the team owner.", Mini: MiniMinutes },
   { title: "Teams and invites", body: "Share a six-character code, and colleagues join with everything already in place.", Mini: MiniInvite },
 ];
 
@@ -103,11 +104,11 @@ const COPY = {
     cta: "/register",
   },
   teams: {
-    eyebrow: "For teams that run on documents",
-    headline: ["Meetings that ", "actually", " move work forward."],
-    sub: "Share your team's documents once. StudyFlow answers questions from them with sources, plans the next meeting's agenda, and writes knowledge checks so everyone stays on the same page.",
+    eyebrow: "For teams and organizations",
+    headline: ["Everything your team knows, ", "ready", " on day one."],
+    sub: "Share your team's documents once. Everyone who joins gets all of them on day one, asks questions instead of colleagues, and every meeting ends with minutes, decisions and owners.",
     perks: ["Free to start", "No credit card", "Works on any device"],
-    heroLabel: "Platform team · Ask AI",
+    heroLabel: "Platform Team · Ask AI",
     formats: FORMATS_TEAMS, problems: PROBLEMS_TEAMS, features: FEATURES_TEAMS,
     steps: STEPS_TEAMS, useCases: USE_CASES_TEAMS, faq: FAQ_TEAMS,
     problemsTitle: "Team knowledge usually gets lost in the same three places",
@@ -124,15 +125,17 @@ const COPY = {
 export function Landing() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  const playIntro = () => window.dispatchEvent(new Event("sf:play-intro"));
-  const [who, setWho] = useState<Audience>("students");
+  const [params] = useSearchParams();
+  const [who, setWho] = useState<Audience>(params.get("for") === "teams" ? "teams" : "students");
+  const team = who === "teams";
+  const playIntro = () => playIntroFor(team ? "professional" : "student");
   const c = COPY[who];
   const start = () => navigate(isAuthenticated ? "/dashboard" : c.cta);
   const startLabel = isAuthenticated ? "Go to dashboard" : "Get started free";
 
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground">
-      <IntroExperience />
+      <IntroExperience initialAudience={params.get("for") === "teams" ? "professional" : "student"} />
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
         <nav className="mx-auto flex h-16 max-w-[1120px] items-center gap-6 px-4 sm:px-6">
@@ -191,10 +194,10 @@ export function Landing() {
             <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
               <span className="h-2 w-2 rounded-sm bg-primary" /> {c.heroLabel}
             </div>
-            <MiniChat />
+            <MiniChat team={team} />
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <MiniQuiz />
-              <MiniPlanner />
+              {team ? <MiniMinutes /> : <MiniQuiz />}
+              <MiniPlanner team={team} />
             </div>
           </div>
         </div>
@@ -233,7 +236,7 @@ export function Landing() {
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {c.features.map(({ title, body, Mini }) => (
               <div key={title} className="rounded-xl border border-border bg-surface p-4">
-                <Mini />
+                <Mini team={team} />
                 <h3 className="mt-4 text-md font-semibold text-foreground">{title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{body}</p>
               </div>

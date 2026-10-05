@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import { Calendar, Check, FileText, FolderOpen, Home, Send, Sparkles, Users } from "lucide-react";
 import { RichText } from "../ui";
+import type { CanvasContent } from "./timeline";
 
 export const CANVAS_W = 1280;
 export const CANVAS_H = 780;
@@ -20,14 +21,9 @@ export interface CanvasState {
  * A fixed-size, presentational copy of StudyFlow used by the intro's camera.
  * Elements the camera can frame carry data-cam attributes.
  */
-export const IntroCanvas = forwardRef<HTMLDivElement, { state: CanvasState }>(function IntroCanvas({ state }, ref) {
-  const nav = [
-    { icon: Home, label: "Today" },
-    { icon: Users, label: "Groups", on: true },
-    { icon: Calendar, label: "Sessions" },
-    { icon: Sparkles, label: "Ask AI" },
-    { icon: FolderOpen, label: "Library" },
-  ];
+export const IntroCanvas = forwardRef<HTMLDivElement, { state: CanvasState; content: CanvasContent }>(function IntroCanvas({ state, content: c }, ref) {
+  const icons = [Home, Users, Calendar, Sparkles, FolderOpen];
+  const nav = c.nav.map((label, i) => ({ icon: icons[i], label, on: i === 1 }));
   return (
     <div
       ref={ref}
@@ -47,26 +43,26 @@ export const IntroCanvas = forwardRef<HTMLDivElement, { state: CanvasState }>(fu
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-14 items-center gap-3 border-b border-border px-6 text-sm text-muted-foreground">
           <div className="w-72 rounded-lg border border-border bg-surface px-3 py-1.5">Search or jump to…</div>
-          <span className="ml-auto grid h-8 w-8 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary-text">DS</span>
+          <span className="ml-auto grid h-8 w-8 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary-text">{c.initials}</span>
         </div>
 
         <div className="grid flex-1 grid-cols-[1fr_1.15fr] gap-5 p-6">
           <div className="flex flex-col gap-5">
             <div>
-              <div className="font-serif text-2xl text-foreground">Operating Systems</div>
-              <div className="text-sm text-muted-foreground">Study group · 2 members</div>
+              <div className="font-serif text-2xl text-foreground">{c.group}</div>
+              <div className="text-sm text-muted-foreground">{c.groupMeta}</div>
             </div>
 
             <div data-cam="upload" className="rounded-xl border border-border bg-surface p-4">
-              <div className="mb-3 flex justify-between text-base font-semibold text-foreground">Library <span className="text-sm font-normal text-muted-foreground">Upload notes</span></div>
+              <div className="mb-3 flex justify-between text-base font-semibold text-foreground">{c.library} <span className="text-sm font-normal text-muted-foreground">{c.libraryAction}</span></div>
               <div className="relative grid h-24 place-items-center rounded-lg border-[1.5px] border-dashed border-border text-sm text-muted-foreground">
-                <span className={`transition-opacity duration-300 ${state.fileDropped ? "opacity-0" : "opacity-100"}`}>Drop PDFs, slides or notes here</span>
+                <span className={`transition-opacity duration-300 ${state.fileDropped ? "opacity-0" : "opacity-100"}`}>{c.dropHint}</span>
                 <div
                   className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-base font-semibold text-foreground shadow-float transition-all duration-700"
                   style={{ top: state.fileDropped ? 22 : -120, opacity: state.fileDropped ? 1 : 0, transitionTimingFunction: "cubic-bezier(.2,.8,.2,1)" }}
                 >
                   <span className="grid h-8 w-8 place-items-center rounded-md bg-danger-soft text-xs font-bold text-danger">PDF</span>
-                  os_notes.pdf <span className="font-normal text-muted-foreground">16 KB</span>
+                  {c.file} <span className="font-normal text-muted-foreground">{c.fileSize}</span>
                 </div>
               </div>
               <div className={`mt-3 flex items-center gap-2 text-sm text-foreground transition-opacity duration-300 ${state.fileDropped ? "opacity-100" : "opacity-0"}`}>
@@ -81,29 +77,58 @@ export const IntroCanvas = forwardRef<HTMLDivElement, { state: CanvasState }>(fu
             </div>
 
             <div data-cam="quiz" className="rounded-xl border border-border bg-surface p-4">
-              <div className="mb-2 flex justify-between text-base font-semibold text-foreground">Session quiz <span className="text-sm font-normal text-muted-foreground">3 of 8</span></div>
-              <div className="mb-2 font-serif text-lg leading-snug text-foreground">Which state does the Banker's algorithm keep the system in?</div>
-              {["Deadlocked", "A safe state", "Preempted"].map((o) => {
-                const correct = o === "A safe state";
-                const picked = correct && state.answerPicked;
-                return (
-                  <div
-                    key={o}
-                    data-cam={correct ? "answer" : undefined}
-                    className={`mt-2 flex items-center justify-between rounded-lg border px-3 py-2 text-base transition-colors duration-300 ${picked ? "border-primary/50 bg-primary-soft text-foreground" : "border-border text-foreground"}`}
-                  >
-                    {o}
-                    {picked && <span className="flex items-center gap-1 text-sm font-semibold text-primary-text"><Check className="h-3.5 w-3.5" />Correct</span>}
+              {c.card.kind === "quiz" ? (
+                <>
+                  <div className="mb-2 flex justify-between text-base font-semibold text-foreground">{c.card.title} <span className="text-sm font-normal text-muted-foreground">{c.card.count}</span></div>
+                  <div className="mb-2 font-serif text-lg leading-snug text-foreground">{c.card.question}</div>
+                  {c.card.options.map((o) => {
+                    const correct = c.card.kind === "quiz" && o === c.card.correct;
+                    const picked = correct && state.answerPicked;
+                    return (
+                      <div
+                        key={o}
+                        data-cam={correct ? "answer" : undefined}
+                        className={`mt-2 flex items-center justify-between rounded-lg border px-3 py-2 text-base transition-colors duration-300 ${picked ? "border-primary/50 bg-primary-soft text-foreground" : "border-border text-foreground"}`}
+                      >
+                        {o}
+                        {picked && <span className="flex items-center gap-1 text-sm font-semibold text-primary-text"><Check className="h-3.5 w-3.5" />Correct</span>}
+                      </div>
+                    );
+                  })}
+                </>
+              ) : (
+                <>
+                  <div className="mb-3 flex items-center justify-between text-base font-semibold text-foreground">
+                    {c.card.title}
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors duration-300 ${state.answerPicked ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`}>
+                      {state.answerPicked ? "Approved" : "Draft"}
+                    </span>
                   </div>
-                );
-              })}
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Decisions</div>
+                  <div className="mb-3 mt-1 text-base text-foreground">• {c.card.decision}</div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Action items</div>
+                  <div className="mt-1 flex items-center gap-2 text-base text-foreground">
+                    <span className="flex-1">{c.card.action}</span>
+                    <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-text">{c.card.owner}</span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Due {c.card.due}</span>
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <span
+                      data-cam="answer"
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors duration-300 ${state.answerPicked ? "bg-success-soft text-success" : "bg-primary text-primary-foreground"}`}
+                    >
+                      <Check className="h-3.5 w-3.5" />{state.answerPicked ? "Approved" : "Approve"}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
           <div data-cam="chat" className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
-            <div className="flex justify-between text-base font-semibold text-foreground">Ask AI <span className="text-sm font-normal text-muted-foreground">answers only from this group's notes</span></div>
+            <div className="flex justify-between text-base font-semibold text-foreground">Ask AI <span className="text-sm font-normal text-muted-foreground">{c.chatHint}</span></div>
             <div className={`max-w-[85%] self-end rounded-xl bg-primary px-4 py-2.5 text-base text-primary-foreground transition-opacity duration-300 ${state.sent ? "opacity-100" : "opacity-0"}`}>
-              What are the four conditions for deadlock?
+              {c.question}
             </div>
             <div className={`max-w-[88%] rounded-xl border border-border bg-background px-4 py-3 transition-opacity duration-300 ${state.streamed ? "opacity-100" : "opacity-0"}`}>
               <RichText text={state.streamed || " "} className="text-base leading-relaxed text-foreground" />
@@ -112,9 +137,9 @@ export const IntroCanvas = forwardRef<HTMLDivElement, { state: CanvasState }>(fu
                   data-cam="citation"
                   className={`inline-flex items-center gap-1.5 rounded-lg border bg-surface px-2.5 py-1 text-sm text-foreground transition-shadow duration-300 ${state.citationGlow ? "border-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.25)]" : "border-border"}`}
                 >
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />os_notes.pdf · page 4 · <b className="text-primary-text">72%</b>
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />{c.citation} · <b className="text-primary-text">{c.citationScore}</b>
                 </span>
-                <span className="inline-flex items-center rounded-lg border border-border bg-surface px-2.5 py-1 text-sm text-foreground">page 2 · <b className="ml-1 text-primary-text">34%</b></span>
+                <span className="inline-flex items-center rounded-lg border border-border bg-surface px-2.5 py-1 text-sm text-foreground">{c.secondCitation} · <b className="ml-1 text-primary-text">{c.secondScore}</b></span>
               </div>
             </div>
             <div data-cam="input" className="mt-auto flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-base text-foreground">

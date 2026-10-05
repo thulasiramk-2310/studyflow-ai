@@ -4,12 +4,12 @@ import { useReducedMotion } from "framer-motion";
 import { Button } from "../ui";
 import { cn } from "../ui/cn";
 import { IntroCanvas, CANVAS_H, CANVAS_W, type CanvasState } from "./IntroCanvas";
-import { ANSWER, BEATS, INTRO_MS, QUESTION, type Caption, type CameraTarget } from "./timeline";
+import { INTRO_MS, SCRIPTS, type Caption, type CameraTarget } from "./timeline";
+import type { Audience } from "../../types";
 
 const INITIAL: CanvasState = {
   fileDropped: false, indexed: false, typed: "", sent: false, streamed: "", citationGlow: false, answerPicked: false, cursor: null,
 };
-const FIRST_CAPTION = BEATS[0].caption as Caption;
 
 /** Offset of a data-cam element relative to the canvas, measured at zoom 1. */
 function camBox(canvas: HTMLElement, target: string) {
@@ -20,7 +20,8 @@ function camBox(canvas: HTMLElement, target: string) {
   return { x, y, w: el.offsetWidth, h: el.offsetHeight };
 }
 
-export function IntroStage({ onDone, embedded = false }: { onDone: () => void; embedded?: boolean }) {
+export function IntroStage({ onDone, embedded = false, audience = "student" }: { onDone: () => void; embedded?: boolean; audience?: Audience }) {
+  const script = SCRIPTS[audience];
   const reduce = useReducedMotion();
   const navigate = useNavigate();
   const viewport = useRef<HTMLDivElement>(null);
@@ -28,7 +29,7 @@ export function IntroStage({ onDone, embedded = false }: { onDone: () => void; e
   const world = useRef<HTMLDivElement>(null);
   const camera = useRef<{ target: CameraTarget; zoom: number }>({ target: "wide", zoom: 1 });
   const [state, setState] = useState<CanvasState>(INITIAL);
-  const [caption, setCaption] = useState<Caption>(FIRST_CAPTION);
+  const [caption, setCaption] = useState<Caption>(script.beats[0].caption as Caption);
   const [ended, setEnded] = useState(Boolean(reduce));
   const [moving, setMoving] = useState(false);
   const [progress, setProgress] = useState(false);
@@ -55,7 +56,8 @@ export function IntroStage({ onDone, embedded = false }: { onDone: () => void; e
     const patch = (p: Partial<CanvasState>) => setState((s) => ({ ...s, ...p }));
     requestAnimationFrame(() => setProgress(true));
 
-    for (const beat of BEATS) {
+    const { beats, question, answer } = script;
+    for (const beat of beats) {
       later(beat.at, () => {
         if (beat.caption) setCaption(beat.caption);
         if (beat.camera) {
@@ -68,14 +70,14 @@ export function IntroStage({ onDone, embedded = false }: { onDone: () => void; e
           case "dropFile": patch({ fileDropped: true }); break;
           case "indexed": patch({ indexed: true }); break;
           case "typeQuestion":
-            for (let i = 1; i <= QUESTION.length; i++) later(i * 32, () => patch({ typed: QUESTION.slice(0, i) }));
+            for (let i = 1; i <= question.length; i++) later(i * 32, () => patch({ typed: question.slice(0, i) }));
             break;
           case "clickSend":
             patch({ cursor: { target: "send", click: Date.now() } });
             later(800, () => patch({ typed: "", sent: true, cursor: null }));
             break;
           case "streamAnswer": {
-            const words = ANSWER.split(" ");
+            const words = answer.split(" ");
             words.forEach((_, i) => later(i * 70, () => patch({ streamed: words.slice(0, i + 1).join(" ") })));
             break;
           }
@@ -90,7 +92,7 @@ export function IntroStage({ onDone, embedded = false }: { onDone: () => void; e
       });
     }
     return () => timers.forEach(clearTimeout);
-  }, [reduce, frame]);
+  }, [reduce, frame, script]);
 
   // Re-frame on resize; Esc skips.
   useEffect(() => {
@@ -150,7 +152,7 @@ export function IntroStage({ onDone, embedded = false }: { onDone: () => void; e
             willChange: moving ? "transform" : "auto",
           }}
         >
-          <IntroCanvas ref={canvas} state={state} />
+          <IntroCanvas ref={canvas} state={state} content={script.canvas} />
           {cursorBox && (
             <svg
               key={state.cursor?.click}
@@ -171,7 +173,7 @@ export function IntroStage({ onDone, embedded = false }: { onDone: () => void; e
           <div>
             <div className="font-serif text-xl text-primary-text">StudyFlow</div>
             <div className="mt-3 font-serif text-foreground" style={{ fontSize: "clamp(30px, 4.4vw, 56px)", lineHeight: 1.02 }}>
-              Study groups that <em className="text-primary-text">actually</em> study.
+              {script.closing[0]}<em className="text-primary-text">{script.closing[1]}</em>{script.closing[2]}
             </div>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button onClick={onDone}>{embedded ? "Close" : "Explore StudyFlow"}</Button>

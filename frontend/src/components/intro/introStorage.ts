@@ -1,3 +1,5 @@
+import type { Audience } from "../../types";
+
 const KEY = "sf_intro_seen";
 let seenThisLoad = false;
 
@@ -18,3 +20,6 @@ export function markIntroSeen(): void {
     /* storage blocked: remembered for this page load only */
   }
 }
+
+/** Plays the landing intro for an audience (handled by IntroExperience). */
+export const playIntro = (audience: Audience) => window.dispatchEvent(new CustomEvent<Audience>("sf:play-intro", { detail: audience }));
