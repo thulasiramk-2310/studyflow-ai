@@ -39,17 +39,21 @@ def generate_schedule(context_str: str, target_duration: int = 60, audience: str
         prompt = with_audience(prompt, audience)
     
     try:
-        response_text = generate_answer(prompt)
-        
-        # Parse JSON
-        start_idx = response_text.find('{')
-        end_idx = response_text.rfind('}')
-        if start_idx != -1 and end_idx != -1:
-            json_str = response_text[start_idx:end_idx+1]
-            schedule_data = json.loads(json_str)
-        else:
-            raise ValueError("No JSON object found in response")
-            
+        # One retry: the model occasionally drops a comma in long JSON.
+        for attempt in range(2):
+            response_text = generate_answer(prompt)
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}')
+            try:
+                if start_idx == -1 or end_idx == -1:
+                    raise ValueError("No JSON object found in response")
+                schedule_data = json.loads(response_text[start_idx:end_idx+1])
+                break
+            except ValueError as parse_error:  # json.JSONDecodeError is a ValueError
+                logger.warning(f"Schedule JSON unreadable (attempt {attempt + 1}): {parse_error}")
+                if attempt == 1:
+                    raise
+
         for item in schedule_data.get("agenda") or []:
             if isinstance(item, dict):
                 item["activity_type"] = normalize_activity_type(item.get("activity_type"))
