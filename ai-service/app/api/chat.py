@@ -65,7 +65,7 @@ def generate_chat_title(session_id: int, first_query: str):
 @router.post("")
 def chat_with_documents(request: ChatRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
-    Generate an answer using RAG based on uploaded study materials, with chat history.
+    Generate an answer using RAG based on uploaded documents, with chat history.
     """
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")

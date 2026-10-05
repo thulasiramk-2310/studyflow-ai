@@ -66,7 +66,7 @@ export function AIAssistant() {
               {chat.groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
             </select>
           )}
-          <span className="hidden text-sm text-muted-foreground xl:inline">Answers from this {terms.groupLower}'s notes</span>
+          <span className="hidden text-sm text-muted-foreground xl:inline">Answers from this {terms.groupLower}'s {terms.library.toLowerCase()}</span>
           <Button size="sm" variant="ghost" icon={Plus} onClick={newChat} disabled={loadingConversation || !!error} className="ml-auto lg:hidden">New chat</Button>
           <div className="flex w-full items-center gap-2 lg:hidden">
             <History className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -105,7 +105,7 @@ export function AIAssistant() {
                 <div key={index} className={`flex gap-2 sm:gap-3 ${message.role === "user" ? "justify-end" : ""}`}>
                   {message.role === "ai" && <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-text"><Sparkles className="h-3.5 w-3.5" /></span>}
                   <div className={`min-w-0 max-w-[85%] break-words rounded-lg border px-4 py-3 ${message.role === "user" ? "border-primary bg-primary text-primary-foreground" : isError ? "border-danger/20 bg-danger-soft text-danger" : "border-border bg-surface text-foreground"}`}>
-                    {message.thinking ? <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />Searching your notes and writing an answer…</div>
+                    {message.thinking ? <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />Searching your {terms.audience === "professional" ? "documents" : "notes"} and writing an answer…</div>
                       : message.role === "user" ? <p className="whitespace-pre-wrap">{message.content}</p>
                       : isError ? <p role="alert">{message.content.replace(/^❌\s*/, "")}</p>
                       : <>

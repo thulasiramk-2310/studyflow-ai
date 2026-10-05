@@ -21,7 +21,7 @@ def generate_rag_response(group_id: int, query: str, top_k: int = 3, history_mes
     if not results_raw:
         return ChatResponse(
             success=True,
-            answer="I couldn't find this information in the uploaded study materials.",
+            answer="I couldn't find this information in the uploaded documents.",
             confidence=0.0,
             citations=[]
         )

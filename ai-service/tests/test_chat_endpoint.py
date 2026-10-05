@@ -123,7 +123,7 @@ def test_chat_returns_not_in_notes_when_nothing_is_retrieved(client):
     response = client(results=[]).post(URL, json=_payload(), headers=HEADERS)
 
     data = response.json()["data"]
-    assert data["answer"] == "I couldn't find this information in the uploaded study materials."
+    assert data["answer"] == "I couldn't find this information in the uploaded documents."
     assert data["citations"] == []
 
 

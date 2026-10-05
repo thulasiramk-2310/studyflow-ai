@@ -56,6 +56,6 @@ def test_chat_prompt_keeps_its_original_contract():
     """Hardening must not change the answer the model is told to give."""
     prompt = build_chat_prompt("What is paging?", ["Paging splits memory into frames."])
 
-    assert "I couldn't find this information in the uploaded study materials." in prompt
+    assert "I couldn't find this information in the uploaded documents." in prompt
     assert "What is paging?" in prompt
     assert "Paging splits memory into frames." in prompt
