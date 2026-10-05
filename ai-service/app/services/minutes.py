@@ -12,7 +12,7 @@ import logging
 import re
 
 from app.core.config import settings
-from app.guardrails.grounding import _content_tokens, check_grounding
+from app.guardrails.grounding import _content_tokens, check_grounding, split_sentences
 from app.prompts.audience import with_audience
 from app.prompts.minutes_prompt import build_merge_prompt, build_minutes_prompt
 from app.services.llm_service import generate_answer
@@ -126,14 +126,19 @@ def _supported(text: str, windows: list[str], transcript_tokens: set[str]) -> bo
 
 def _named_in(value: str, lowered_transcript: str) -> bool:
     parts = [p for p in re.findall(r"[a-z0-9]+", value.lower()) if len(p) > 1]
-    return bool(parts) and any(re.search(rf"\b{re.escape(p)}\b", lowered_transcript) for p in parts)
+    return bool(parts) and all(re.search(rf"\b{re.escape(p)}\b", lowered_transcript) for p in parts)
 
 
 def ground_minutes(minutes: dict, transcript: str) -> dict:
     windows = _windows(transcript)
     tokens = _content_tokens(transcript)
     lowered = transcript.lower()
-    minutes["decisions"] = [d for d in minutes["decisions"] if _supported(d, windows, tokens)]
+    minutes["executive_summary"] = " ".join(
+        sentence for sentence in split_sentences(minutes["executive_summary"])
+        if _supported(sentence, windows, tokens)
+    )
+    for field in LIST_FIELDS:
+        minutes[field] = [item for item in minutes[field] if _supported(item, windows, tokens)]
     kept = []
     for item in minutes["action_items"]:
         if not _supported(item["task"], windows, tokens):
