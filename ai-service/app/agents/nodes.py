@@ -16,7 +16,7 @@ from typing import Any, Optional
 
 from app.agents.intent import CLARIFY_QUESTION, classify
 from app.agents.state import MAX_STEPS, AgentState
-from app.guardrails.grounding import UNSUPPORTED_MESSAGE, keep_grounded_sentences
+from app.guardrails.grounding import UNSUPPORTED_MESSAGE, _content_tokens, keep_grounded_sentences
 from app.guardrails.pii import mask_all
 from app.prompts.agent_prompt import NOT_IN_NOTES, build_agent_prompt
 from app.prompts.audience import with_audience
@@ -35,6 +35,16 @@ NO_INDEX_MESSAGE = "No study materials have been indexed for this group yet."
 # CHUNK_SIZE=1000 dilutes it with adjacent memory-management content. See
 # follow-up: smaller chunk size to widen the score gap.
 MIN_RELEVANCE = 0.45
+# A multi-section chunk (a runbook with several headings) dilutes the score of the
+# one section that answers the question. Below MIN_RELEVANCE, a match still counts
+# when it scores at least LEXICAL_FLOOR and contains most of the question's key words.
+LEXICAL_FLOOR = 0.3
+LEXICAL_SHARE = 0.67
+
+
+def _key_words_covered(query: str, content: str) -> float:
+    words = _content_tokens(query)
+    return len(words & _content_tokens(content)) / len(words) if words else 0.0
 
 
 def _bump(state: AgentState, label: str) -> dict[str, Any]:
@@ -143,7 +153,8 @@ def rag_node(
     # all-MiniLM-L6-v2 scores unrelated technical text in the 0.2-0.4 band, so
     # 0.2 alone lets an off-topic question pull in unrelated notes.
     top_score = float(results[0]["score"])
-    if top_score < min_relevance:
+    lexical = top_score >= LEXICAL_FLOOR and _key_words_covered(query, results[0]["content"]) >= LEXICAL_SHARE
+    if top_score < min_relevance and not lexical:
         logger.info(
             f"RAGAgent rejected weak match | group={group_id} "
             f"top_score={top_score:.3f} min={min_relevance}"
