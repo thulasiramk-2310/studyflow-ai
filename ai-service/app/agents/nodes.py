@@ -16,7 +16,7 @@ from typing import Any, Optional
 
 from app.agents.intent import CLARIFY_QUESTION, classify
 from app.agents.state import MAX_STEPS, AgentState
-from app.guardrails.grounding import UNSUPPORTED_MESSAGE, enforce_grounding
+from app.guardrails.grounding import UNSUPPORTED_MESSAGE, keep_grounded_sentences
 from app.guardrails.pii import mask_all
 from app.prompts.agent_prompt import NOT_IN_NOTES, build_agent_prompt
 from app.prompts.audience import with_audience
@@ -160,7 +160,7 @@ def rag_node(
     raw_answer = (provider.complete(prompt) if provider else "") or ""
 
     # Grounding: the answer must be supported by what was actually retrieved.
-    answer, grounding = enforce_grounding(
+    answer, grounding = keep_grounded_sentences(
         raw_answer.strip(),
         chunks,
         exempt=(NOT_IN_NOTES, ""),

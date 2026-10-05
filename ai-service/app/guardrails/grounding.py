@@ -147,3 +147,35 @@ def enforce_grounding(
         f"sentences={result.checked_sentences} best_overlap={result.best_overlap:.2f}"
     )
     return UNSUPPORTED_MESSAGE, result
+
+
+def keep_grounded_sentences(
+    answer: str,
+    chunks: list[str],
+    threshold: float = DEFAULT_THRESHOLD,
+    exempt: tuple[str, ...] = (),
+) -> tuple[str, GroundingResult]:
+    """Drop unsupported sentences while preserving independently grounded claims."""
+    if answer in exempt:
+        return answer, check_grounding(answer, chunks, threshold)
+    if not answer or not chunks:
+        return UNSUPPORTED_MESSAGE, check_grounding(answer, chunks, threshold)
+
+    all_chunk_tokens = set().union(*(_content_tokens(chunk) for chunk in chunks))
+    kept: list[str] = []
+    for sentence in split_sentences(answer):
+        tokens = _content_tokens(sentence)
+        if len(tokens) < MIN_CONTENT_TOKENS:
+            if tokens and tokens <= all_chunk_tokens:
+                kept.append(sentence)
+            continue
+        if check_grounding(sentence, chunks, threshold).grounded:
+            kept.append(sentence)
+
+    if not kept:
+        result = check_grounding(answer, chunks, threshold)
+        if result.checked_sentences == 0:
+            return answer, result
+        return UNSUPPORTED_MESSAGE, result
+    grounded_answer = " ".join(kept)
+    return grounded_answer, check_grounding(grounded_answer, chunks, threshold)
