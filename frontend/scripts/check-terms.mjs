@@ -34,6 +34,13 @@ for (const f of files) {
     // JSX text with {expressions} inside: drop the expressions and scan the words around them.
     let jsxText = line;
     while (/\{[^{}]*\}/.test(jsxText)) jsxText = jsxText.replace(/\{[^{}]*\}/g, " "); // nested ${} inside {}
+    // JSX text alone on its own line ("Create session" between a tag above and below).
+    const bare = /^\s*([A-Za-z][A-Za-z ,.'’-]*[A-Za-z.])\s*$/.exec(raw);
+    if (bare && !/^\s*(import|export|return|case|type|const|let|function|default)/.test(raw) && NOUN.test(bare[1])) {
+      hits.push(`${relative(ROOT, f)}:${i + 1}: ${bare[1].slice(0, 90)}`);
+    }
+    const tail = /\/>\s*([A-Za-z][^<>{}]*)$/.exec(line);
+    if (tail && NOUN.test(tail[1])) hits.push(`${relative(ROOT, f)}:${i + 1}: ${tail[1].trim().slice(0, 90)}`);
     for (const m of [...line.matchAll(TEXT), ...jsxText.matchAll(/>([^<>]+)</g)]) {
       // In template literals only the literal words count: `${t.sessions} hosted` is fine.
       const text = (m[1] ?? m[2] ?? m[3] ?? (m[4] ?? "").replace(/\$\{[^}]*\}/g, " ")).trim();

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, X, File as FileIcon, AlertCircle } from 'lucide-react';
 import { resourceService } from '../../services/resource.service';
 import type { Group } from '../../services/group.service';
+import { useTerms } from '../../hooks/useTerms';
 
 interface Props {
   groupId?: number;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: Props) {
+  const terms = useTerms();
   const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>(groupId || (groups && groups.length > 0 ? groups[0].id : undefined));
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -95,12 +97,12 @@ export function DragDropUploader({ groupId, groups, onUploadSuccess, onClose }: 
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Upload notes" className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4 backdrop-blur-[2px]">
+    <div role="dialog" aria-modal="true" aria-label={terms.uploadNotes} className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 p-4 backdrop-blur-[2px]">
       <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-float">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h3 className="font-serif text-lg text-foreground">Upload notes</h3>
+          <h3 className="font-serif text-lg text-foreground">{terms.uploadNotes}</h3>
           <button onClick={onClose} disabled={uploading} aria-label="Close" className="p-1 hover:bg-muted rounded-md transition-colors disabled:opacity-50 text-muted-foreground">
             <X className="w-5 h-5" />
           </button>

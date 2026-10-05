@@ -101,7 +101,7 @@ export function Resources() {
             onClick={() => setIsUploadOpen(true)}
             className="flex items-center gap-1.5 bg-primary text-primary-foreground rounded-lg px-3.5 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm"
           >
-            <Upload className="w-4 h-4" /> Upload notes
+            <Upload className="w-4 h-4" /> {terms.uploadNotes}
           </button>
         }
       />

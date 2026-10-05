@@ -7,6 +7,7 @@ import { Upload, Calendar, Sparkles, UserPlus } from "lucide-react";
 import { notificationService } from "../../services/notification.service";
 import type { Notification } from "../../services/notification.service";
 import { formatDistanceToNow } from "date-fns";
+import { useTerms } from "../../hooks/useTerms";
 
 const TYPE_ICON: Record<string, React.ElementType> = {
   upload: Upload, session: Calendar, ai: Sparkles, member: UserPlus,
@@ -26,6 +27,7 @@ const mapNotificationType = (apiType: string) => {
 };
 
 export function Notifications() {
+  const terms = useTerms();
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [notifs, setNotifs] = useState<Notification[]>([]);
@@ -111,7 +113,7 @@ export function Notifications() {
           </div>
           <h3 className="text-base font-bold text-foreground">No notifications yet</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-[280px]">
-            We'll notify you when AI summaries finish, someone joins your group, or sessions are scheduled.
+            We'll notify you when AI summaries finish, someone joins your {terms.groupLower}, or {terms.sessionsLower} are scheduled.
           </p>
         </div>
       </div>

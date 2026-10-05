@@ -23,14 +23,14 @@ const doneMessage = (t: ReturnType<typeof useTerms>): Record<Exclude<NewAction, 
   group: `${t.group} created`,
   join: `You joined the ${t.groupLower}`,
   session: `${t.session} scheduled`,
-  upload: "Notes uploaded. They'll be ready for Ask AI in a moment.",
+  upload: `${t.notesUploaded}. They'll be ready for Ask AI in a moment.`,
 });
 
 const newItems = (t: ReturnType<typeof useTerms>) => [
   { key: "group" as const, label: t.newGroup, icon: Users },
   { key: "join" as const, label: t.joinGroup, icon: KeyRound },
   { key: "session" as const, label: t.newSession, icon: CalendarPlus },
-  { key: "upload" as const, label: "Upload notes", icon: Upload },
+  { key: "upload" as const, label: t.uploadNotes, icon: Upload },
 ];
 
 export function Topbar() {

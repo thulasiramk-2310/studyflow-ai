@@ -397,7 +397,7 @@ export function GroupWorkspace() {
 
       {activeTab === "Library" && (
         <Card className="mt-6">
-          <CardHeader title={`${terms.library} · ${resources.length}`} action={<Button size="sm" icon={Upload} onClick={() => setIsUploadOpen(true)}>Upload notes</Button>} />
+          <CardHeader title={`${terms.library} · ${resources.length}`} action={<Button size="sm" icon={Upload} onClick={() => setIsUploadOpen(true)}>{terms.uploadNotes}</Button>} />
           {resources.length === 0 ? (
             <EmptyState icon={FileText} title="No notes yet" description="Upload PDFs, Word, PowerPoint or Markdown. They're indexed so Ask AI can cite them." />
           ) : (
