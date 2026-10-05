@@ -1,14 +1,34 @@
 import json
 import logging
 import httpx
-from sqlalchemy.orm import Session
-from app.models.session import StudySession, SessionStatus
-from app.models.group import StudyGroup
+from sqlalchemy.orm import Session, joinedload
+from app.models.session import StudySession, SessionStatus, SummaryStatus
+from app.models.group import StudyGroup, LearningPlanItem, LearningPlanItemStatus
 from app.models.resource import Resource
 from app.core.config import settings
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
+
+HISTORY_LIMIT = 10
+CONTEXT_LIMIT = 24000
+
+
+def _followups(summary) -> dict:
+    """Retain source attribution without treating an action as still outstanding."""
+    actions = []
+    for item in (summary.action_items or [])[:10]:
+        if isinstance(item, dict):
+            # Minutes store "" for an owner or due date nobody stated: report it as unknown.
+            actions.append({key: str(item[key])[:300] if item.get(key) else None
+                            for key in ("task", "owner", "due")})
+        elif isinstance(item, str):
+            actions.append({"task": item[:300], "owner": None, "due": None})
+    return {
+        "source": summary.source,
+        "actions_to_review": actions,
+        "open_questions": [str(q)[:300] for q in (summary.open_questions or [])[:10]],
+    }
 
 async def generate_agentic_schedule(db: Session, group_id: int, target_duration_minutes: int) -> dict:
     # 1. Fetch group, resources, and learning path
@@ -16,22 +36,29 @@ async def generate_agentic_schedule(db: Session, group_id: int, target_duration_
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
         
-    resources = db.query(Resource).filter(Resource.group_id == group_id).all()
-    resource_info = [f"- ID {r.id}: {r.filename} (Uploaded: {r.created_at})" for r in resources]
+    resources = (db.query(Resource).filter(Resource.group_id == group_id)
+                 .order_by(Resource.created_at.desc(), Resource.id.desc()).limit(50).all())
+    resource_info = [f"- ID {r.id}: {r.filename[:100]} (Uploaded: {r.created_at})" for r in resources]
     
     # 2. Fetch Learning Path
-    learning_plan = group.learning_plan
-    completed_topics = [f"- ID {lp.id}: {lp.title}" for lp in learning_plan if lp.status.value == "COMPLETED"]
-    pending_topics = [f"- ID {lp.id}: {lp.title}" for lp in learning_plan if lp.status.value != "COMPLETED"]
+    learning_plan = (db.query(LearningPlanItem).filter(LearningPlanItem.group_id == group_id)
+                     .order_by((LearningPlanItem.status == LearningPlanItemStatus.COMPLETED).asc(),
+                               LearningPlanItem.order_index, LearningPlanItem.id).limit(50).all())
+    completed_topics = [f"- ID {lp.id}: {lp.title[:120]}" for lp in learning_plan if lp.status.value == "COMPLETED"]
+    pending_topics = [f"- ID {lp.id}: {lp.title[:120]}" for lp in learning_plan if lp.status.value != "COMPLETED"]
     
     # 3. Fetch past sessions
-    sessions = db.query(StudySession).filter(StudySession.group_id == group_id).order_by(StudySession.scheduled_at.asc()).all()
-    
-    pending_sessions = [s for s in sessions if s.status == SessionStatus.SCHEDULED]
-    if pending_sessions:
-        raise HTTPException(status_code=400, detail="A scheduled session already exists for this group. Complete or cancel it first.")
-        
-    completed_sessions = [s for s in sessions if s.status == SessionStatus.COMPLETED]
+    pending_session = db.query(StudySession.id).filter(
+        StudySession.group_id == group_id,
+        StudySession.status.in_([SessionStatus.SCHEDULED, SessionStatus.LIVE]),
+    ).first()
+    if pending_session:
+        raise HTTPException(status_code=400, detail="A scheduled or live session already exists for this group. Complete or cancel it first.")
+
+    completed_sessions = (db.query(StudySession).filter(
+        StudySession.group_id == group_id, StudySession.status == SessionStatus.COMPLETED,
+    ).options(joinedload(StudySession.summary), joinedload(StudySession.quiz), joinedload(StudySession.flashcard_deck))
+      .order_by(StudySession.scheduled_at.desc(), StudySession.id.desc()).limit(HISTORY_LIMIT).all())
     
     # 4. Build Context String
     context_lines = []
@@ -47,16 +74,26 @@ async def generate_agentic_schedule(db: Session, group_id: int, target_duration_
     context_lines.append("\nAvailable Resources:")
     context_lines.extend(resource_info if resource_info else ["None"])
     
-    context_lines.append("\nSession History:")
+    context_lines.append("\nRecent Session History (newest first; older history may be omitted):")
     for idx, s in enumerate(completed_sessions):
-        context_lines.append(f"\n{idx+1}. {s.title} (Type: {s.session_type.value}, Duration: {s.duration_minutes}m, Date: {s.scheduled_at})")
-        if s.summary and s.summary.summary:
-            context_lines.append(f"   Summary: {s.summary.summary}")
+        entry = [f"\n{idx+1}. {s.title} (ID: {s.id}, Type: {s.session_type.value}, Duration: {s.duration_minutes}m, Date: {s.scheduled_at})"]
+        summary = s.summary
+        if summary and summary.status == SummaryStatus.READY:
+            is_minutes = bool(summary.source or summary.review_status)
+            if not is_minutes or summary.review_status == "APPROVED":
+                entry.append(f"   Summary: {(summary.summary or '')[:1200]}")
+                if is_minutes:
+                    entry.append("   Approved minutes follow-ups: " + json.dumps(_followups(summary), ensure_ascii=True))
             
         if s.quiz:
-            context_lines.append(f"   Quiz Status: {s.quiz.status.value}")
+            entry.append(f"   Quiz Status: {s.quiz.status.value}")
         if s.flashcard_deck:
-            context_lines.append(f"   Flashcards Status: {s.flashcard_deck.status.value}")
+            entry.append(f"   Flashcards Status: {s.flashcard_deck.status.value}")
+        # Keep whole entries so a clipped JSON fragment cannot change its meaning.
+        if len("\n".join(context_lines + entry)) > CONTEXT_LIMIT:
+            context_lines.append("Additional session history omitted for size.")
+            break
+        context_lines.extend(entry)
 
     context_str = "\n".join(context_lines)
     

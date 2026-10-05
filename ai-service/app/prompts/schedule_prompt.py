@@ -15,6 +15,13 @@ RULES:
 3. If past sessions are well understood, move on to the pending/available resources that have not been covered yet.
 4. The total sum of duration_minutes in the agenda items MUST equal exactly the Target Duration provided in the context.
 5. Output a single JSON object (and nothing else). No markdown formatting blocks around the JSON.
+   When approved minutes contain actions or open questions, consider a follow-up
+   agenda item and name the source session in its description. Completion of an
+   action is unknown: propose checking progress, never assert it is overdue or
+   unfinished. Preserve only explicitly supplied owners and due dates; never
+   invent either. Do not treat draft minutes as approved facts. Quiz or flashcard
+   generation status is not evidence of a participant's score or understanding.
+   This is a proposal for organizer approval, not an already booked session.
 6. The JSON must match this exact schema:
 {{
   "title": "String (Short, descriptive title for the session)",
