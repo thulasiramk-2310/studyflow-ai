@@ -22,7 +22,7 @@ The same product works for students and professionals: switch the account type a
 - **Learning path** per group, with progress tracking.
 - **Library.** Upload PDF, Word (.docx), PowerPoint (.pptx), Markdown or plain-text notes, up to 25 MB each. Each file is chunked, embedded and indexed for its group only.
 - **Ask AI.** Answers come only from the group's notes and show the file and page they came from. If the notes don't cover a question, it says so instead of guessing.
-- **AI session planner.** Proposes the next session with a timed agenda; the organizer reviews it before it is created.
+- **AI session planner.** Proposes the next session with a timed agenda; the organizer reviews it before it is created. Recent approved minutes supply action items and open questions for follow-up proposals. Draft minutes are excluded, and action completion is treated as unknown. Context is bounded to recent history rather than loading every past session.
 - **After a session:** an AI summary, a graded quiz with explanations, and flashcards.
 - **Meeting minutes.** Add the meeting's transcript (.vtt, .txt or .docx from Google Meet, Zoom or Teams) or paste notes, and the AI writes minutes from what was said: decisions, action items with owners and due dates when they were stated, and open questions. Each item must be backed by the transcript, and the minutes stay a draft until the organizer edits and approves them.
 - **Accounts that behave like a real product:** change password (other sessions are signed out), reset a forgotten password by email (one-time links that expire after 30 minutes), notification preferences per category, and account deletion that also removes your AI chat history.
@@ -80,10 +80,11 @@ AI features are limited by the Groq account, not by these servers: chat, summari
 ## Testing
 
 - `auth-service`: 28 JUnit tests (sign-up, cookies, password change and reset, revocation, account deletion).
-- `study-service`: 85 pytest tests (transactions, job leases, invite-code visibility, audiences, notification preferences, upload types, transcripts and minutes review).
-- `ai-service`: 244 pytest tests (guardrails, grounding, agents, MCP, FAISS locking and S3 snapshots, document loaders, key failover, transcript parsing and minutes).
+- `study-service`: pytest coverage for transactions, job leases, invite-code visibility, audiences, notification preferences, upload types, transcripts, minutes review, approved planner follow-ups, and public chat authorization and input limits.
+- `ai-service`: pytest coverage for guardrails, grounding, agents, MCP, FAISS locking and S3 snapshots, document loaders, key failover, transcript parsing, minutes, bounded chat history and cross-user access checks.
 - Offline RAG eval (`python -m evals.rag_eval`, add `--live` for Groq): decision recall 14/15, faithfulness 15/15, not-in-notes 5/5.
-- Frontend: `npm run lint` (oxlint plus colour-token and wording guards), `npm run walkthrough` (Playwright end to end in light, dark and 390 px) and `npm run walkthrough:modes` (26 checks across student and professional modes, including transcript minutes).
+- Frontend: `npm run lint` (oxlint plus colour-token and wording guards), `npm run walkthrough` (Playwright end to end in light, dark and 390 px) and `npm run walkthrough:modes` (student and professional flows, including transcript minutes).
+- Chat regressions: start the frontend with `npm run dev -- --host 127.0.0.1 --port 5173`, then run `npm run test:conversations` in another terminal. This Playwright suite uses mocked API responses, including deliberately delayed replies, to check workspace isolation, retries, pagination, mobile layout, and the planner shortcut. It requires no live backend or AI key. Set `BASE_URL` to use a different local port; screenshots go to a timestamped folder under `frontend/walkthrough-output/`. Live integration still requires the separate walkthroughs against the running stack.
 
 ## Folder structure
 
