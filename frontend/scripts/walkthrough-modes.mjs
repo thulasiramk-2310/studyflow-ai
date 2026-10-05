@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BASE = (process.env.BASE_URL || "http://localhost").replace(/\/$/, "");
-const OUT = resolve(HERE, "../walkthrough-output/modes");
+const OUT = resolve(process.env.WALKTHROUGH_OUTPUT_DIR || join(HERE, "../walkthrough-output/modes"));
 const NOTES = resolve(HERE, "../../ai-service/evals/data/os_notes.pdf");
 const DOCX = resolve(HERE, "fixtures/sample-notes.docx");
 const VTT = resolve(HERE, "fixtures/sample-meeting.vtt");
@@ -293,6 +293,7 @@ try {
   await step(acct.p, "Word upload is indexed", async () => {
     await createGroup(acct.p, `Docx Group ${stamp}`);
     const groupId = new URL(acct.p.url()).pathname.split("/").pop();
+    acct.groupId = groupId;
     await acct.p.goto(`${BASE}/resources`);
     await acct.p.locator("h1").first().waitFor();
     await acct.p.getByRole("button", { name: "Upload notes" }).click();
@@ -313,6 +314,86 @@ try {
         .then((r) => r.json()).then((j) => (j.data || [])[0]?.status || ""), groupId);
     }
     if (status !== "INDEXED") throw new Error(`docx ended as "${status}"`);
+  });
+  await step(acct.p, "Ask AI answers from indexed notes with a citation", async () => {
+    await acct.p.goto(`${BASE}/ai`);
+    const groupSelect = acct.p.locator('select[aria-label="Study group"]');
+    await groupSelect.waitFor();
+    const option = groupSelect.locator("option", { hasText: `Docx Group ${stamp}` }).first();
+    await option.waitFor({ state: "attached" });
+    await groupSelect.selectOption({ label: (await option.textContent()).trim() });
+    const box = acct.p.locator('textarea[placeholder="Ask about your study materials…"]');
+    await box.fill("What four conditions must hold for a deadlock?");
+    await acct.p.getByRole("button", { name: "Send message" }).click();
+    await acct.p.getByText("Searching your notes and writing an answer…").waitFor({ state: "detached", timeout: 180_000 });
+    await acct.p.getByText("Sources", { exact: true }).waitFor({ timeout: 10_000 });
+    const text = await acct.p.locator("main").innerText();
+    if (!/mutual exclusion/i.test(text) || !/circular wait/i.test(text)) throw new Error("answer did not cover the indexed deadlock notes");
+  });
+  let generatedSessionPath = "";
+  await step(acct.p, "AI planner creates a session from group notes", async () => {
+    await acct.p.goto(`${BASE}/groups/${acct.groupId}`);
+    await acct.p.getByRole("button", { name: "Plan next session" }).click();
+    await acct.p.getByRole("dialog", { name: "Proposed session" }).waitFor({ timeout: 180_000 });
+    await acct.p.getByRole("button", { name: "Create session" }).click();
+    await acct.p.waitForURL(/\/sessions\/\d+$/ , { timeout: 60_000 });
+    generatedSessionPath = new URL(acct.p.url()).pathname;
+    await acct.p.locator("main h1").first().waitFor();
+  });
+  await step(acct.p, "session summary generates from attached notes", async () => {
+    await acct.p.getByRole("button", { name: "Mark completed" }).click();
+    await acct.p.getByText("Session marked as completed!").waitFor();
+    await acct.p.getByText("Key concepts", { exact: true }).waitFor({ timeout: 180_000 });
+  });
+  await step(acct.p, "flashcards generate and flip", async () => {
+    await acct.p.getByRole("button", { name: "Generate flashcards" }).click();
+    const card = acct.p.getByText("Click to flip", { exact: true });
+    await card.waitFor({ timeout: 180_000 });
+    await card.click();
+    await acct.p.getByText("Answer", { exact: true }).waitFor();
+  });
+  await step(acct.p, "quiz generates, submits, and returns a grade", async () => {
+    await acct.p.getByRole("button", { name: "Generate quiz" }).click();
+    await acct.p.getByRole("button", { name: "Take quiz" }).waitFor({ timeout: 180_000 });
+    await acct.p.getByRole("button", { name: "Take quiz" }).click();
+    await acct.p.waitForURL(/\/sessions\/\d+\/quiz$/);
+    await acct.p.getByText("Question 1", { exact: true }).waitFor();
+    const cards = acct.p.locator("main div.p-5").filter({ has: acct.p.getByText(/^Question \d+$/) });
+    const count = await cards.count();
+    if (!count) throw new Error("quiz has no questions");
+    for (let i = 0; i < count; i++) {
+      const card = cards.nth(i);
+      const answer = card.locator("textarea");
+      if (await answer.count()) await answer.fill("Mutual exclusion, hold and wait, no preemption and circular wait.");
+      else await card.locator("button").first().click();
+    }
+    await acct.p.getByRole("button", { name: /Submit/ }).click();
+    await acct.p.getByRole("link", { name: /Return to/ }).waitFor({ timeout: 120_000 });
+  });
+  await step(acct.p, "dark theme applies and can be restored", async () => {
+    await acct.p.setViewportSize({ width: 1440, height: 900 });
+    await acct.p.goto(`${BASE}/settings`);
+    await acct.p.getByRole("button", { name: "Dark", exact: true }).click();
+    await acct.p.waitForFunction(() => document.documentElement.classList.contains("dark"));
+    await acct.p.getByRole("button", { name: "Light", exact: true }).click();
+    await acct.p.waitForFunction(() => !document.documentElement.classList.contains("dark"));
+  });
+  await step(acct.p, "authenticated pages fit phone and tablet widths", async () => {
+    const paths = [
+      "/dashboard", "/groups", `/groups/${acct.groupId}`, "/resources", "/sessions",
+      generatedSessionPath, `${generatedSessionPath}/quiz`, "/ai", "/notifications", "/settings",
+    ];
+    for (const width of [390, 768]) {
+      await acct.p.setViewportSize({ width, height: 900 });
+      for (const path of paths) {
+        await acct.p.goto(BASE + path);
+        await acct.p.locator("h1").first().waitFor();
+        await acct.p.waitForTimeout(150);
+        const overflow = await acct.p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        if (overflow > 1) throw new Error(`${path} overflows horizontally at ${width}px by ${overflow}px`);
+      }
+    }
+    await acct.p.setViewportSize({ width: 1440, height: 900 });
   });
   await step(acct.p, "forgot password confirms without revealing accounts", async () => {
     const ctx = await browser.newContext();

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { Calendar, Copy, Download, FileText, LogOut, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -73,6 +73,11 @@ export function GroupWorkspace() {
   const { groupId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const handledIntent = useRef<string | null>(null);
+  const generatingPlan = useRef(false);
+  const plannerVersion = useRef(0);
+  const dataVersion = useRef(0);
   
   const [group, setGroup] = useState<Group | null>(null);
   const terms = useGroupTerms(group);
@@ -90,16 +95,17 @@ export function GroupWorkspace() {
   const [targetDuration, setTargetDuration] = useState(60);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!groupId) return;
+    const current = ++dataVersion.current;
     try {
-      if (!group) setLoading(true);
       const [g, r, s, up] = await Promise.all([
         groupService.getGroup(Number(groupId)),
         resourceService.getResources(Number(groupId)),
         sessionService.getGroupSessions(Number(groupId)),
         groupService.getUpcomingSessions(Number(groupId))
       ]);
+      if (current !== dataVersion.current) return;
       // Sort resources by date
       r.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setGroup(g);
@@ -109,13 +115,58 @@ export function GroupWorkspace() {
     } catch (err) {
       console.error("Failed to load group data", err);
     } finally {
-      setLoading(false);
+      if (current === dataVersion.current) setLoading(false);
     }
-  };
+  }, [groupId]);
 
   useEffect(() => {
-    loadData();
-  }, [groupId]);
+    setLoading(true);
+    setGroup(null);
+    setResources([]);
+    setSessions([]);
+    setUpcomingSessions([]);
+    setActiveTab("Overview");
+    setIsPlanModalOpen(false);
+    setAiProposal(null);
+    setIsGeneratingPlan(false);
+    generatingPlan.current = false;
+    void loadData();
+    return () => { dataVersion.current += 1; plannerVersion.current += 1; toast.dismiss("generate-plan"); };
+  }, [loadData]);
+
+  const handleGeneratePlan = useCallback(async () => {
+    if (!groupId || generatingPlan.current) return;
+    generatingPlan.current = true;
+    const current = plannerVersion.current;
+    try {
+      setIsGeneratingPlan(true);
+      toast.loading(`AI is analyzing ${terms.groupLower} progress...`, { id: "generate-plan" });
+      const proposal = await groupService.generateStudyPlan(Number(groupId), targetDuration);
+      if (current !== plannerVersion.current) return;
+      setAiProposal(proposal);
+      setIsPlanModalOpen(true);
+      toast.success("Plan generated!", { id: "generate-plan" });
+    } catch (err) {
+      if (current !== plannerVersion.current) return;
+      toast.error(err instanceof Error ? err.message : "Failed to generate plan", { id: "generate-plan" });
+    } finally {
+      if (current === plannerVersion.current) { generatingPlan.current = false; setIsGeneratingPlan(false); }
+    }
+  }, [groupId, targetDuration, terms.groupLower]);
+
+  useEffect(() => {
+    if (loading || !group || group.id !== Number(groupId) || handledIntent.current === location.key) return;
+    const intent = location.state as { openTab?: string; generatePlan?: boolean } | null;
+    if (!intent?.openTab && !intent?.generatePlan) return;
+    handledIntent.current = location.key;
+    if (intent.openTab && TABS.includes(intent.openTab)) setActiveTab(intent.openTab);
+    if (intent.generatePlan) {
+      const organizer = group.members?.some(m => m.user_id === Number(user?.id) && m.role === "ORGANIZER");
+      if (organizer) void handleGeneratePlan();
+      else toast.error(`Only the ${terms.organizer.toLowerCase()} can generate a plan.`);
+    }
+    navigate(location.pathname, { replace: true, state: null });
+  }, [group, groupId, loading, location.key, location.state, location.pathname, navigate, user?.id, handleGeneratePlan, terms.organizer]);
 
   const handleDeleteResource = async (resourceId: number) => {
     if (!confirm("Are you sure you want to delete this resource?")) return;
@@ -128,7 +179,7 @@ export function GroupWorkspace() {
     }
   };
 
-  if (loading) {
+  if (loading || (group && group.id !== Number(groupId))) {
     return (
       <div className="mx-auto max-w-[1100px] px-6 py-8 md:px-8">
         <Skeleton className="mb-3 h-4 w-40" />
@@ -150,7 +201,6 @@ export function GroupWorkspace() {
   const canManageGroup = userRole === "ORGANIZER";
   const recentResources = resources.slice(0, 3);
 
-  const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
   
   const handleLeaveGroup = async () => {
     if (!confirm(`Are you sure you want to leave this ${terms.groupLower}?`)) return;
@@ -192,22 +242,6 @@ export function GroupWorkspace() {
       toast.success("Member removed");
     } catch (err: any) {
       toast.error(err.message || "Failed to remove member");
-    }
-  };
-
-  const handleGeneratePlan = async () => {
-    if (!groupId) return;
-    try {
-      setIsGeneratingPlan(true);
-      toast.loading(`AI is analyzing ${terms.groupLower} progress...`, { id: "generate-plan" });
-      const proposal = await groupService.generateStudyPlan(Number(groupId), targetDuration);
-      setAiProposal(proposal);
-      setIsPlanModalOpen(true);
-      toast.success("Study plan generated!", { id: "generate-plan" });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to generate study plan", { id: "generate-plan" });
-    } finally {
-      setIsGeneratingPlan(false);
     }
   };
 

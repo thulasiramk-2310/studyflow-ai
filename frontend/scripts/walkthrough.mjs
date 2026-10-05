@@ -11,7 +11,7 @@ const BASE = (process.env.BASE_URL || "http://localhost").replace(/\/$/, "");
 const DEMO_EMAIL = process.env.DEMO_EMAIL || "demo@studyflow.ai";
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD;
 const NOTES = resolve(HERE, "../../ai-service/evals/data/os_notes.pdf");
-const OUT = resolve(HERE, "../walkthrough-output");
+const OUT = resolve(process.env.WALKTHROUGH_OUTPUT_DIR || join(HERE, "../walkthrough-output"));
 const DEMO_GROUP = "Operating Systems (Demo)";
 const AI_TIMEOUT = 180_000;
 
