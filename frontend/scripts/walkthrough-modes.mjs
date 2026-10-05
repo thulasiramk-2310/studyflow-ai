@@ -335,7 +335,7 @@ try {
     const box = acct.p.locator('textarea[placeholder="Ask about your study materials…"]');
     await box.fill("What four conditions must hold for a deadlock?");
     await acct.p.getByRole("button", { name: "Send message" }).click();
-    await acct.p.getByText("Searching your notes and writing an answer…").waitFor({ state: "detached", timeout: 180_000 });
+    await acct.p.getByText(/Searching your (notes|documents) and writing an answer/).waitFor({ state: "detached", timeout: 180_000 });
     await acct.p.getByText("Sources", { exact: true }).waitFor({ timeout: 10_000 });
     const text = await acct.p.locator("main").innerText();
     if (!/mutual exclusion/i.test(text) || !/circular wait/i.test(text)) throw new Error("answer did not cover the indexed deadlock notes");

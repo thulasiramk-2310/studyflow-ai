@@ -81,7 +81,7 @@ def test_enforce_keeps_a_supported_answer():
 
 def test_enforce_passes_through_exempt_answers():
     """The 'not in your notes' reply is not a claim about the notes."""
-    exempt = "I couldn't find this information in the uploaded study materials."
+    exempt = "I couldn't find this information in the uploaded documents."
 
     answer, _ = enforce_grounding(exempt, [CHUNK], exempt=(exempt,))
 
