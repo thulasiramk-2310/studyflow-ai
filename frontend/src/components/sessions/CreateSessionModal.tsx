@@ -194,7 +194,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: Props) {
               <label className="block text-sm font-semibold mb-1.5">Attach Resources</label>
               {groupResources.length === 0 ? (
                 <div className="text-sm text-muted-foreground p-3 bg-background rounded-lg border border-border-soft text-center">
-                  No resources in this group yet.
+                  Nothing in this {terms.groupLower}'s {terms.library.toLowerCase()} yet.
                 </div>
               ) : (
                 <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar border border-border-soft rounded-lg p-2">

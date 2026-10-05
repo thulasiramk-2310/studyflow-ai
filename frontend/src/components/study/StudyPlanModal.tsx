@@ -258,7 +258,7 @@ export const StudyPlanModal: React.FC<StudyPlanModalProps> = ({
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  Create session
+                  Create {terms.sessionLower}
                 </>
               )}
             </button>

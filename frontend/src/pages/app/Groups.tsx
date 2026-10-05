@@ -53,13 +53,13 @@ export function Groups() {
               onClick={() => setIsJoinOpen(true)}
               className="flex items-center gap-1.5 bg-surface border border-border text-foreground rounded-lg px-3.5 py-2 text-sm font-semibold hover:bg-muted transition-colors shadow-sm"
             >
-              Join group
+              {terms.joinGroup}
             </button>
             <button
               onClick={() => setIsCreateOpen(true)}
               className="flex items-center gap-1.5 bg-primary text-primary-foreground rounded-lg px-3.5 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm"
             >
-              <Plus className="w-4 h-4" strokeWidth={3} /> Create group
+              <Plus className="w-4 h-4" strokeWidth={3} /> {terms.createGroup}
             </button>
           </div>
         }
@@ -80,11 +80,11 @@ export function Groups() {
         <EmptyState icon={Users} title={`No ${terms.groupsLower} found`} description={query ? `No ${terms.groupsLower} match "${query}". Try a different term.` : `Create your first ${terms.groupLower} to get started.`} action={
           <div className="flex gap-2">
             <button onClick={() => setIsCreateOpen(true)} className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold hover:bg-primary-hover transition-colors">
-              Create Group
+              {terms.createGroup}
             </button>
             {!query && (
               <button onClick={() => setIsJoinOpen(true)} className="bg-surface border border-border text-foreground rounded-lg px-4 py-2 text-sm font-semibold hover:bg-muted transition-colors">
-                Join group
+                {terms.joinGroup}
               </button>
             )}
           </div>

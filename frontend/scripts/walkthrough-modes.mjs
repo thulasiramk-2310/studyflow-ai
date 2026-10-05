@@ -167,8 +167,8 @@ try {
   await step(pro.p, "professional documents upload", async () => {
     await pro.p.goto(`${BASE}/resources`);
     await pro.p.locator("h1").first().waitFor();
-    await pro.p.getByRole("button", { name: "Upload notes" }).click();
-    const dlg = pro.p.getByRole("dialog", { name: "Upload notes" });
+    await pro.p.getByRole("button", { name: /Upload (notes|documents)/ }).click();
+    const dlg = pro.p.getByRole("dialog", { name: /Upload (notes|documents)/ });
     await dlg.locator('input[type="file"]').setInputFiles(NOTES);
     await dlg.getByRole("button", { name: "Upload", exact: true }).click();
     await pro.p.getByText("File uploaded successfully").waitFor();
@@ -306,8 +306,8 @@ try {
     acct.groupId = groupId;
     await acct.p.goto(`${BASE}/resources`);
     await acct.p.locator("h1").first().waitFor();
-    await acct.p.getByRole("button", { name: "Upload notes" }).click();
-    const dlg = acct.p.getByRole("dialog", { name: "Upload notes" });
+    await acct.p.getByRole("button", { name: /Upload (notes|documents)/ }).click();
+    const dlg = acct.p.getByRole("dialog", { name: /Upload (notes|documents)/ });
     await dlg.locator('input[type="file"]').setInputFiles(DOCX);
     const sel = dlg.locator("select");
     if (await sel.count()) {
