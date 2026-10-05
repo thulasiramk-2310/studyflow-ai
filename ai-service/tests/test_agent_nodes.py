@@ -255,3 +255,37 @@ def test_agent_router_halts_at_the_cap_even_with_intents_left():
     state["pending_intents"] = ["scheduler", "rag"]
 
     assert route_after_agent(state) == "halt"
+
+
+RUNBOOK = ("# Onboarding runbook\n## Production access\nTo get access to production, raise an access request in the "
+           "IT portal. Your manager approves it.\n## First week\nPair with your onboarding buddy for three deploys.")
+
+
+def test_rag_answers_a_diluted_section_when_the_question_words_are_in_it(stub_retriever, chunk):
+    # A multi-section chunk scores below the semantic gate, but every key word of the question is in it.
+    retriever = stub_retriever([chunk(RUNBOOK, "onboarding_runbook.md", score=0.41)])
+    provider = MockProvider(responses=["To get access to production, raise an access request in the IT portal."])
+
+    update = rag_node(_state("How do I get access to production?"), provider=provider, retriever=retriever)
+
+    assert update["answer"].startswith("To get access to production")
+    assert provider.call_count == 1
+
+
+def test_rag_still_rejects_a_weak_match_that_shares_no_key_words(stub_retriever, chunk):
+    retriever = stub_retriever([chunk(RUNBOOK, "onboarding_runbook.md", score=0.41)])
+    provider = MockProvider(responses=["made up"])
+
+    update = rag_node(_state("What is the capital of Australia?"), provider=provider, retriever=retriever)
+
+    assert update["answer"] == NOT_IN_NOTES
+    assert provider.call_count == 0
+
+
+def test_rag_rejects_a_very_weak_match_even_with_shared_words(stub_retriever, chunk):
+    retriever = stub_retriever([chunk(RUNBOOK, "onboarding_runbook.md", score=0.22)])
+    provider = MockProvider(responses=["made up"])
+
+    update = rag_node(_state("How do I get access to production?"), provider=provider, retriever=retriever)
+
+    assert update["answer"] == NOT_IN_NOTES
