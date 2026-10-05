@@ -34,6 +34,8 @@ export function FloatingAI() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const conversationVersion = useRef(0);
+  const busy = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -41,10 +43,13 @@ export function FloatingAI() {
   const isAIPage = location.pathname === "/ai";
 
   useEffect(() => {
+    let active = true;
     groupService.getGroups().then(data => {
+      if (!active) return;
       setGroups(data);
       if (data.length > 0) setSelectedGroup(data[0]);
     }).catch(() => {});
+    return () => { active = false; conversationVersion.current += 1; };
   }, []);
 
   useEffect(() => {
@@ -79,7 +84,9 @@ export function FloatingAI() {
   };
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || sending || !selectedGroup) return;
+    if (!text.trim() || busy.current || !selectedGroup) return;
+    busy.current = true;
+    const current = conversationVersion.current;
 
     const userMsg: Message = { role: "user", content: text };
     setMessages(prev => [...prev, userMsg, { role: "ai", content: "", thinking: true }]);
@@ -88,6 +95,7 @@ export function FloatingAI() {
 
     try {
       const res = await aiService.chat(selectedGroup.id, text, sessionId || undefined, audience);
+      if (current !== conversationVersion.current) return;
       const aiBody = res?.answer || "No response";
       const aiCitations = res?.citations || [];
 
@@ -101,6 +109,8 @@ export function FloatingAI() {
         setSessionId(res.sessionId);
       }
     } catch (err: any) {
+      if (current !== conversationVersion.current) return;
+      setInput(text);
       // Show the server's message (guardrail block, AI unavailable, rate limit) when there is one.
       const msg = err?.status && err.message ? err.message : "Sorry, something went wrong. Try again.";
       setMessages(prev => {
@@ -109,11 +119,15 @@ export function FloatingAI() {
         return next;
       });
     } finally {
-      setSending(false);
+      if (current === conversationVersion.current) { busy.current = false; setSending(false); }
     }
   };
 
   const handleNewChat = () => {
+    conversationVersion.current += 1;
+    busy.current = false;
+    setSending(false);
+    setInput("");
     setMessages([]);
     setSessionId(null);
   };
@@ -191,6 +205,7 @@ export function FloatingAI() {
               {groups.length > 1 && (
                 <div className="px-4 py-2 border-b border-border-soft bg-background/50 shrink-0">
                   <select
+                    aria-label={terms.group}
                     className="w-full appearance-none bg-surface border border-border rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:border-primary/50 cursor-pointer"
                     value={selectedGroup?.id || ""}
                     onChange={(e) => {
@@ -216,7 +231,7 @@ export function FloatingAI() {
                     <div className="text-center">
                       <div className="font-serif text-lg text-foreground">How can I help?</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
-                        {selectedGroup ? `Studying: ${selectedGroup.name}` : `Select a ${terms.groupLower} to get started`}
+                        {selectedGroup ? selectedGroup.name : `Select a ${terms.groupLower} to get started`}
                       </div>
                     </div>
 
@@ -272,7 +287,7 @@ export function FloatingAI() {
                                   <div key={ci} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <FileText className="w-3 h-3 shrink-0" />
                                     <span className="truncate">{c.filename}</span>
-                                    <span className="shrink-0 font-semibold text-primary-text">{Math.round(c.score * 100)}%</span>
+                                    {c.page != null && <span className="shrink-0 text-muted-foreground">p{c.page}</span>}
                                   </div>
                                 ))}
                               </div>
@@ -296,10 +311,12 @@ export function FloatingAI() {
                   <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
                     <input
                       ref={inputRef}
+                      aria-label="Message"
+                      maxLength={8000}
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={e => {
-                        if (e.key === "Enter" && !e.shiftKey) {
+                        if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                           e.preventDefault();
                           sendMessage(input);
                         }

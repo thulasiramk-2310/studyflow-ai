@@ -9,7 +9,8 @@
     "lint": "oxlint && node scripts/check-colors.mjs && node scripts/check-terms.mjs",
     "preview": "vite preview",
     "walkthrough": "node scripts/walkthrough.mjs",
-    "walkthrough:modes": "node scripts/walkthrough-modes.mjs"
+    "walkthrough:modes": "node scripts/walkthrough-modes.mjs",
+    "test:conversations": "node scripts/check-conversations.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",

@@ -43,13 +43,14 @@ class AIService {
     return data;
   }
 
-  async getChatSessions(groupId: number): Promise<ChatSession[]> {
-    const data = await apiClient.get<ChatSession[]>(`/api/v1/ai/chat/sessions?group_id=${groupId}`);
+  async getChatSessions(groupId: number, offset = 0): Promise<ChatSession[]> {
+    const data = await apiClient.get<ChatSession[]>(`/api/v1/ai/chat/sessions?group_id=${groupId}&limit=50&offset=${offset}`);
     return data;
   }
 
-  async getChatSessionMessages(sessionId: number, groupId: number): Promise<ChatMessage[]> {
-    const data = await apiClient.get<ChatMessage[]>(`/api/v1/ai/chat/sessions/${sessionId}?group_id=${groupId}`);
+  async getChatSessionMessages(sessionId: number, groupId: number, beforeId?: number): Promise<ChatMessage[]> {
+    const cursor = beforeId === undefined ? "" : `&before_id=${beforeId}`;
+    const data = await apiClient.get<ChatMessage[]>(`/api/v1/ai/chat/sessions/${sessionId}?group_id=${groupId}&latest=true&limit=30${cursor}`);
     return data;
   }
 
