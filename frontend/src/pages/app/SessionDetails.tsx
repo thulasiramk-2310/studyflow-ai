@@ -22,6 +22,7 @@ export function SessionDetails() {
   const terms = useGroupTerms(group);
   const quizWord = terms.quiz.toLowerCase();
   const cardsWord = terms.flashcards.toLowerCase();
+  const notesWord = terms.audience === "professional" ? "documents" : "notes";
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [quiz, setQuiz] = useState<any>(null);
   const [flashcards, setFlashcards] = useState<FlashcardDeckResponse | null>(null);
@@ -294,7 +295,7 @@ export function SessionDetails() {
                   <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary-text" />
                   <div>
                     <div className="text-base font-semibold text-foreground">Summary, {quizWord} and {cardsWord} come next</div>
-                    <p className="mt-0.5 text-sm text-muted-foreground">When the {terms.sessionLower} is marked completed, StudyFlow writes a summary from the attached notes, and you can generate a {quizWord} and {cardsWord}.</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">When the {terms.sessionLower} is marked completed, StudyFlow writes a summary from the attached {notesWord}, and you can generate a {quizWord} and {cardsWord}.</p>
                   </div>
                 </div>
               </Card>
@@ -316,7 +317,7 @@ export function SessionDetails() {
                   <MinutesView sessionId={session.id} summary={summary} terms={terms} canManage={canManageGroup} sourceByName={group?.members?.find((m) => m.user_id === summary.source_by)?.name ?? null} onChange={setSummary} />
                 ) : summary?.status === "READY" ? (
                   <>
-                    <p className="mb-3 text-sm text-muted-foreground">Written from the attached notes. Add a transcript to get {terms.minutes.toLowerCase()} of what was said.</p>
+                    <p className="mb-3 text-sm text-muted-foreground">Written from the attached {notesWord}. Add a transcript to get {terms.minutes.toLowerCase()} of what was said.</p>
                     <RichText text={summary.summary ?? ""} className="text-base leading-relaxed text-foreground" />
                     {!!summary.key_concepts?.length && (
                       <div className="mt-4">
@@ -340,7 +341,7 @@ export function SessionDetails() {
                 ) : (
                   <div className="flex flex-col gap-2">
                     <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-11/12" /><Skeleton className="h-4 w-3/4" />
-                    <p className="text-xs text-muted-foreground">{session.meeting_transcript_source ? `Writing the ${terms.minutes.toLowerCase()} from what was said…` : "Writing the summary from the attached notes…"}</p>
+                    <p className="text-xs text-muted-foreground">{session.meeting_transcript_source ? `Writing the ${terms.minutes.toLowerCase()} from what was said…` : `Writing the summary from the attached ${notesWord}…`}</p>
                   </div>
                 )}
               </Card>
@@ -449,7 +450,7 @@ export function SessionDetails() {
           </Card>
 
           <Card>
-            <CardHeader title="Notes attached" />
+            <CardHeader title={notesWord === "notes" ? "Notes attached" : "Documents attached"} />
             {session.resources && session.resources.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {session.resources.map((r) => {
@@ -463,7 +464,7 @@ export function SessionDetails() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No notes attached.</p>
+              <p className="text-sm text-muted-foreground">No {notesWord} attached.</p>
             )}
           </Card>
         </div>
