@@ -64,7 +64,7 @@ The same product works for students and professionals: switch the account type a
 
 ## Performance
 
-Measured with k6 against the production Docker Compose stack on one laptop (16 cores, shared with the load generator). Each virtual user loads the dashboard and then reads for 3 to 7 seconds:
+Measured with k6 ([`loadtest/dashboard.js`](loadtest/dashboard.js)) against the production Docker Compose stack on one laptop (16 cores, shared with the load generator), on 2026-10-02. Each virtual user loads the dashboard and then reads for 3 to 7 seconds. The raw results were not kept in the repository; rerun the script to reproduce:
 
 | Concurrent users | Median | p95 | Errors |
 | --- | --- | --- | --- |
