@@ -149,33 +149,63 @@ def enforce_grounding(
     return UNSUPPORTED_MESSAGE, result
 
 
+_LIST_MARKER_RE = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+")
+# "Name - explanation" or "Name: explanation" inside a list item.
+_ITEM_HEAD_RE = re.compile(r"\s+[–—-]\s+|:\s+")
+
+
+def _sentence_supported(sentence: str, chunks: list[str], threshold: float, all_chunk_tokens: set[str]) -> bool:
+    tokens = _content_tokens(sentence)
+    if len(tokens) < MIN_CONTENT_TOKENS:
+        return bool(tokens) and tokens <= all_chunk_tokens
+    return check_grounding(sentence, chunks, threshold).grounded
+
+
 def keep_grounded_sentences(
     answer: str,
     chunks: list[str],
     threshold: float = DEFAULT_THRESHOLD,
     exempt: tuple[str, ...] = (),
 ) -> tuple[str, GroundingResult]:
-    """Drop unsupported sentences while preserving independently grounded claims."""
+    """Drop unsupported sentences while preserving independently grounded claims.
+
+    Works line by line so lists stay lists. When a list item's explanation is
+    unsupported but its name is in the notes ("Mutual exclusion - <invented
+    detail>"), only the name is kept. A lead-in ending in ":" is dropped when
+    none of the items it introduces survive, so an answer never ends mid-thought.
+    """
     if answer in exempt:
         return answer, check_grounding(answer, chunks, threshold)
     if not answer or not chunks:
         return UNSUPPORTED_MESSAGE, check_grounding(answer, chunks, threshold)
 
     all_chunk_tokens = set().union(*(_content_tokens(chunk) for chunk in chunks))
-    kept: list[str] = []
-    for sentence in split_sentences(answer):
-        tokens = _content_tokens(sentence)
-        if len(tokens) < MIN_CONTENT_TOKENS:
-            if tokens and tokens <= all_chunk_tokens:
-                kept.append(sentence)
+    lines: list[tuple[bool, str]] = []  # (is list item, text)
+    for raw in answer.split("\n"):
+        if not raw.strip():
             continue
-        if check_grounding(sentence, chunks, threshold).grounded:
-            kept.append(sentence)
+        marker_match = _LIST_MARKER_RE.match(raw)
+        marker = marker_match.group(0).strip() if marker_match else ""
+        body = raw[marker_match.end():] if marker_match else raw
+        kept = [s for s in split_sentences(body) if _sentence_supported(s, chunks, threshold, all_chunk_tokens)]
+        if not kept and marker:
+            head = _ITEM_HEAD_RE.split(body, maxsplit=1)[0].strip()
+            if head != body.strip() and _sentence_supported(head, chunks, threshold, all_chunk_tokens):
+                kept = [head]
+        if kept:
+            text = " ".join(kept)
+            lines.append((bool(marker), f"{marker} {text}" if marker else text))
 
-    if not kept:
+    # A lead-in ("The conditions are:") needs at least one surviving item after it.
+    result_lines = [
+        text for i, (is_item, text) in enumerate(lines)
+        if not (text.rstrip().endswith(":") and not (i + 1 < len(lines) and lines[i + 1][0]))
+    ]
+
+    if not result_lines:
         result = check_grounding(answer, chunks, threshold)
         if result.checked_sentences == 0:
             return answer, result
         return UNSUPPORTED_MESSAGE, result
-    grounded_answer = " ".join(kept)
+    grounded_answer = "\n".join(result_lines)
     return grounded_answer, check_grounding(grounded_answer, chunks, threshold)

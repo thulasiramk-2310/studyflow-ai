@@ -158,3 +158,36 @@ def test_rag_node_drops_citations_for_an_answer_too_short_to_check(stub_retrieve
     assert update["answer"] == "Yes."
     assert update["grounded"] is False
     assert update["citations"] == []
+
+
+NOTES = ("A deadlock needs four conditions at once: mutual exclusion, hold and wait, "
+         "no preemption and circular wait.")
+
+
+def test_a_list_keeps_its_grounded_item_names_when_explanations_are_unsupported():
+    from app.guardrails.grounding import keep_grounded_sentences
+
+    answer = (
+        "The four conditions that must simultaneously hold for a deadlock are:\n\n"
+        "1. **Mutual exclusion** – at least one resource is held in a non-shareable mode.\n"
+        "2. **Hold and wait** – a process holds a resource while requesting others.\n"
+        "3. **No preemption** – resources cannot be forcibly taken from a process.\n"
+        "4. **Circular wait** – a closed chain of processes each waits on the next."
+    )
+    kept, _ = keep_grounded_sentences(answer, [NOTES])
+    for name in ("Mutual exclusion", "Hold and wait", "No preemption", "Circular wait"):
+        assert name in kept
+    assert "non-shareable" not in kept and "forcibly" not in kept
+    assert kept.count("\n") >= 4  # the list stays a list
+
+
+def test_a_lead_in_is_never_left_dangling():
+    from app.guardrails.grounding import UNSUPPORTED_MESSAGE, keep_grounded_sentences
+
+    answer = (
+        "A deadlock needs four conditions at once:\n"
+        "- Starvation of the scheduler queue by priority inversion.\n"
+        "- Thrashing caused by an overcommitted page table."
+    )
+    kept, _ = keep_grounded_sentences(answer, [NOTES])
+    assert kept == UNSUPPORTED_MESSAGE
