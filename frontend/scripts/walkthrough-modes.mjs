@@ -111,13 +111,23 @@ try {
       await p.goto(`${BASE}/`);
       await p.getByRole("tab", { name: "For teams" }).click();
       const h1 = await p.locator("h1").first().innerText();
-      if (!/move work forward/.test(h1)) throw new Error(`teams headline not shown: "${h1}"`);
+      if (!/ready/.test(h1) || !/on day one/.test(h1)) throw new Error(`teams headline not shown: "${h1}"`);
       const extra = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       if (extra > 1) throw new Error(`landing scrolls sideways by ${extra}px`);
       await p.getByRole("button", { name: /Get started free/ }).first().click();
       await p.waitForURL(/\/register\?for=teams/);
       if ((await p.getByRole("radio", { name: /professional/i }).getAttribute("aria-checked")) !== "true") throw new Error("professional not preselected");
     });
+    if (width === 1440) {
+      await step(p, "teams tour shows the team script", async () => {
+        await p.goto(`${BASE}/?for=teams`);
+        await p.getByRole("button", { name: /Watch the 25-second tour/ }).click();
+        await p.getByText("Everything your team knows, in one place.").waitFor();
+        await p.getByText("Platform Team", { exact: true }).first().waitFor({ state: "attached" });
+        await p.keyboard.press("Escape");
+        await p.getByRole("dialog", { name: "How StudyFlow works" }).waitFor({ state: "detached" });
+      });
+    }
     await ctx.close();
   }
 

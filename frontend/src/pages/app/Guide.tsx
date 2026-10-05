@@ -24,7 +24,7 @@ export function Guide() {
       <Card className="overflow-hidden" padded={false}>
         <div className="relative isolate aspect-[16/10] overflow-clip bg-muted">
           {playing ? (
-            <IntroStage embedded onDone={() => setPlaying(false)} />
+            <IntroStage embedded audience={terms.audience} onDone={() => setPlaying(false)} />
           ) : (
             <div className="grid h-full place-items-center px-6 text-center">
               <div>
