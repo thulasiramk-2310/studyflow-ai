@@ -1,12 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Literal, Optional, Any
 from datetime import datetime
 
 class ChatRequest(BaseModel):
-    groupId: int
-    query: str
-    sessionId: Optional[int] = None
-    userId: Optional[int] = None # Added by study-service proxy
+    groupId: int = Field(gt=0)
+    query: str = Field(min_length=1, max_length=8000)
+    sessionId: Optional[int] = Field(default=None, gt=0)
+    userId: Optional[int] = Field(default=None, gt=0) # Added by study-service proxy
     audience: Literal["student", "professional"] = "student"  # the asking user's account type
 
 class ChatCitation(BaseModel):
