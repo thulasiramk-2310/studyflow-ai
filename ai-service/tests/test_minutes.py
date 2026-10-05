@@ -66,6 +66,34 @@ def test_unsupported_decisions_and_actions_are_dropped(no_background):
     assert [a["task"] for a in m["action_items"]] == ["Send the migration draft"]
 
 
+def test_unsupported_summary_sections_are_dropped(no_background):
+    set_provider(MockProvider([_reply(
+        executive_summary=(
+            "The team chose Postgres 16. The team hired three contractors for the mobile app."
+        ),
+        key_concepts=["Postgres 16", "Mobile app contractors"],
+        important_points=["Reporting database moves to Postgres 16", "The offsite is in Goa"],
+        open_questions=["Do we need read replicas?", "Who will manage the mobile app launch?"],
+    )]))
+
+    minutes = generate_minutes(TRANSCRIPT, "transcript")
+
+    assert minutes["executive_summary"] == "The team chose Postgres 16."
+    assert minutes["key_concepts"] == ["Postgres 16"]
+    assert minutes["important_points"] == ["Reporting database moves to Postgres 16"]
+    assert minutes["open_questions"] == ["Do we need read replicas?"]
+
+
+def test_owner_requires_all_name_parts_to_appear_in_the_transcript(no_background):
+    set_provider(MockProvider([_reply(action_items=[
+        {"task": "Send the migration draft", "owner": "Priya Invented", "due": "Friday"},
+    ])]))
+
+    minutes = generate_minutes(TRANSCRIPT, "transcript")
+
+    assert minutes["action_items"] == [{"task": "Send the migration draft", "owner": "", "due": "Friday"}]
+
+
 def test_owner_and_due_are_kept_only_when_the_source_says_so(no_background):
     set_provider(MockProvider([_reply(action_items=[
         {"task": "Send the migration draft", "owner": "Meera", "due": "2026-10-09"},
