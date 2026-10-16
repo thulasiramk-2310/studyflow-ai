@@ -6,9 +6,9 @@ The same product works for students and professionals: switch the account type a
 
 ## Demo
 
-https://github.com/user-attachments/assets/b4626a34-6fca-4b9c-8e9e-ff7765a61687
+https://github.com/user-attachments/assets/a07a4aa4-cd61-4a3a-934b-e687ed9607f8
 
-A 50-second walkthrough ([download the mp4](docs/media/studyflow-demo.mp4)): Harish creates Platform Team and uploads the onboarding runbook, Kavya joins with the team code on her first day and asks how to get production access, then Harish plans a meeting with the AI planner, uploads the call transcript and approves the minutes.
+A 3.5-minute walkthrough in two parts ([download the mp4](docs/media/studyflow-demo.mp4)). **Part 1, study groups:** Rahul creates an Operating Systems group and uploads notes, Sneha joins with the invite code and asks Ask AI, then Rahul plans a session with the AI planner and gets a summary, a quiz and flashcards. **Part 2, teams:** Harish creates Platform Team and uploads the onboarding runbook, Kavya joins on her first day and asks how to get production access, then Harish plans a meeting, uploads the call transcript and approves the minutes.
 
 | Ask AI, with the file and page behind each answer | The same group in professional mode |
 | --- | --- |
